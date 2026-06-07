@@ -1,0 +1,221 @@
+<script>
+/**
+ * Enterprise Database Schemas
+ * Used for dynamic form generation, data grid rendering, and validation.
+ */
+const AppSchemas = {
+  // ==========================================
+  // SYSTEM MODULE
+  // ==========================================
+  users: {
+    title: 'System Users', table: 'users', pk: 'user_id', prefix: 'USR',
+    fields: [
+      { name: 'email', label: 'Email Address', type: 'email', required: true },
+      { name: 'role_name', label: 'Access Role', type: 'select', options: ['SUPER_ADMIN', 'HR', 'TQC', 'EMPLOYEE'], required: true },
+      { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Suspended'], required: true }
+    ]
+  },
+
+  // ==========================================
+  // ORG MODULE
+  // ==========================================
+  directorates: {
+    title: 'Directorates', table: 'directorates', pk: 'dir_id', prefix: 'DIR',
+    fields: [
+      { name: 'dir_code', label: 'DIR Code', type: 'text', required: true },
+      { name: 'dir_letter_code', label: 'Letter Code', type: 'text', required: true },
+      { name: 'dir_name', label: 'Directorate Name', type: 'text', required: true }
+    ]
+  },
+  departments: {
+    title: 'Departments', table: 'departments', pk: 'dep_id', prefix: 'DEP',
+    fields: [
+      { name: 'dir_id', label: 'Directorate', type: 'select', source: 'directorates', sourceDisplay: 'dir_code', required: true },
+      { name: 'dep_code', label: 'DEP Code', type: 'text', required: true },
+      { name: 'dep_letter_code', label: 'Letter Code', type: 'text', required: true },
+      { name: 'dep_name', label: 'Department Name', type: 'text', required: true }
+    ]
+  },
+  stations: {
+    title: 'Stations', table: 'stations', pk: 'station_id', prefix: 'STN',
+    fields: [
+      { name: 'station_code', label: 'Station Code', type: 'text', required: true },
+      { name: 'station_name', label: 'Station Name', type: 'text', required: true },
+      { name: 'station_location', label: 'Location', type: 'text', required: true },
+      { name: 'station_type', label: 'Type', type: 'select', options: ['Hub', 'Spoke', 'Base'], required: true }
+    ]
+  },
+  sections: {
+    title: 'Sections', table: 'sections', pk: 'sec_id', prefix: 'SEC',
+    fields: [
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
+      { name: 'sec_code', label: 'SEC Code', type: 'text', required: true },
+      { name: 'sec_letter_code', label: 'Letter Code', type: 'text', required: true },
+      { name: 'sec_name', label: 'Section Name', type: 'text', required: true }
+    ]
+  },
+  shifts: {
+    title: 'Shifts', table: 'shifts', pk: 'shift_id', prefix: 'SHF',
+    fields: [
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
+      { name: 'shift_code', label: 'Shift Code', type: 'text', required: true },
+      { name: 'shift_name', label: 'Shift Name', type: 'text', required: true },
+      { name: 'shift_description', label: 'Description', type: 'text', required: false }
+    ]
+  },
+  pay_groups: {
+    title: 'Pay Groups', table: 'pay_groups', pk: 'pg_id', prefix: 'PG',
+    fields: [
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'pay_group', label: 'Pay Group', type: 'text', required: true },
+      { name: 'rank_level', label: 'Rank Level (Higher = More Senior)', type: 'number', required: true },
+      { name: 'designation', label: 'Designation', type: 'text', required: true },
+      { name: 'designation_short', label: 'Short Designation', type: 'text', required: true }
+    ]
+  },
+  employee_types: {
+    title: 'Employee Types', table: 'employee_types', pk: 'emp_type_id', prefix: 'ETY',
+    fields: [
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'emp_type_code', label: 'Type Code', type: 'text', required: true },
+      { name: 'emp_type', label: 'Employee Type', type: 'text', required: true },
+      { name: 'description', label: 'Description', type: 'text', required: false }
+      
+    ]
+  },
+
+  // ==========================================
+  // HRM MODULE
+  // ==========================================
+  employees: {
+    title: 'Employees', table: 'employees', pk: 'emp_id', prefix: 'EMP',
+    fields: [
+      { name: 'staff_id', label: 'Staff ID', type: 'text', required: true },
+      { name: 'emp_name', label: 'Full Name', type: 'text', required: true },
+      { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Others'], required: true },
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'emp_type_id', label: 'Emp Type', type: 'select', source: 'employee_types', sourceDisplay: 'emp_type', required: true },
+      { name: 'designation_short', label: 'Short Designation', type: 'select', source: 'pay_groups', sourceDisplay: 'designation_short', saveDisplayValue: true, required: true },
+      { name: 'contact_primary', label: 'Contact 01', type: 'text', required: true },
+      { name: 'contact_secondary', label: 'Contact 02', type: 'text', required: false },
+      { name: 'contact_family', label: 'Contact (Family)', type: 'text', required: false },
+      { name: 'email', label: 'Email', type: 'email', required: true },
+      { name: 'dob', label: 'Date of Birth', type: 'date_custom', required: true },
+      { name: 'joining_date', label: 'Joining Date', type: 'date_custom', required: true },
+      { name: 'home_district', label: 'Home District', type: 'text', required: true },
+      { name: 'picture_url', label: 'Picture', type: 'image', required: false },
+      { name: 'remarks', label: 'Remarks', type: 'text', required: false }
+    ]
+  },
+  postings: {
+    title: 'Posting History', table: 'postings', pk: 'posting_id', prefix: 'PST',
+    fields: [
+      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
+      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
+      { name: 'posting_date', label: 'Posting Date', type: 'date_custom', required: true }
+      // End date omitted intentionally as per rule
+    ]
+  },
+  placements: {
+    title: 'Placement History', table: 'placements', pk: 'placement_id', prefix: 'PLC',
+    fields: [
+      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
+      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
+      { name: 'sec_id', label: 'Section', type: 'select', source: 'sections', sourceDisplay: 'sec_letter_code', required: true },
+      { name: 'shift_id', label: 'Shift', type: 'select', source: 'shifts', sourceDisplay: 'shift_name', required: true },
+      { name: 'placement_date', label: 'Placement Date', type: 'date_custom', required: true }
+    ]
+  },
+  promotions: {
+    title: 'Promotion History', table: 'promotions', pk: 'promotion_id', prefix: 'PRM',
+    fields: [
+      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
+      { name: 'sequence_no', label: 'Sequence No', type: 'number', required: true },
+      { name: 'present_pg_id', label: 'Present PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
+      { name: 'promoted_pg_id', label: 'Promoted PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
+      { name: 'promotion_date', label: 'Promotion Date', type: 'date_custom', required: true }
+    ]
+  },
+  extensions: {
+    title: 'Extension History', table: 'extensions', pk: 'extension_id', prefix: 'EXT',
+    fields: [
+      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
+      { name: 'extension_pg_id', label: 'Extension PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
+      { name: 'extension_from', label: 'From Date', type: 'date_custom', required: true },
+      { name: 'extension_to', label: 'To Date', type: 'date_custom', required: true }
+    ]
+  },
+  additional_charges: {
+    title: 'Additional Charge History', table: 'additional_charges', pk: 'charge_id', prefix: 'CHG',
+    fields: [
+      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
+      { name: 'charge_pg_id', label: 'Charge PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
+      { name: 'charge_from', label: 'From Date', type: 'date_custom', required: true },
+      { name: 'charge_to', label: 'To Date', type: 'date_custom', required: true }
+    ]
+  },
+  self_retirements: {
+    title: 'Self Retirement', table: 'self_retirements', pk: 'retirement_id', prefix: 'RET',
+    fields: [
+      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
+      { name: 'retirement_date', label: 'Retirement Date', type: 'date_custom', required: true },
+      { name: 'remarks', label: 'Remarks', type: 'text', required: false }
+    ]
+  },
+  employee_migrations: {
+    title: 'Employee Migration', table: 'employee_migrations', pk: 'migration_id', prefix: 'MIG',
+    fields: [
+      { name: 'old_staff_id', label: 'Old Staff ID', type: 'text', required: true },
+      { name: 'new_staff_id', label: 'New Staff ID', type: 'text', required: true },
+      { name: 'migration_type', label: 'Migration Type', type: 'select', options: ['Department Change', 'Employee Type Change'], required: true },
+      { name: 'migration_date', label: 'Migration Date', type: 'date_custom', required: true },
+      { name: 'remarks', label: 'Remarks', type: 'text', required: false }
+    ]
+  },
+  setups: {
+    title: 'Setup Matrix', table: 'setups', pk: 'setup_id', prefix: 'SET',
+    fields: [
+      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
+      { name: 'pg_id', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
+      { name: 'authorized_strength', label: 'Authorized Strength', type: 'number', required: true }
+    ]
+  },
+
+  // ==========================================
+  // TQC MODULE
+  // ==========================================
+  courses: {
+    title: 'Courses', table: 'courses', pk: 'course_id', prefix: 'CRS',
+    fields: [
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'course_code', label: 'Course Code', type: 'text', required: true },
+      { name: 'course_name', label: 'Course Name', type: 'text', required: true },
+      { name: 'course_type', label: 'Course Type', type: 'select', options: ['Mandatory', 'Optional', 'Refresher'], required: true },
+      { name: 'duration', label: 'Duration (Days)', type: 'number', required: true },
+      { name: 'validity_months', label: 'Validity (Months)', type: 'number', required: true }
+    ]
+  },
+  trainings: {
+    title: 'Training Records', table: 'trainings', pk: 'training_id', prefix: 'TRN',
+    fields: [
+      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
+      { name: 'course_id', label: 'Course', type: 'select', source: 'courses', sourceDisplay: 'course_code', required: true },
+      { name: 'start_date', label: 'Start Date', type: 'date_custom', required: true },
+      { name: 'end_date', label: 'End Date', type: 'date_custom', required: true },
+      { name: 'result', label: 'Result', type: 'select', options: ['Pass', 'Fail', 'Incomplete'], required: true },
+      { name: 'result_file', label: 'Result Document URL', type: 'text', required: false },
+      { name: 'certificate_file', label: 'Certificate URL', type: 'text', required: false }
+    ]
+  },
+  tickets: {
+    title: 'Tickets', table: 'tickets', pk: 'ticket_id', prefix: 'TCK',
+    fields: [
+      { name: 'ticket_type', label: 'Ticket Type', type: 'select', options: ['Training Issue', 'Certificate Issue', 'HR Issue', 'System Issue', 'General Query'], required: true },
+      { name: 'description', label: 'Description', type: 'text', required: true },
+      { name: 'status', label: 'Status', type: 'select', options: ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'], required: true }
+    ]
+  }
+};
+</script>

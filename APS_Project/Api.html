@@ -1,0 +1,38 @@
+<script>
+/**
+ * API Wrapper
+ */
+const api = {
+  call: function(serverFunction, ...args) {
+    return new Promise((resolve, reject) => {
+      if (typeof google === 'undefined' || !google.script) {
+        console.error('Google Script context not found.');
+        reject(new Error('Not running in Google Apps Script environment.'));
+        return;
+      }
+      
+      google.script.run
+        .withSuccessHandler(response => {
+          if (response && response.status === 'success') {
+            resolve(response.data);
+          } else {
+            reject(new Error((response && response.message) || 'Unknown server error'));
+          }
+        })
+        .withFailureHandler(error => reject(error))
+        [serverFunction](...args);
+    });
+  },
+
+  // Generic CRUD
+  read: (table) => api.call('api_read', table),
+  create: (table, data, pkPrefix, pkColName) => api.call('api_create', table, data, pkPrefix, pkColName),
+  update: (table, pkCol, id, data) => api.call('api_update', table, pkCol, id, data),
+  delete: (table, pkCol, id) => api.call('api_delete', table, pkCol, id),
+
+  // Complex Operations
+  getHrmDetails: () => api.call('api_get_hrm_details'),
+  getServiceHistory: (empId) => api.call('api_get_service_history', empId),
+  getTqcRecords: () => api.call('api_get_tqc_records')
+};
+</script>

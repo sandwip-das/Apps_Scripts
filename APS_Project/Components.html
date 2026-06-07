@@ -1,0 +1,631 @@
+<script>
+const ALL_COUNTRY_CODES = [
+  {n:"Afghanistan",c:"+93"},{n:"Albania",c:"+355"},{n:"Algeria",c:"+213"},{n:"Andorra",c:"+376"},{n:"Angola",c:"+244"},{n:"Argentina",c:"+54"},{n:"Armenia",c:"+374"},{n:"Australia",c:"+61"},{n:"Austria",c:"+43"},{n:"Azerbaijan",c:"+994"},{n:"Bahamas",c:"+1-242"},{n:"Bahrain",c:"+973"},{n:"Bangladesh",c:"+880"},{n:"Belarus",c:"+375"},{n:"Belgium",c:"+32"},{n:"Belize",c:"+501"},{n:"Bhutan",c:"+975"},{n:"Bolivia",c:"+591"},{n:"Bosnia and Herzegovina",c:"+387"},{n:"Botswana",c:"+267"},{n:"Brazil",c:"+55"},{n:"Brunei",c:"+673"},{n:"Bulgaria",c:"+359"},{n:"Cambodia",c:"+855"},{n:"Cameroon",c:"+237"},{n:"Canada",c:"+1"},{n:"Chile",c:"+56"},{n:"China",c:"+86"},{n:"Colombia",c:"+57"},{n:"Costa Rica",c:"+506"},{n:"Croatia",c:"+385"},{n:"Cuba",c:"+53"},{n:"Cyprus",c:"+357"},{n:"Czech Republic",c:"+420"},{n:"Denmark",c:"+45"},{n:"Ecuador",c:"+593"},{n:"Egypt",c:"+20"},{n:"Estonia",c:"+372"},{n:"Ethiopia",c:"+251"},{n:"Fiji",c:"+679"},{n:"Finland",c:"+358"},{n:"France",c:"+33"},{n:"Georgia",c:"+995"},{n:"Germany",c:"+49"},{n:"Ghana",c:"+233"},{n:"Greece",c:"+30"},{n:"Guatemala",c:"+502"},{n:"Haiti",c:"+509"},{n:"Honduras",c:"+504"},{n:"Hungary",c:"+36"},{n:"Iceland",c:"+354"},{n:"India",c:"+91"},{n:"Indonesia",c:"+62"},{n:"Iran",c:"+98"},{n:"Iraq",c:"+964"},{n:"Ireland",c:"+353"},{n:"Israel",c:"+972"},{n:"Italy",c:"+39"},{n:"Jamaica",c:"+1-876"},{n:"Japan",c:"+81"},{n:"Jordan",c:"+962"},{n:"Kazakhstan",c:"+7"},{n:"Kenya",c:"+254"},{n:"Kuwait",c:"+965"},{n:"Kyrgyzstan",c:"+996"},{n:"Latvia",c:"+371"},{n:"Lebanon",c:"+961"},{n:"Libya",c:"+218"},{n:"Lithuania",c:"+370"},{n:"Luxembourg",c:"+352"},{n:"Malaysia",c:"+60"},{n:"Maldives",c:"+960"},{n:"Malta",c:"+356"},{n:"Mexico",c:"+52"},{n:"Moldova",c:"+373"},{n:"Monaco",c:"+377"},{n:"Mongolia",c:"+976"},{n:"Montenegro",c:"+382"},{n:"Morocco",c:"+212"},{n:"Myanmar",c:"+95"},{n:"Nepal",c:"+977"},{n:"Netherlands",c:"+31"},{n:"New Zealand",c:"+64"},{n:"Nigeria",c:"+234"},{n:"North Korea",c:"+850"},{n:"Norway",c:"+47"},{n:"Oman",c:"+968"},{n:"Pakistan",c:"+92"},{n:"Palestine",c:"+970"},{n:"Panama",c:"+507"},{n:"Papua New Guinea",c:"+675"},{n:"Paraguay",c:"+595"},{n:"Peru",c:"+51"},{n:"Philippines",c:"+63"},{n:"Poland",c:"+48"},{n:"Portugal",c:"+351"},{n:"Qatar",c:"+974"},{n:"Romania",c:"+40"},{n:"Russia",c:"+7"},{n:"Rwanda",c:"+250"},{n:"Saudi Arabia",c:"+966"},{n:"Senegal",c:"+221"},{n:"Serbia",c:"+381"},{n:"Singapore",c:"+65"},{n:"Slovakia",c:"+421"},{n:"Slovenia",c:"+386"},{n:"Somalia",c:"+252"},{n:"South Africa",c:"+27"},{n:"South Korea",c:"+82"},{n:"Spain",c:"+34"},{n:"Sri Lanka",c:"+94"},{n:"Sudan",c:"+249"},{n:"Sweden",c:"+46"},{n:"Switzerland",c:"+41"},{n:"Syria",c:"+963"},{n:"Taiwan",c:"+886"},{n:"Tajikistan",c:"+992"},{n:"Tanzania",c:"+255"},{n:"Thailand",c:"+66"},{n:"Tunisia",c:"+216"},{n:"Turkey",c:"+90"},{n:"Turkmenistan",c:"+993"},{n:"Uganda",c:"+256"},{n:"Ukraine",c:"+380"},{n:"United Arab Emirates",c:"+971"},{n:"United Kingdom",c:"+44"},{n:"United States",c:"+1"},{n:"Uruguay",c:"+598"},{n:"Uzbekistan",c:"+998"},{n:"Vatican City",c:"+379"},{n:"Venezuela",c:"+58"},{n:"Vietnam",c:"+84"},{n:"Yemen",c:"+967"},{n:"Zambia",c:"+260"},{n:"Zimbabwe",c:"+263"}
+];
+
+/**
+ * UI Components & Formatters
+ */
+const Components = {
+  gridState: {},
+
+  /**
+   * Export Grid Data to CSV (Excel)
+   */
+  exportToCSV: function(schemaKey) {
+    const schema = AppSchemas[schemaKey];
+    const data = this.gridState[schemaKey];
+    if (!data || data.length === 0) return app.toast('No data to export', 'warning');
+
+    const headers = [schema.prefix + ' ID', ...schema.fields.map(f => f.label)];
+    const keys = [schema.pk, ...schema.fields.map(f => f.name)];
+
+    let csvContent = headers.join(',') + '\n';
+    data.forEach(row => {
+      const rowData = keys.map(k => {
+        let val = row[k] || '';
+        val = String(val).replace(/"/g, '""');
+        return `"${val}"`;
+      });
+      csvContent += rowData.join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${schema.title}_Export.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    app.toast('Excel (CSV) downloaded!', 'success');
+  },
+
+  /**
+   * Export Grid Data to PDF using html2pdf
+   */
+  exportToPDF: function(schemaKey) {
+    const schema = AppSchemas[schemaKey];
+    const data = this.gridState[schemaKey];
+    if (!data || data.length === 0) return app.toast('No data to export', 'warning');
+
+    app.showLoader();
+    app.toast('Generating PDF...', 'info');
+
+    let html = `
+      <div style="font-family: sans-serif; padding: 20px;">
+        <h2 style="text-align: center; color: #1e3a8a; margin-bottom: 20px;">${schema.title} Report</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+          <thead>
+            <tr style="background-color: #f3f4f6;">
+              <th style="border: 1px solid #d1d5db; padding: 6px; text-align: left;">${schema.prefix} ID</th>
+              ${schema.fields.map(f => `<th style="border: 1px solid #d1d5db; padding: 6px; text-align: left;">${f.label}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(row => `
+              <tr>
+                <td style="border: 1px solid #d1d5db; padding: 6px;">${row[schema.pk] || '-'}</td>
+                ${schema.fields.map(f => `<td style="border: 1px solid #d1d5db; padding: 6px;">${row[f.name] || '-'}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <p style="margin-top: 20px; font-size: 8px; color: #6b7280; text-align: right;">Generated on ${new Date().toLocaleString()}</p>
+      </div>
+    `;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+
+    if (typeof window.html2pdf === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = () => {
+        window.html2pdf().from(wrapper).save(`${schema.title}_Report.pdf`).then(() => {
+          app.hideLoader();
+          app.toast('PDF downloaded!', 'success');
+        });
+      };
+      document.head.appendChild(script);
+    } else {
+      window.html2pdf().from(wrapper).save(`${schema.title}_Report.pdf`).then(() => {
+        app.hideLoader();
+        app.toast('PDF downloaded!', 'success');
+      });
+    }
+  },
+
+  handleDependentDropdowns: function(sourceSelect) {
+    const form = sourceSelect.closest('form');
+    const changedName = sourceSelect.name;
+    const changedVal = sourceSelect.value;
+    const sourceData = window.currentFormSourceData;
+    if (!sourceData) return;
+
+    if (changedName === 'station_id') {
+      const secSelect = form.querySelector('[name="sec_id"]');
+      if (secSelect && sourceData['sections']) {
+        const sections = sourceData['sections'].filter(s => String(s.station_id) === String(changedVal));
+        const prevVal = secSelect.value;
+        secSelect.innerHTML = '<option value="">-- Select --</option>';
+        sections.forEach(s => {
+          secSelect.innerHTML += `<option value="${s.sec_id}">${s.sec_letter_code}</option>`;
+        });
+        if (prevVal) secSelect.value = prevVal; // Attempt restore for edit mode
+      }
+      
+      const shiftSelect = form.querySelector('[name="shift_id"]');
+      if (shiftSelect && sourceData['shifts']) {
+        const shifts = sourceData['shifts'].filter(s => String(s.station_id) === String(changedVal));
+        const prevVal = shiftSelect.value;
+        shiftSelect.innerHTML = '<option value="">-- Select --</option>';
+        shifts.forEach(s => {
+          shiftSelect.innerHTML += `<option value="${s.shift_id}">${s.shift_name}</option>`;
+        });
+        if (prevVal) shiftSelect.value = prevVal;
+      }
+    }
+  },
+
+  /**
+   * Professional Customized Confirmation Modal
+   */
+  confirm: function(title, message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center transition-opacity duration-200 opacity-0';
+    overlay.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all duration-200 scale-95" id="modal-box">
+        <div class="bg-red-50 p-6 flex flex-col items-center border-b border-red-100">
+          <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+            <span class="material-icons text-4xl">warning</span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900">${title}</h3>
+        </div>
+        <div class="p-6 text-center text-gray-600">
+          <p>${message}</p>
+        </div>
+        <div class="p-4 bg-gray-50 flex justify-center space-x-4 border-t border-gray-100">
+          <button class="px-2 py-2 rounded-lg text-gray-600 font-medium hover:bg-gray-200 transition-colors" id="modal-cancel">Cancel</button>
+          <button class="px-2 py-2 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-md shadow-red-200 flex items-center" id="modal-confirm">
+            <span class="material-icons text-sm mr-2">delete_forever</span> Confirm Delete
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Animate In
+    setTimeout(() => {
+      overlay.classList.remove('opacity-0');
+      overlay.querySelector('#modal-box').classList.replace('scale-95', 'scale-100');
+    }, 10);
+
+    const close = () => {
+      overlay.classList.add('opacity-0');
+      overlay.querySelector('#modal-box').classList.replace('scale-100', 'scale-95');
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    overlay.querySelector('#modal-cancel').onclick = close;
+    overlay.querySelector('#modal-confirm').onclick = () => {
+      close();
+      if(onConfirm) onConfirm();
+    };
+  },
+
+  /**
+   * Attaches DDMMYYYY listener to input elements
+   */
+  initDateInputs: function() {
+    const inputs = document.querySelectorAll('.date-ddmmyyyy');
+    inputs.forEach(input => {
+      if (input.dataset.dateBound === 'true') return;
+      input.dataset.dateBound = 'true';
+
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = input.name;
+      input.removeAttribute('name'); 
+      input.parentNode.insertBefore(hiddenInput, input.nextSibling);
+
+      // If pre-filled by rowData, initialize hidden input
+      if (input.dataset.isoValue) {
+        hiddenInput.value = input.dataset.isoValue;
+      }
+
+      input.addEventListener('blur', (e) => {
+        const val = e.target.value.replace(/[^0-9]/g, '');
+        if (val.length === 8) {
+          const day = val.substring(0, 2);
+          const month = val.substring(2, 4);
+          const year = val.substring(4, 8);
+          const dateObj = new Date(year, parseInt(month)-1, day);
+          
+          if (!isNaN(dateObj.getTime())) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            e.target.value = `${day}-${months[dateObj.getMonth()]}-${year}`;
+            hiddenInput.value = dateObj.toISOString();
+            e.target.classList.remove('border-red-500');
+          } else {
+            e.target.classList.add('border-red-500');
+            app.toast('Invalid Date', 'error');
+          }
+        } else if (val.length > 0) {
+          e.target.classList.add('border-red-500');
+          app.toast('Date must be DDMMYYYY', 'error');
+        } else {
+          hiddenInput.value = '';
+          e.target.classList.remove('border-red-500');
+        }
+      });
+
+      input.addEventListener('focus', (e) => {
+        if (hiddenInput.value) {
+          const d = new Date(hiddenInput.value);
+          if (!isNaN(d.getTime())) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            e.target.value = `${day}${month}${year}`;
+          }
+        }
+      });
+      
+      // Fire blur to format pre-filled data
+      if (input.dataset.isoValue) {
+        input.dispatchEvent(new Event('focus'));
+        input.dispatchEvent(new Event('blur'));
+      }
+    });
+  },
+
+  /**
+   * Dynamically renders a Form based on schema key
+   * Passes rowData for Update Mode.
+   */
+  renderForm: async function(schemaKey, containerId, rowData = null) {
+    const schema = AppSchemas[schemaKey];
+    if (!schema) return;
+    const isUpdate = !!rowData;
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="p-4 text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto"></div></div>';
+
+    let html = `<div class="bg-white shadow-sm border border-gray-200 p-4 animate-fade-in w-full h-[calc(100vh-140px)] flex flex-col">
+                  <div class="flex justify-between border-b border-gray-200 pb-2 mb-4 shrink-0">
+                    <div>
+                      <h3 class="text-lg font-bold text-gray-800 tracking-tight">${isUpdate ? 'Edit' : 'New'} ${schema.title}</h3>
+                    </div>
+                    ${isUpdate ? `<div class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-mono font-bold border border-yellow-300 self-center">ID: ${rowData[schema.pk]}</div>` : ''}
+                  </div>
+                  
+                  <div class="flex-1 overflow-auto">
+                    <form id="form-${schemaKey}" class="space-y-3">
+                      <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">`;
+
+    // Fetch dropdown data concurrently
+    const selects = schema.fields.filter(f => f.type === 'select' && f.source);
+    const sourceData = {};
+      if (selects.length > 0) {
+        await Promise.all(selects.map(async (field) => {
+          try { sourceData[field.source] = await api.read(field.source); } 
+          catch (e) { sourceData[field.source] = []; }
+        }));
+      }
+      window.currentFormSourceData = sourceData;
+
+    schema.fields.forEach(f => {
+      const requiredHtml = f.required ? '<span class="text-red-500">*</span>' : '';
+      
+      // Dynamic Col Span for denser layout
+      let colSpan = 'col-span-1 md:col-span-2 lg:col-span-2';
+      if (f.name.endsWith('_code') || f.name.endsWith('_id') || f.type === 'date_custom' || f.name === 'pay_group') {
+        colSpan = 'col-span-1 md:col-span-1 lg:col-span-1'; // small codes & dates
+      } else if (f.name.includes('name') || f.name.includes('email') || f.name.includes('remarks')) {
+        colSpan = 'col-span-1 md:col-span-3 lg:col-span-3'; // wider fields
+      }
+
+      html += `<div class="${colSpan}"><label class="block text-xs font-bold text-gray-600 mb-0.5 uppercase tracking-tighter">${f.label} ${requiredHtml}</label>`;
+
+      if (f.type === 'select') {
+        html += `<select name="${f.name}" data-source="${f.source || ''}" onchange="Components.handleDependentDropdowns(this)" class="w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>
+                   <option value="">-- Select --</option>`;
+        if (f.options) {
+          f.options.forEach(opt => { html += `<option value="${opt}">${opt}</option>`; });
+        } else if (f.source && sourceData[f.source]) {
+          const pkField = AppSchemas[f.source].pk;
+          sourceData[f.source].forEach(row => { 
+            const val = f.saveDisplayValue ? row[f.sourceDisplay] : row[pkField];
+            html += `<option value="${val}">${row[f.sourceDisplay]}</option>`; 
+          });
+        }
+        html += `</select>`;
+        } else if (f.name.includes('contact')) {
+          const placeholderText = "Enter Mobile Number";
+          let optionsHtml = '';
+          ALL_COUNTRY_CODES.forEach(country => {
+            const selected = country.c === '+880' ? 'selected' : '';
+            optionsHtml += `<option value="${country.c}" ${selected} title="${country.n}">${country.c}</option>`;
+          });
+          
+          html += `<div class="flex items-center space-x-1">
+                     <select id="${f.name}_cc" class="w-[70px] border border-gray-400 rounded-sm px-0.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50 text-center cursor-pointer">
+                       ${optionsHtml}
+                     </select>
+                     <input type="text" id="${f.name}_num" placeholder="${placeholderText}" class="flex-1 w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>
+                     <input type="hidden" name="${f.name}" id="${f.name}_hidden">
+                   </div>`;
+      } else if (f.type === 'date_custom') {
+        html += `<input type="text" name="${f.name}" placeholder="DDMMYYYY" class="date-ddmmyyyy w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>`;
+      } else if (f.type === 'image') {
+        html += `<input type="file" id="${f.name}_file" accept="image/*" class="w-full border border-gray-400 rounded-sm text-xs bg-gray-50 file:mr-2 file:py-1 file:px-2 file:border-0 file:text-xs file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300 cursor-pointer" ${f.required ? 'required' : ''}>
+                 <input type="hidden" name="${f.name}" id="${f.name}_hidden">`;
+      } else {
+        const placeholderText = `Enter ${f.label.split(' (')[0]}`;
+        html += `<input type="${f.type}" name="${f.name}" placeholder="${placeholderText}" class="w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>`;
+      }
+      html += `</div>`;
+    });
+
+    html += `</div>
+              <div class="mt-4 flex justify-between items-center pt-2 border-t border-gray-200">
+                <div>
+                  ${isUpdate ? `<button type="button" id="btn-delete-${schemaKey}" class="px-2 py-1 bg-red-50 border border-red-500 text-red-700 rounded-sm hover:bg-red-100 text-xs font-bold flex items-center shadow-sm"><span class="material-icons text-xs mr-1">delete</span> Delete</button>` : ''}
+                </div>
+                <div class="flex space-x-2">
+                  <button type="button" onclick="${isUpdate ? `Components.renderGrid('${schemaKey}', '${containerId}')` : `document.getElementById('form-${schemaKey}').reset()`}" class="px-2 py-1 border border-gray-400 bg-white rounded-sm text-gray-700 hover:bg-gray-100 text-xs font-bold shadow-sm">${isUpdate ? 'Cancel' : 'Clear'}</button>
+                  ${isUpdate ? `<button type="submit" class="px-2 py-1 bg-green-700 text-white rounded-sm hover:bg-green-800 text-xs font-bold shadow-sm flex items-center"><span class="material-icons text-xs mr-1">save</span> Update</button>` : `<button type="submit" class="px-2 py-1 bg-blue-900 text-white rounded-sm hover:bg-blue-800 text-xs font-bold shadow-sm flex items-center"><span class="material-icons text-xs mr-1">add_circle</span> Save</button>`}
+                </div>
+              </div>
+            </form></div></div>`;
+
+    container.innerHTML = html;
+
+    const form = document.getElementById(`form-${schemaKey}`);
+
+    // Bind Contact Number Dropdown Synchronization
+    schema.fields.forEach(f => {
+        if (f.name.includes('contact')) {
+          const ccSelect = document.getElementById(`${f.name}_cc`);
+          const numInput = document.getElementById(`${f.name}_num`);
+          const hiddenInput = document.getElementById(`${f.name}_hidden`);
+          const syncContact = () => {
+            let numStr = numInput.value.replace(/[^0-9]/g, '');
+            if (numStr.length > 4) {
+              numInput.value = numStr.substring(0,4) + '-' + numStr.substring(4);
+            } else {
+              numInput.value = numStr;
+            }
+            if (!numStr) hiddenInput.value = '';
+            else hiddenInput.value = `${ccSelect.value} ${numInput.value}`;
+          };
+          if (ccSelect && numInput) {
+            ccSelect.addEventListener('change', syncContact);
+            numInput.addEventListener('input', syncContact);
+          }
+      } else if (f.type === 'image') {
+        const fileInput = document.getElementById(`${f.name}_file`);
+        const hiddenInput = document.getElementById(`${f.name}_hidden`);
+        
+        if (fileInput) {
+          fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function(evt) {
+                hiddenInput.value = evt.target.result;
+              };
+              reader.readAsDataURL(file);
+            } else {
+              hiddenInput.value = '';
+            }
+          });
+        }
+      }
+    });
+
+    // Pre-populate fields in UPDATE mode
+    if (isUpdate) {
+      schema.fields.forEach(f => {
+        if (rowData[f.name] !== undefined) {
+          const input = form.elements[f.name];
+          if (input) {
+            if (f.type === 'date_custom') {
+               // Store ISO value to data attribute so initDateInputs can catch it
+               if (rowData[f.name] && rowData[f.name] !== '-') {
+                 input.dataset.isoValue = rowData[f.name];
+               }
+              } else if (f.name.includes('contact')) {
+                 let val = rowData[f.name] || '';
+                 val = String(val);
+                 const ccSelect = document.getElementById(`${f.name}_cc`);
+                 const numInput = document.getElementById(`${f.name}_num`);
+                 
+                 let rawNum = val.replace(/[^\+0-9]/g, '');
+                 if (rawNum.startsWith('+') && rawNum.length > 4) {
+                   let cc = rawNum.substring(0, 4);
+                   let num = rawNum.substring(4);
+                   if (ccSelect) ccSelect.value = cc;
+                   if (numInput) {
+                     if (num.length > 4) {
+                       numInput.value = num.substring(0,4) + '-' + num.substring(4);
+                     } else {
+                       numInput.value = num;
+                     }
+                   }
+                 } else {
+                   if (numInput) numInput.value = val;
+                 }
+                 if (input) input.value = val; // Set the hidden input's value
+            } else if (f.type === 'image') {
+               const val = rowData[f.name] || '';
+               input.value = val;
+            } else {
+               input.value = rowData[f.name];
+            }
+          }
+        }
+      });
+
+      // Trigger dependent dropdowns to filter appropriately on edit load
+      const stationInput = form.elements['station_id'];
+      if (stationInput) Components.handleDependentDropdowns(stationInput);
+      const secInput = form.elements['sec_id'];
+      if (secInput) Components.handleDependentDropdowns(secInput);
+
+      // Bind Delete Button
+      document.getElementById(`btn-delete-${schemaKey}`).addEventListener('click', () => {
+        Components.confirm('Confirm Deletion', 'Are you absolutely sure you want to permanently delete this record? This action cannot be undone.', async () => {
+          try {
+            app.showLoader();
+            await api.delete(schema.table, schema.pk, rowData[schema.pk]);
+            app.toast('Data successfully deleted', 'success');
+            Components.renderGrid(schemaKey, containerId); // Return to grid
+          } catch(err) {
+            app.toast(err.message, 'error');
+          } finally {
+            app.hideLoader();
+          }
+        });
+      });
+    }
+
+    // Attach submit event (Create or Update)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      try {
+        app.showLoader();
+        if (isUpdate) {
+          await api.update(schema.table, schema.pk, rowData[schema.pk], data);
+          app.toast('Data successfully updated', 'success');
+          Components.renderGrid(schemaKey, containerId); // Return to grid
+        } else {
+          await api.create(schema.table, data, schema.prefix, schema.pk);
+          app.toast('Record saved successfully', 'success');
+          e.target.reset();
+        }
+      } catch (err) {
+        app.toast(err.message, 'error');
+      } finally {
+        app.hideLoader();
+      }
+    });
+
+    // Initialize custom dates for this new HTML
+    this.initDateInputs();
+  },
+
+  /**
+   * Dynamically renders a Data Grid (View Forms) based on schema key
+   */
+  renderGrid: async function(schemaKey, containerId) {
+    const schema = AppSchemas[schemaKey];
+    if (!schema) return;
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="p-4 text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto"></div></div>';
+
+    let html = `<div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full animate-fade-in">
+                  <!-- Toolbar -->
+                  <div class="p-2 border-b border-gray-300 bg-gray-100 flex justify-between items-center shrink-0">
+                    <div class="flex space-x-2 items-center">
+                      <div class="relative">
+                        <span class="material-icons absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs">search</span>
+                        <input type="text" id="search-${schemaKey}" placeholder="Search ${schema.title}..." class="pl-6 pr-2 py-0.5 border border-gray-400 text-xs focus:outline-none w-48 bg-white">
+                      </div>
+                    </div>
+                    <div class="flex space-x-1 items-center">
+                      <select class="border border-gray-400 bg-white text-xs px-1 py-0.5 text-gray-800">
+                        <option>20</option><option>50</option><option>100</option><option>All</option>
+                      </select>
+                      <button onclick="Components.exportToCSV('${schemaKey}')" class="bg-green-600 text-white border border-green-700 px-2 py-0.5 hover:bg-green-700 flex items-center text-xs font-medium cursor-pointer">
+                        Excel
+                      </button>
+                      <button onclick="Components.exportToPDF('${schemaKey}')" class="bg-red-600 text-white border border-red-700 px-2 py-0.5 hover:bg-red-700 flex items-center text-xs font-medium cursor-pointer">
+                        PDF
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Table Container (Spreadsheet Style) -->
+                  <div class="flex-1 overflow-auto bg-white">
+                    <table class="w-full border-collapse whitespace-nowrap text-xs font-sans">
+                      <thead class="sticky top-0 z-10">
+                        <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900">
+                          <th class="p-1 border border-gray-300 font-bold text-left">${schema.prefix} ID</th>`;
+    
+    schema.fields.forEach(f => {
+      html += `<th class="p-1 border border-gray-300 font-bold text-left">${f.label}</th>`;
+    });
+
+    html += `             <th class="p-1 border border-gray-300 font-bold text-center w-16">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="grid-tbody-${schemaKey}">
+                        <tr><td colspan="${schema.fields.length + 2}" class="p-4 text-center text-gray-500">Loading spreadsheet data...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>`;
+
+    container.innerHTML = html;
+
+    try {
+      const data = await api.read(schema.table);
+      Components.gridState[schemaKey] = data; // Store state for export
+      const tbody = document.getElementById(`grid-tbody-${schemaKey}`);
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${schema.fields.length + 2}" class="px-1 py-4 text-center text-gray-500 font-medium">No records found. Click 'Input Records' to create one.</td></tr>`;
+        return;
+      }
+
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-blue-50";
+        
+        // PK Column
+        const tdPk = document.createElement('td');
+        tdPk.className = 'border border-gray-300 px-1 py-0 truncate max-w-[120px] font-bold text-blue-900';
+        tdPk.textContent = row[schema.pk];
+        tr.appendChild(tdPk);
+        
+        // Data Columns
+        schema.fields.forEach(f => {
+          let val = row[f.name] || '-';
+            if (f.type === 'date_custom' && val !== '-') {
+               const d = new Date(val);
+               if (!isNaN(d.getTime())) {
+                 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                 val = `${String(d.getDate()).padStart(2,'0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+               }
+            } else if (f.name.includes('contact') && val !== '-') {
+                 let strVal = String(val);
+                 let rawNum = strVal.replace(/[^\+0-9]/g, '');
+                 if (rawNum.startsWith('+') && rawNum.length > 4) {
+                   let cc = rawNum.substring(0, 4);
+                   let rest = rawNum.substring(4);
+                   if (rest.length > 4) val = `${cc} ${rest.substring(0,4)}-${rest.substring(4)}`;
+                   else val = `${cc} ${rest}`;
+                 }
+            }
+          const td = document.createElement('td');
+          td.className = 'border border-gray-300 px-1 py-0 truncate max-w-[200px] text-gray-800';
+          td.title = val;
+          td.textContent = val;
+          tr.appendChild(td);
+        });
+
+        // Actions Column
+        const tdActions = document.createElement('td');
+        tdActions.className = 'border border-gray-300 px-1 py-0 text-center space-x-0.5 whitespace-nowrap bg-gray-50';
+        
+        const btnView = document.createElement('button');
+        btnView.className = 'text-blue-800 bg-blue-100 hover:bg-blue-200 px-1 rounded-sm border border-blue-300 transition-colors';
+        btnView.title = 'View / Edit';
+        btnView.innerHTML = '<span class="material-icons text-[14px] leading-none">edit_document</span>';
+        btnView.onclick = () => Components.renderForm(schemaKey, containerId, row);
+        
+        const btnDel = document.createElement('button');
+        btnDel.className = 'text-red-800 bg-red-100 hover:bg-red-200 px-1 rounded-sm border border-red-300 transition-colors';
+        btnDel.title = 'Delete';
+        btnDel.innerHTML = '<span class="material-icons text-[14px] leading-none">delete</span>';
+        btnDel.onclick = () => {
+          Components.confirm('Delete Record', `Are you sure you want to permanently delete record ${row[schema.pk]}?`, async () => {
+            try {
+              app.showLoader();
+              await api.delete(schema.table, schema.pk, row[schema.pk]);
+              app.toast('Data successfully deleted', 'success');
+              Components.renderGrid(schemaKey, containerId); // Refresh
+            } catch(e) {
+              app.toast(e.message, 'error');
+            } finally {
+              app.hideLoader();
+            }
+          });
+        };
+
+        tdActions.appendChild(btnView);
+        tdActions.appendChild(btnDel);
+        tr.appendChild(tdActions);
+        
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      document.getElementById(`grid-tbody-${schemaKey}`).innerHTML = `<tr><td colspan="${schema.fields.length + 2}" class="px-1 py-4 text-center text-red-500 font-bold"><span class="material-icons block text-xl mb-1">error_outline</span> ${err.message}</td></tr>`;
+    }
+  }
+};
+
+// Auto-init on DOM changes (simple mutation observer)
+const observer = new MutationObserver(() => Components.initDateInputs());
+document.addEventListener('DOMContentLoaded', () => {
+  observer.observe(document.body, { childList: true, subtree: true });
+});
+</script>

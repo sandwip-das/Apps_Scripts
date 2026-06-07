@@ -1,0 +1,357 @@
+<!-- HRM Module Views -->
+
+<template id="tmpl-hrm_dashboard">
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">HRM Dashboard</h2>
+      <p class="text-sm text-gray-500">Human Resource Overview</p>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Employees</p>
+          <h3 class="text-3xl font-light text-gray-800" id="hrm-stat-emp">-</h3>
+        </div>
+        <span class="material-icons text-blue-100 text-5xl">groups</span>
+      </div>
+    </div>
+    <!-- More cards will be populated here -->
+  </div>
+</template>
+
+<template id="tmpl-hrm_employees">
+  <div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full">
+    
+    <!-- Functional Options Buttons & Filters -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center shrink-0 text-sm">
+      <button id="btn-emp-precise" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('precise')">Precise List</button>
+      <button id="btn-emp-details" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('details')">Details List</button>
+      <button id="btn-emp-onjob" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('onjob')">On Job</button>
+      <button id="btn-emp-retired" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('retired')">Retired</button>
+      <button id="btn-emp-officer" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('officer')">Officer & Sup</button>
+      <button id="btn-emp-th" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('th')">TH</button>
+      
+      <div class="border-l border-gray-400 h-6 mx-1"></div>
+      
+      <select id="emp-filter-pg" class="border border-gray-400 bg-white px-2 py-1 text-xs" onchange="renderEmpList(window.currentEmpView || 'details')">
+        <option value="ALL">All Pay Groups</option>
+      </select>
+    </div>
+    
+    <!-- Spreadsheet Container (Zero Padding, Scrollable) -->
+    <div class="flex-1 overflow-auto bg-white">
+      <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="emp-spreadsheet">
+        <thead class="sticky top-0 z-10">
+          <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900" id="emp-sheet-header">
+            <!-- Headers injected here -->
+          </tr>
+        </thead>
+        <tbody id="hrm-emp-list">
+          <tr><td class="p-4 text-center text-gray-500">Loading data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<!-- HRM Input Records -->
+<template id="tmpl-hrm_input">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">HRM Input Records</h2>
+    <p class="text-sm text-gray-500">Manage employee lifecycle records</p>
+  </div>
+  
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('employees', 'hrm-form-container')">Employees</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('placements', 'hrm-form-container')">Placements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('postings', 'hrm-form-container')">Postings</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('promotions', 'hrm-form-container')">Promotions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('extensions', 'hrm-form-container')">Extensions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('additional_charges', 'hrm-form-container')">Addl Charges</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('self_retirements', 'hrm-form-container')">Retirements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('employee_migrations', 'hrm-form-container')">Migrations</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('setups', 'hrm-form-container')">Setups</button>
+  </div>
+
+  <div id="hrm-form-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to load its input form.</p>
+    </div>
+  </div>
+</template>
+
+<!-- HRM View Forms -->
+<template id="tmpl-hrm_view">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">HRM View Forms</h2>
+    <p class="text-sm text-gray-500">View and manage employee records</p>
+  </div>
+
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('employees', 'hrm-grid-container')">Employees</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('placements', 'hrm-grid-container')">Placements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('postings', 'hrm-grid-container')">Postings</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('promotions', 'hrm-grid-container')">Promotions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('extensions', 'hrm-grid-container')">Extensions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('additional_charges', 'hrm-grid-container')">Addl Charges</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('self_retirements', 'hrm-grid-container')">Retirements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('employee_migrations', 'hrm-grid-container')">Migrations</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('setups', 'hrm-grid-container')">Setups</button>
+  </div>
+
+  <div id="hrm-grid-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to view data.</p>
+    </div>
+  </div>
+</template>
+
+<script>
+async function hrm_dashboard_init() {
+  try {
+    const employees = await api.read('employees');
+    const el = document.getElementById('hrm-stat-emp');
+    if (el) el.innerText = employees.length;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function hrm_employees_init() {
+  try {
+    app.showLoader();
+    window.allEmployeesData = await api.getHrmDetails();
+    
+    // Populate PG Dropdown
+    const pgSet = new Set();
+    window.allEmployeesData.forEach(e => { if(e.pay_group !== '-') pgSet.add(e.pay_group); });
+    const select = document.getElementById('emp-filter-pg');
+    Array.from(pgSet).sort().forEach(pg => {
+      const opt = document.createElement('option');
+      opt.value = pg; opt.text = pg;
+      select.appendChild(opt);
+    });
+
+    renderEmpList('details');
+  } catch (e) {
+    app.toast(e.message, 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function renderEmpList(viewMode) {
+  window.currentEmpView = viewMode;
+  
+  // Highlight active button
+  const modes = ['precise', 'details', 'onjob', 'retired', 'officer', 'th'];
+  modes.forEach(m => {
+    const btn = document.getElementById(`btn-emp-${m}`);
+    if (btn) {
+      if (m === viewMode) {
+        btn.className = "bg-blue-800 text-white px-2 py-1 hover:bg-blue-700 font-medium border border-blue-900";
+      } else {
+        btn.className = "bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400";
+      }
+    }
+  });
+
+  if (!window.allEmployeesData) return;
+  let data = window.allEmployeesData;
+
+  // 1. Apply Pay Group Filter
+  const pgFilter = document.getElementById('emp-filter-pg').value;
+  if (pgFilter !== 'ALL') {
+    data = data.filter(e => e.pay_group === pgFilter);
+  }
+
+  // Helper to calculate numerical power of Pay Group
+  // Higher power means higher seniority.
+  function getPgPower(pgStr) {
+    if (!pgStr || pgStr === '-') return 0;
+    const match = pgStr.match(/PG-(\d+)(?:\((.*?)\))?/);
+    if (!match) return 0;
+    
+    const num = parseInt(match[1]);
+    const sub = match[2] || '';
+    
+    let basePower = 100 - ((num - 1) * 10);
+    
+    if (num === 3) {
+      if (sub === 'I') return 85;
+      if (sub === 'II') return 80;
+      return 80; // default
+    }
+    
+    return basePower;
+  }
+
+  // 2. Apply Functional Button Filter
+  if (viewMode === 'onjob') {
+    data = data.filter(e => e.status === 'Active' || e.status === 'Extension');
+  } else if (viewMode === 'retired') {
+    data = data.filter(e => e.status === 'Retired');
+  } else if (viewMode === 'officer') {
+    data = data.filter(e => getPgPower(e.pay_group) >= 80); // >= PG-3(II)
+  } else if (viewMode === 'th') {
+    data = data.filter(e => getPgPower(e.pay_group) < 80); // < PG-3(II)
+  }
+
+  // 3. Define Columns based on Precise vs Details
+  const isPrecise = (viewMode === 'precise');
+  const cols = [
+    { key: 'sl', label: 'SL' },
+    { key: 'name', label: 'Name' },
+    { key: 'staff_id', label: 'Staff ID' },
+    { key: 'gender', label: 'Gender' }
+  ];
+  if (!isPrecise) {
+    cols.push({ key: 'previous_id', label: 'Previous ID' });
+    cols.push({ key: 'pay_group', label: 'Pay Group' });
+  }
+  cols.push({ key: 'designation', label: 'Designation' });
+  if (!isPrecise) cols.push({ key: 'sl', label: 'Seniority' }); // Using SL as seniority for now
+  cols.push({ key: 'contact_1', label: 'Contact 1' });
+  if (!isPrecise) {
+    cols.push({ key: 'contact_2', label: 'Contact 2' });
+    cols.push({ key: 'contact_family', label: 'Contact Family' });
+  }
+  cols.push({ key: 'email', label: 'E-mail' });
+  cols.push({ key: 'shift', label: 'Shift' });
+  cols.push({ key: 'placement', label: 'Placement' });
+  cols.push({ key: 'placement_duration', label: 'Placement Duration' });
+  cols.push({ key: 'posting', label: 'Posting' });
+  cols.push({ key: 'department', label: 'Department' });
+  if (!isPrecise) {
+    cols.push({ key: 'dob', label: 'DOB', type: 'date' });
+    cols.push({ key: 'joining_date', label: 'Joining Date', type: 'date' });
+  }
+  cols.push({ key: 'retirement_date', label: 'Retirement Date', type: 'date' });
+  if (!isPrecise) {
+    cols.push({ key: 'home_district', label: 'Home District' });
+    cols.push({ key: 'status', label: 'Status' });
+  }
+  cols.push({ key: 'remarks', label: 'Remarks' });
+
+  // 4. Render Headers
+  const thead = document.getElementById('emp-sheet-header');
+  thead.innerHTML = cols.map(c => `<th class="p-1 border border-gray-300 font-bold text-left">${c.label}</th>`).join('');
+
+  // 5. Render Rows with Zero Padding Spreadsheet Style
+  const tbody = document.getElementById('hrm-emp-list');
+  tbody.innerHTML = '';
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" class="p-4 text-center text-gray-500">No records matched</td></tr>`;
+    return;
+  }
+
+  data.forEach(row => {
+    let trHtml = '';
+    cols.forEach(c => {
+      let val = row[c.key] || '';
+      if (c.type === 'date' && val && val !== '-') {
+        const d = new Date(val);
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        val = `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+      }
+      // Zero padding, border for spreadsheet look
+      trHtml += `<td class="border border-gray-300 px-1 py-0 truncate max-w-[200px]" title="${val}">${val}</td>`;
+    });
+    tbody.innerHTML += `<tr>${trHtml}</tr>`;
+  });
+}
+
+async function hrm_service_init() {
+  try {
+    app.showLoader();
+    const emps = await api.read('employees');
+    const select = document.getElementById('hrm-service-emp-select');
+    if (select) {
+      emps.sort((a,b) => a.staff_id.localeCompare(b.staff_id)).forEach(e => {
+        select.innerHTML += `<option value="${e.emp_id}">${e.staff_id} - ${e.emp_name}</option>`;
+      });
+    }
+  } catch(e) {
+    app.toast(e.message, 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+
+async function loadServiceHistory(empId) {
+  const container = document.getElementById('hrm-service-container');
+  if (!empId) {
+    container.innerHTML = `<div class="text-center text-gray-400 mt-10"><span class="material-icons text-4xl mb-2">manage_search</span><p>Select an employee above to view their chronological service history.</p></div>`;
+    return;
+  }
+  
+  try {
+    container.innerHTML = '<div class="text-center text-gray-500 mt-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900 mx-auto mb-4"></div>Loading timeline...</div>';
+    
+    const history = await api.getServiceHistory(empId);
+    
+    if (!history || history.length === 0) {
+      container.innerHTML = `<div class="text-center text-gray-500 mt-10">No service records found.</div>`;
+      return;
+    }
+
+    let html = `<div class="relative border-l-2 border-blue-200 ml-4 mt-2 mb-8">`;
+    history.forEach(ev => {
+      let icon = 'event';
+      let color = 'bg-blue-500';
+      if (ev.type === 'Promotion') { icon = 'trending_up'; color = 'bg-green-500'; }
+      if (ev.type === 'Placement' || ev.type === 'Posting') { icon = 'place'; color = 'bg-purple-500'; }
+      if (ev.type === 'Extension') { icon = 'more_time'; color = 'bg-orange-500'; }
+      if (ev.type === 'Joined') { icon = 'login'; color = 'bg-blue-800'; }
+
+      const d = new Date(ev.date);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const dateStr = ev.date ? `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}` : 'Unknown Date';
+
+      html += `
+        <div class="mb-6 ml-6 relative">
+          <div class="absolute -left-9 top-1 w-6 h-6 rounded-full ${color} flex items-center justify-center border-4 border-white shadow-sm">
+            <span class="material-icons text-white text-[12px]">${icon}</span>
+          </div>
+          <div class="bg-gray-50 border border-gray-200 rounded p-3 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold text-gray-800">${ev.type}</span>
+              <span class="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded">${dateStr}</span>
+            </div>
+            <p class="text-sm text-gray-600">${ev.details}</p>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+    
+    container.innerHTML = html;
+
+  } catch(e) {
+    container.innerHTML = `<div class="text-center text-red-500 mt-10">Error loading history: ${e.message}</div>`;
+  }
+}
+</script>
+
+<template id="tmpl-hrm_service">
+  <div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full">
+    <div class="p-4 border-b border-gray-300 bg-gray-100 flex items-center shrink-0">
+      <span class="material-icons text-gray-500 mr-2">search</span>
+      <select id="hrm-service-emp-select" class="border border-gray-400 bg-white px-2 py-1 text-sm w-64" onchange="loadServiceHistory(this.value)">
+        <option value="">-- Select Employee --</option>
+      </select>
+    </div>
+    <div class="flex-1 overflow-auto bg-white p-4" id="hrm-service-container">
+      <div class="text-center text-gray-400 mt-10">
+        <span class="material-icons text-4xl mb-2">manage_search</span>
+        <p>Select an employee above to view their chronological service history.</p>
+      </div>
+    </div>
+  </div>
+</template>

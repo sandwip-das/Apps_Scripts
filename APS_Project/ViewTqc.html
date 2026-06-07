@@ -1,0 +1,189 @@
+<!-- TQC Module Views -->
+
+<template id="tmpl-tqc_dashboard">
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">TQC Dashboard</h2>
+      <p class="text-sm text-gray-500">Training & Quality Control Overview</p>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Courses</p>
+          <h3 class="text-3xl font-light text-gray-800" id="tqc-stat-courses">-</h3>
+        </div>
+        <span class="material-icons text-purple-100 text-5xl">library_books</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- TQC Input Records -->
+<template id="tmpl-tqc_input">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">TQC Input Records</h2>
+    <p class="text-sm text-gray-500">Create new training and quality control records</p>
+  </div>
+  
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('courses', 'tqc-form-container')">Courses</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('trainings', 'tqc-form-container')">Training Records</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('tickets', 'tqc-form-container')">Tickets</button>
+  </div>
+
+  <div id="tqc-form-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to load its input form.</p>
+    </div>
+  </div>
+</template>
+
+<!-- TQC View Forms -->
+<template id="tmpl-tqc_view">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">TQC View Forms</h2>
+    <p class="text-sm text-gray-500">View and manage TQC records</p>
+  </div>
+
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('courses', 'tqc-grid-container')">Courses</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('trainings', 'tqc-grid-container')">Training Records</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('tickets', 'tqc-grid-container')">Tickets</button>
+  </div>
+
+  <div id="tqc-grid-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to view data.</p>
+    </div>
+  </div>
+</template>
+
+<!-- TQC Training Record -->
+<template id="tmpl-tqc_record">
+  <div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full">
+    
+    <!-- Functional Options Buttons & Filters -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center shrink-0 text-sm">
+      <button class="bg-blue-800 text-white px-2 py-1 hover:bg-blue-700 font-medium border border-blue-900" onclick="renderTqcRecord('course_wise')">Course Wise</button>
+      <button class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderTqcRecord('all_courses')">All Courses</button>
+      <button class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderTqcRecord('individual')">Individual Training History</button>
+      
+      <div class="border-l border-gray-400 h-6 mx-1" id="tqc-filter-divider"></div>
+      
+      <select id="tqc-filter-course" class="border border-gray-400 bg-white px-2 py-1 text-xs hidden" onchange="renderTqcRecord('course_wise')">
+        <option value="ALL">All Courses</option>
+      </select>
+    </div>
+    
+    <!-- Spreadsheet Container -->
+    <div class="flex-1 overflow-auto bg-white" id="tqc-record-container">
+      <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="tqc-spreadsheet">
+        <thead class="sticky top-0 z-10">
+          <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900" id="tqc-sheet-header">
+            <!-- Headers injected here -->
+          </tr>
+        </thead>
+        <tbody id="tqc-sheet-body">
+          <tr><td class="p-4 text-center text-gray-500">Loading training data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script>
+async function tqc_dashboard_init() {
+  try {
+    const courses = await api.read('courses');
+    const el = document.getElementById('tqc-stat-courses');
+    if (el) el.innerText = courses.length;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function tqc_record_init() {
+  try {
+    app.showLoader();
+    window.allTqcRecords = await api.getTqcRecords();
+    
+    // Populate Course Dropdown
+    const courseSet = new Set();
+    window.allTqcRecords.forEach(r => { if(r.course_name) courseSet.add(r.course_name); });
+    const select = document.getElementById('tqc-filter-course');
+    Array.from(courseSet).sort().forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.text = c;
+      select.appendChild(opt);
+    });
+
+    renderTqcRecord('course_wise');
+  } catch (e) {
+    app.toast(e.message, 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function renderTqcRecord(viewMode) {
+  const data = window.allTqcRecords || [];
+  const thead = document.getElementById('tqc-sheet-header');
+  const tbody = document.getElementById('tqc-sheet-body');
+  const courseFilter = document.getElementById('tqc-filter-course');
+  
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+
+  if (viewMode === 'course_wise') {
+    courseFilter.classList.remove('hidden');
+    let filteredData = data.filter(d => d.status !== 'Retired');
+    if (courseFilter.value !== 'ALL') {
+      filteredData = filteredData.filter(d => d.course_name === courseFilter.value);
+    }
+    
+    const cols = [
+      { key: 'sl', label: 'SL' },
+      { key: 'name', label: 'Name' },
+      { key: 'staff_id', label: 'Staff ID' },
+      { key: 'designation', label: 'Designation' },
+      { key: 'shift', label: 'Shift' },
+      { key: 'placement', label: 'Placement' },
+      { key: 'posting', label: 'Posting' },
+      { key: 'course_name', label: 'Course Name' },
+      { key: 'start_date', label: 'Start Date', type: 'date' },
+      { key: 'end_date', label: 'End Date', type: 'date' },
+      { key: 'expire_date', label: 'Expire Date', type: 'date' }
+    ];
+
+    thead.innerHTML = cols.map(c => `<th class="p-1 border border-gray-300 font-bold text-left">${c.label}</th>`).join('');
+    
+    filteredData.forEach((row, i) => {
+      row.sl = i + 1;
+      let trHtml = '';
+      cols.forEach(c => {
+        let val = row[c.key] || '-';
+        if (c.type === 'date' && val !== '-') {
+          const d = new Date(val);
+          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          val = `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+        }
+        trHtml += `<td class="border border-gray-300 px-1 py-0 truncate max-w-[200px]">${val}</td>`;
+      });
+      tbody.innerHTML += `<tr>${trHtml}</tr>`;
+    });
+
+  } else if (viewMode === 'all_courses') {
+    courseFilter.classList.add('hidden');
+    // Cross tabulation logic goes here (Placeholder for now)
+    tbody.innerHTML = `<tr><td class="p-4 text-center">All Courses Cross-tabulation loading...</td></tr>`;
+  } else if (viewMode === 'individual') {
+    courseFilter.classList.add('hidden');
+    tbody.innerHTML = `<tr><td class="p-4 text-center">Individual Training History Search loading...</td></tr>`;
+  }
+}
+</script>

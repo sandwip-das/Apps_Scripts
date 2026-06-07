@@ -1,0 +1,179 @@
+<!-- ORG Module Views -->
+
+<template id="tmpl-org_dashboard">
+  <div class="mb-6 flex justify-between items-end border-b border-gray-200 pb-4">
+    <div>
+      <h2 class="text-2xl font-bold text-blue-900 tracking-tight">Organization Overview</h2>
+      <p class="text-sm text-gray-500 mt-1">Real-time metrics of the corporate structure</p>
+    </div>
+    <button class="bg-blue-900 text-white px-4 py-1.5 rounded-sm hover:bg-blue-800 text-sm font-medium flex items-center shadow-sm" onclick="app.loadView('org_input')">
+      <span class="material-icons text-sm mr-2">add</span> Quick Add
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 animate-fade-in">
+    <!-- Stat Card 1 -->
+    <div class="bg-white p-5 rounded shadow-sm border border-gray-200 border-l-4 border-l-blue-700 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Directorates</p>
+          <h3 class="text-3xl font-bold text-gray-800 group-hover:text-blue-700 transition-colors" id="stat-dir">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+          <span class="material-icons">account_balance</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Stat Card 2 -->
+    <div class="bg-white p-5 rounded shadow-sm border border-gray-200 border-l-4 border-l-sky-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Departments</p>
+          <h3 class="text-3xl font-bold text-gray-800 group-hover:text-sky-500 transition-colors" id="stat-dep">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons">domain</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 3 -->
+    <div class="bg-white p-5 rounded shadow-sm border border-gray-200 border-l-4 border-l-teal-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Sections</p>
+          <h3 class="text-3xl font-bold text-gray-800 group-hover:text-teal-500 transition-colors" id="stat-sec">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-teal-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons">lan</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 4 -->
+    <div class="bg-white p-5 rounded shadow-sm border border-gray-200 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Stations</p>
+          <h3 class="text-3xl font-bold text-gray-800 group-hover:text-amber-500 transition-colors" id="stat-st">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons">place</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 5 -->
+    <div class="bg-white p-5 rounded shadow-sm border border-gray-200 border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Pay Groups</p>
+          <h3 class="text-3xl font-bold text-gray-800 group-hover:text-indigo-500 transition-colors" id="stat-pg">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons">payments</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 6 -->
+    <div class="bg-white p-5 rounded shadow-sm border border-gray-200 border-l-4 border-l-rose-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Shifts</p>
+          <h3 class="text-3xl font-bold text-gray-800 group-hover:text-rose-500 transition-colors" id="stat-sh">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons">schedule</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-blue-50 border border-blue-100 rounded p-6 flex items-start">
+    <span class="material-icons text-blue-600 mr-3">info</span>
+    <div>
+      <h4 class="font-bold text-blue-900 text-sm mb-1">Master Data Management</h4>
+      <p class="text-xs text-blue-800">The Organization module is the backbone of AeroHRMS. Create and manage Directorates, Departments, Sections, and Pay Groups here. Other modules such as HRM and TQC rely strictly on these master records to ensure data integrity.</p>
+    </div>
+  </div>
+</template>
+
+<!-- ORG Input Records -->
+<template id="tmpl-org_input">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">ORG Input Records</h2>
+    <p class="text-sm text-gray-500">Create new master records</p>
+  </div>
+  
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('directorates', 'org-form-container')">Directorates</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('departments', 'org-form-container')">Departments</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('stations', 'org-form-container')">Stations</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('sections', 'org-form-container')">Sections</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('shifts', 'org-form-container')">Shifts</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('pay_groups', 'org-form-container')">Pay Groups</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('employee_types', 'org-form-container')">Employee Types</button>
+  </div>
+
+  <div id="org-form-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to load its input form.</p>
+    </div>
+  </div>
+</template>
+
+<!-- ORG View Forms -->
+<template id="tmpl-org_view">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">ORG View Forms</h2>
+    <p class="text-sm text-gray-500">View and manage master records</p>
+  </div>
+
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('directorates', 'org-grid-container')">Directorates</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('departments', 'org-grid-container')">Departments</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('stations', 'org-grid-container')">Stations</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('sections', 'org-grid-container')">Sections</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('shifts', 'org-grid-container')">Shifts</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('pay_groups', 'org-grid-container')">Pay Groups</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('employee_types', 'org-grid-container')">Employee Types</button>
+  </div>
+
+  <div id="org-grid-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to view data.</p>
+    </div>
+  </div>
+</template>
+
+<script>
+async function org_dashboard_init() {
+  try {
+    app.showLoader();
+    const [directorates, departments, stations, sections, payGroups, shifts] = await Promise.all([
+      api.read('directorates').catch(()=>[]),
+      api.read('departments').catch(()=>[]),
+      api.read('stations').catch(()=>[]),
+      api.read('sections').catch(()=>[]),
+      api.read('pay_groups').catch(()=>[]),
+      api.read('shifts').catch(()=>[])
+    ]);
+
+    const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    setStat('stat-dir', directorates.length);
+    setStat('stat-dep', departments.length);
+    setStat('stat-st', stations.length);
+    setStat('stat-sec', sections.length);
+    setStat('stat-pg', payGroups.length);
+    setStat('stat-sh', shifts.length);
+  } catch (e) {
+    app.toast(e.message, 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+</script>

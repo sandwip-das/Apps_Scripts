@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AeroNexus| All Solutions</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <?!= include('Styles'); ?>
+</head>
+<body class="flex flex-col h-screen overflow-hidden bg-slate-50 font-sans text-gray-800">
+
+  <!-- Top Navigation Menu (Full Width) -->
+  <header class="h-12 bg-teal-600 text-white shadow-md z-30 flex items-center justify-between px-2 md:px-4 shrink-0 relative">
+    
+    <!-- Left: Hamburger (Mobile) & Logo -->
+    <div class="flex items-center">
+      <button class="lg:hidden p-1 mr-2 text-white hover:bg-blue-800 rounded flex items-center" onclick="app.toggleSidebar()">
+        <span class="material-icons">menu</span>
+      </button>
+      <div class="flex items-center border-r border-blue-800 pr-2 md:pr-4">
+        <span class="material-icons text-yellow-400 mr-1 md:mr-2 text-2xl md:text-3xl">flight_takeoff</span>
+        <h1 class="text-lg md:text-xl font-bold tracking-widest uppercase hidden sm:block">Aero Nexus</h1>
+      </div>
+    </div>
+    
+    <!-- Center: Module Buttons (Scrollable on small screens) -->
+    <div class="flex flex-1 items-center space-x-1 md:space-x-2 px-2 overflow-x-auto no-scrollbar">
+      <button class="nav-btn whitespace-nowrap px-2 md:px-4 py-2 rounded-md hover:bg-blue-600 transition-colors font-medium text-xs md:text-sm flex items-center" onclick="app.loadSidebar('ORG')">
+        <span class="material-icons mr-1 md:mr-2 text-sm">corporate_fare</span> ORG
+      </button>
+      <button class="nav-btn whitespace-nowrap px-2 md:px-4 py-2 rounded-md hover:bg-blue-600 transition-colors font-medium text-xs md:text-sm flex items-center" onclick="app.loadSidebar('HRM')">
+        <span class="material-icons mr-1 md:mr-2 text-sm">people</span> HRM
+      </button>
+      <button class="nav-btn whitespace-nowrap px-2 md:px-4 py-2 rounded-md hover:bg-blue-600 transition-colors font-medium text-xs md:text-sm flex items-center" onclick="app.loadSidebar('TQC')">
+        <span class="material-icons mr-1 md:mr-2 text-sm">school</span> TQC
+      </button>
+    </div>
+
+    <!-- Right: Search & Profile -->
+    <div class="flex items-center space-x-2 md:space-x-4 pl-2 border-l border-blue-800">
+      <div class="flex items-center cursor-pointer hover:bg-blue-800 p-1 md:p-2 rounded shrink-0">
+        <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-yellow-400 text-blue-900 flex items-center justify-center font-bold text-xs md:text-sm">AD</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Layout Below Navbar -->
+  <div class="flex flex-1 overflow-hidden relative">
+    
+    <!-- Sidebar Mobile Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-10 hidden lg:hidden" onclick="app.toggleSidebar()"></div>
+
+    <!-- Left Sidebar (Fixed 200px) -->
+    <aside id="sidebar" class="w-[200px] md:w-[200px] bg-white border-r border-gray-200 h-full shadow-lg z-20 flex flex-col absolute lg:relative transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+      <div class="p-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+        <h2 id="sidebar-title" class="text-sm font-bold text-gray-500 uppercase tracking-wider">Module Menu</h2>
+        <button class="lg:hidden text-gray-500 hover:text-gray-800" onclick="app.toggleSidebar()">
+          <span class="material-icons text-sm">close</span>
+        </button>
+      </div>
+      <nav id="sidebar-nav" class="flex-1 overflow-y-auto py-2">
+        <!-- Submenus dynamically injected here -->
+      </nav>
+    </aside>
+
+    <!-- Right Content Area (Auto Width) -->
+    <main class="flex-1 overflow-y-auto p-2 md:p-2 lg:p-2 bg-slate-50 relative">
+      <!-- Loading Overlay -->
+      <div id="loader" class="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-900"></div>
+      </div>
+
+      <!-- Toast Container -->
+      <div id="toast-container" class="fixed top-20 right-6 z-50 flex flex-col space-y-2"></div>
+
+      <!-- Dynamic Views Container -->
+      <div id="view-container" class="transition-opacity duration-300 opacity-0">
+        <div class="flex flex-col items-center justify-center h-full text-gray-400 mt-20">
+          <span class="material-icons text-6xl mb-4 text-gray-300">flight</span>
+          <h2 class="text-2xl font-light">Welcome to Aero Nexus</h2>
+          <p class="text-sm mt-2">Select a module from the top navigation to begin.</p>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Included Scripts & Components -->
+  <?!= include('Api'); ?>
+  <?!= include('Schemas'); ?>
+  <?!= include('Components'); ?>
+  <?!= include('App'); ?>
+  
+  <!-- Views (Wrapped in templates) -->
+  <?!= include('ViewOrg'); ?>
+  <?!= include('ViewHrm'); ?>
+  <?!= include('ViewTqc'); ?>
+
+</body>
+</html>

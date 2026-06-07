@@ -1,0 +1,173 @@
+<script>
+/**
+ * Main Application Logic
+ */
+const app = {
+  
+  // Navigation Structure
+  modules: {
+    'ORG': [
+      { id: 'org_dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'org_input', label: 'Input Records', icon: 'edit_document' },
+      { id: 'org_view', label: 'View Forms', icon: 'table_view' }
+    ],
+    'HRM': [
+      { id: 'hrm_dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'hrm_input', label: 'Input Records', icon: 'person_add' },
+      { id: 'hrm_view', label: 'View Forms', icon: 'list_alt' },
+      { id: 'hrm_employees', label: 'Employees List', icon: 'groups' },
+      { id: 'hrm_service', label: 'Service History', icon: 'history' },
+      { id: 'hrm_promotion', label: 'Promotion', icon: 'trending_up' },
+      { id: 'hrm_workforce', label: 'Workforces', icon: 'work' },
+      { id: 'hrm_allowance', label: 'Allowance Calc', icon: 'calculate' },
+      { id: 'hrm_reports', label: 'Reports', icon: 'assessment' }
+    ],
+    'TQC': [
+      { id: 'tqc_dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'tqc_ticket', label: 'Ticket', icon: 'confirmation_number' },
+      { id: 'tqc_input', label: 'Input Records', icon: 'post_add' },
+      { id: 'tqc_view', label: 'View Forms', icon: 'list_alt' },
+      { id: 'tqc_employees', label: 'Employees List', icon: 'groups' },
+      { id: 'tqc_service', label: 'Service History', icon: 'history' },
+      { id: 'tqc_record', label: 'Training Record', icon: 'library_books' },
+      { id: 'tqc_load', label: 'Load Control', icon: 'flight_class' },
+      { id: 'tqc_nomination', label: 'Training Nomination', icon: 'how_to_reg' },
+      { id: 'tqc_reports', label: 'Reports', icon: 'assessment' }
+    ]
+  },
+
+  // State
+  currentModule: null,
+  currentView: null,
+
+  init: function() {
+    // Default load ORG
+    this.loadSidebar('ORG');
+  },
+
+  showLoader: () => document.getElementById('loader').classList.remove('hidden'),
+  hideLoader: () => document.getElementById('loader').classList.add('hidden'),
+
+  toast: function(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    let icon, colorClass, borderClass;
+    if (type === 'error') {
+      icon = 'cancel'; colorClass = 'text-red-500'; borderClass = 'border-l-4 border-red-500';
+    } else if (type === 'warning') {
+      icon = 'warning'; colorClass = 'text-orange-500'; borderClass = 'border-l-4 border-orange-500';
+    } else {
+      icon = 'check_circle'; colorClass = 'text-green-500'; borderClass = 'border-l-4 border-green-500';
+    }
+
+    toast.className = `translate-x-full opacity-0 flex items-start p-3 mb-3 bg-white/95 backdrop-blur rounded shadow-lg ${borderClass} border border-gray-100 w-72 md:w-80 transition-all duration-300 ease-out relative`;
+    
+    toast.innerHTML = `
+      <span class="material-icons ${colorClass} mr-2 text-[18px] leading-none mt-0.5">${icon}</span>
+      <div class="flex-1 pr-4">
+        <h4 class="text-[10px] font-bold text-gray-800 uppercase tracking-widest mb-0.5">${type}</h4>
+        <p class="text-[11px] text-gray-600 font-medium leading-tight">${message}</p>
+      </div>
+      <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 transition-colors" onclick="this.parentElement.style.opacity='0'; this.parentElement.style.transform='translateX(100%)'; setTimeout(() => this.parentElement.remove(), 300);">
+        <span class="material-icons text-[14px]">close</span>
+      </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Slide in
+    setTimeout(() => {
+      toast.classList.remove('translate-x-full', 'opacity-0');
+    }, 10);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 5000);
+  },
+
+  toggleSidebar: function() {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+  },
+
+  loadSidebar: function(moduleName) {
+    this.currentModule = moduleName;
+    document.getElementById('sidebar-title').innerText = `${moduleName} Module`;
+    
+    const nav = document.getElementById('sidebar-nav');
+    nav.innerHTML = ''; // Clear
+
+    const items = this.modules[moduleName] || [];
+    items.forEach(item => {
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'flex items-center px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-900 border-l-4 border-transparent hover:border-blue-900 transition-colors text-sm font-medium';
+      a.innerHTML = `<span class="material-icons mr-3 text-gray-400">${item.icon}</span> ${item.label}`;
+      a.onclick = (e) => {
+        e.preventDefault();
+        // Highlight active
+        Array.from(nav.children).forEach(child => {
+          child.classList.remove('bg-blue-50', 'text-blue-900', 'border-blue-900');
+          child.classList.add('text-gray-600', 'border-transparent');
+          child.querySelector('.material-icons').classList.replace('text-blue-900', 'text-gray-400');
+        });
+        a.classList.remove('text-gray-600', 'border-transparent');
+        a.classList.add('bg-blue-50', 'text-blue-900', 'border-blue-900');
+        a.querySelector('.material-icons').classList.replace('text-gray-400', 'text-blue-900');
+        
+        this.loadView(item.id);
+        
+        // Mobile auto close
+        if (window.innerWidth < 1024) this.toggleSidebar();
+      };
+      nav.appendChild(a);
+    });
+
+    // Auto click first item if available
+    if (nav.children.length > 0) {
+      nav.children[0].click();
+    }
+  },
+
+  loadView: async function(viewId) {
+    this.currentView = viewId;
+    this.showLoader();
+    const container = document.getElementById('view-container');
+    container.style.opacity = 0;
+
+    try {
+      await new Promise(r => setTimeout(r, 150));
+      
+      let targetId = viewId;
+      if (viewId === 'tqc_employees') targetId = 'hrm_employees';
+      if (viewId === 'tqc_service') targetId = 'hrm_service';
+
+      const template = document.getElementById('tmpl-' + targetId);
+      if (template) {
+        container.innerHTML = template.innerHTML;
+        // Init view specific scripts if they exist globally
+        if (window[targetId + '_init']) {
+          await window[targetId + '_init']();
+        }
+      } else {
+        container.innerHTML = `<div class="p-8 text-center text-gray-400"><span class="material-icons text-6xl mb-2">construction</span><br><h3>View '${viewId}' is under construction.</h3></div>`;
+      }
+      container.style.opacity = 1;
+    } catch (e) {
+      console.error(e);
+      this.toast(e.message, 'error');
+      container.innerHTML = `<div class="p-8 text-red-500">Failed to load view.</div>`;
+      container.style.opacity = 1;
+    } finally {
+      this.hideLoader();
+    }
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => app.init());
+</script>
