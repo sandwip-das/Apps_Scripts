@@ -1,0 +1,2611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyBond | Track, Match, Win</title>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Raw CSS (No Tailwind) -->
+    <style>
+        :root {
+            --primary-color: #4cd137;
+            --primary-hover: #44bd32;
+            --primary-active: #359f24;
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --border-color: #dddddd;
+            --header-bg: #22a6b3;
+            --nav-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --danger-color: #ff4d4d;
+            --success-color: #2ed573;
+            --warning-color: #ffa502;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, p, span, label, input, select, textarea, h1, h2, h3, h4, h5, h6, td, th, li {
+            color: #000000;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4 { margin-bottom: 10px; font-weight: bold; }
+        p { margin-bottom: 15px; }
+        a { color: black !important; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Layout & Navigation */
+        .navbar {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .navbar-tagline {
+            font-size: 14px;
+            color: black !important;
+            margin-left: 10px;
+        }
+        .navbar-nav {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Sidebar & Main Content Layout */
+        .layout-wrapper {
+            display: flex;
+            flex: 1;
+            padding: 0 40px;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: var(--nav-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px 0;
+        }
+        .sidebar.hidden {
+            display: none;
+        }
+        .sidebar ul {
+            list-style: none;
+        }
+        .sidebar li a {
+            display: block;
+            padding: 10px 20px;
+            color: black !important;
+            border-left: 3px solid transparent;
+        }
+        .sidebar li a:hover {
+            background-color: #e9ecef;
+            border-left-color: var(--primary-color);
+            text-decoration: none;
+        }
+        .sidebar .section-title {
+            padding: 10px 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: black !important;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
+
+        /* Utility Classes used by JS */
+        .hidden { display: none !important; }
+        .view-section { animation: fadeIn 0.3s; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Cards & Forms */
+        .card {
+            ;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card-center {
+            max-width: 400px;
+            margin: 40px auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: black !important;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            color: black !important;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(58, 227, 116, 0.5);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white !important;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            text-decoration: none;
+            color: white !important;
+        }
+        .btn:active {
+            background-color: var(--primary-active);
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-primary, .btn-secondary, .btn-danger {
+            background-color: var(--primary-color);
+            color: white !important;
+        }
+        .btn-primary:hover, .btn-secondary:hover, .btn-danger:hover {
+            background-color: var(--primary-hover);
+            color: white !important;
+        }
+        .btn-primary:active, .btn-secondary:active, .btn-danger:active {
+            background-color: var(--primary-active);
+        }
+        .btn-block { display: block; width: 100%; }
+
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .table th, .table td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        .table th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+        .table tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .tab-btn.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .tab-btn:hover:not(.active) {
+            background-color: #f9f9f9;
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .toast {
+            padding: 15px 20px;
+            margin-top: 10px;
+            border-radius: 4px;
+            color: white;
+            min-width: 250px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            animation: slideInRight 0.3s ease forwards;
+        }
+        .toast.success { background-color: var(--success-color); color: white; }
+        .toast.error { background-color: var(--danger-color); color: white; }
+        .toast.info { background-color: var(--primary-color); color: white; }
+        .toast.warning { background-color: var(--warning-color); color: white; }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Modals */
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        /* Custom Raw CSS Modal overlay & card styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            padding: 30px;
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Dropdown Actions Styling */
+        .dropdown-menu-container {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-menu-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 130px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
+            z-index: 1000;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        .dropdown-menu-content button {
+            color: black !important;
+            padding: 10px 15px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            text-align: left;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .dropdown-menu-content button:hover {
+            background-color: #f1f1f1;
+        }
+        .dropdown-menu-content.show {
+            display: block;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-box h3 { font-size: 32px; margin: 10px 0; }
+        .text-center { text-align: center; }
+        .mt-3 { margin-top: 15px; }
+        .mb-3 { margin-bottom: 15px; }
+        .pull-right { float: right; }
+        .clearfix::after { content: ""; clear: both; display: table; }
+
+        /* Compact Form Styles for Manual Draw */
+        .compact-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .fifth-prize-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+        @media (max-width: 992px) {
+            .fifth-prize-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .fifth-prize-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .fifth-prize-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .form-control.compact {
+            padding: 5px 8px;
+            height: 30px;
+            font-size: 13px;
+        }
+        .form-group-compact {
+            margin-bottom: 5px;
+        }
+        .form-group-compact label {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 2px;
+            display: block;
+            color: black !important;
+        }
+        
+        .footer {
+            background-color: var(--header-bg);
+            color: white;
+            text-align: center;
+            padding: 15px 20px;
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+        .footer p {
+            margin-bottom: 0;
+            color: white !important;
+            font-size: 14px;
+        }
+        /* ::placeholder { color: black !important; opacity: 1 !important; } */
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation -->
+    <nav class="navbar">
+        <div class="brand-container" onclick="app.navigateHome()" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-ticket" style="font-size: 28px; color: white;"></i>
+            <div style="display: flex; flex-direction: column;">
+                <span class="navbar-brand" style="font-size: 22px; font-weight: bold; color: white; line-height: 1.1; margin-bottom: 0;">EasyBond</span>
+                <span class="navbar-tagline" style="font-size: 11px; font-style: italic; color: rgba(255, 255, 255, 0.85); line-height: 1.1; margin-left: 0;">Pick EasyBond to Track, Match, Win</span>
+            </div>
+        </div>
+        <div class="navbar-nav" id="nav-unauth-links">
+            <button class="btn btn-primary" style="margin-right: 15px;" onclick="app.navigate('register-view')">Register</button>
+            <button class="btn btn-primary" onclick="app.navigate('login-view')">Login</button>
+        </div>
+        <div class="navbar-nav hidden" id="nav-auth-links">
+            <span id="nav-username" style="font-weight: bold; color: white !important;"></span>
+            <button class="btn btn-secondary" onclick="app.logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="layout-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar hidden" id="sidebar">
+            <ul id="sidebar-menu">
+                <!-- Populated by JS -->
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content" id="main-content">
+            
+            <!-- Landing View -->
+            <div id="landing-view" class="view-section">
+                <div class="card text-center" style="padding: 60px 20px; border: none; box-shadow: none;">
+                    <h1 style="font-size: 40px; margin-bottom: 20px;">Welcome to EasyBond</h1>
+                    <p style="font-size: 18px; max-width: 600px; margin: 0 auto 30px;">The smartest way to save, track, and automatically verify your Prize Bond numbers against official draw results.</p>
+                    <button class="btn btn-primary" style="font-size: 18px; padding: 15px 30px;" onclick="app.navigate('register-view')">Register Now</button>
+                </div>
+            </div>
+
+            <!-- Login View -->
+            <div id="login-view" class="view-section hidden">
+                <div class="card card-center">
+                    <h2 class="text-center">Login</h2>
+                    <p class="text-center">Sign in to your account</p>
+                    <form id="login-form" onsubmit="app.handleLogin(event)">
+                        <div class="form-group">
+                            <label>User ID</label>
+                            <input type="text" id="login-userid" class="form-control" required placeholder="Enter User ID (e.g. 01700000000)">
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Password</label>
+                            <input type="password" id="login-password" class="form-control" required placeholder="Enter Password">
+                            <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('login-password', this)"></i>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                        <div class="text-center mt-3">
+                            <a href="#" onclick="app.navigate('support-ticket-view')">Forgot password? Open a Support Ticket</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Register View -->
+            <div id="register-view" class="view-section hidden">
+                <div class="card card-center">
+                    <h2 class="text-center">Register</h2>
+                    <p class="text-center">Create a new EasyBond account</p>
+                    <form id="register-form" onsubmit="app.handleRegister(event)">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="reg-name" class="form-control" required placeholder="e.g. John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label>Register With</label>
+                            <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                                <label><input type="radio" name="reg-type" value="mobile" checked onchange="app.toggleRegType()"> Mobile Number</label>
+                                <label><input type="radio" name="reg-type" value="email" onchange="app.toggleRegType()"> Email</label>
+                            </div>
+                            <input type="tel" id="reg-mobile" class="form-control" required placeholder="e.g. 01700000000">
+                            <input type="email" id="reg-email" class="form-control hidden" placeholder="e.g. john@example.com">
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Password</label>
+                            <input type="password" id="reg-password" class="form-control" required placeholder="Enter Password">
+                            <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('reg-password', this)"></i>
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Confirm Password</label>
+                            <input type="password" id="reg-confirm" class="form-control" required placeholder="Confirm Password">
+                            <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('reg-confirm', this)"></i>
+                            <small id="reg-pass-error" style="color: black !important;" class="hidden">Passwords do not match.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                        <div class="text-center mt-3">
+                            Already have an account? <a href="#" onclick="app.navigate('login-view')">Login here</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password View -->
+            <div id="change-password-view" class="view-section hidden">
+                <div class="card card-center" style="border-top: 3px solid var(--warning-color);">
+                    <h2 class="text-center">Change Password Required</h2>
+                    <p class="text-center">Please update your password to continue.</p>
+                    <form id="change-pass-form" onsubmit="app.handleChangePassword(event)">
+                        <div class="form-group" style="position: relative;">
+                            <label>Current Password</label>
+                            <input type="password" id="cp-current" class="form-control" required placeholder="Current Password">
+                            <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('cp-current', this)"></i>
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>New Password</label>
+                            <input type="password" id="cp-new" class="form-control" required placeholder="New Password">
+                            <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('cp-new', this)"></i>
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="cp-confirm" class="form-control" required placeholder="Confirm New Password">
+                            <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('cp-confirm', this)"></i>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Update Password</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- User Dashboard View -->
+            <div id="user-dashboard-view" class="view-section hidden">
+                <h2>Dashboard Overview</h2>
+                <div class="grid-3">
+                    <div class="stat-box">
+                        <p>Total Saved Bonds</p>
+                        <h3 id="stat-total-bonds">0</h3>
+                    </div>
+                    <div class="stat-box">
+                        <p>Winning Bonds</p>
+                        <h3 id="stat-win-bonds" style="color: black !important;">0</h3>
+                    </div>
+                    <div class="stat-box">
+                        <p>Last Checked Draw</p>
+                        <h3 id="stat-last-draw">-</h3>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <button class="btn btn-primary" style="margin-right: 10px;" onclick="app.navigate('add-bonds-view')"><i class="fa-solid fa-circle-plus"></i> Add Prize Bond Numbers</button>
+                    <button class="btn btn-secondary" onclick="app.navigate('my-bonds-view')"><i class="fa-solid fa-list-check"></i> View All Bonds</button>
+                </div>
+
+                <div class="card">
+                    <h3>Recent Winning History</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Draw Number</th>
+                                <th>Bond Number</th>
+                                <th>Prize Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-wins-table">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                    <p id="no-wins-msg" class="text-center hidden">No matching wins found yet. Keep your bonds updated!</p>
+                </div>
+            </div>
+
+            <!-- Add Bonds View -->
+            <div id="add-bonds-view" class="view-section hidden">
+                <div class="card">
+                    <h2>Add Prize Bonds</h2>
+                    <div class="tabs">
+                        <button class="tab-btn active" id="tab-single" onclick="app.switchAddMode('single')">Single Entry</button>
+                        <button class="tab-btn" id="tab-multiple" onclick="app.switchAddMode('multiple')">Multiple Entry</button>
+                    </div>
+
+                    <!-- Single Entry Form -->
+                    <form id="form-single-entry" onsubmit="app.addSingleBond(event)">
+                        <div class="form-group">
+                            <label>Enter 7-Digit Bond Number</label>
+                            <input type="text" id="single-bond-input" class="form-control" pattern="[0-9]{7}" maxlength="7" required placeholder="e.g. 0123456">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Bond</button>
+                    </form>
+
+                    <!-- Multiple Entry Form -->
+                    <form id="form-multiple-entry" class="hidden" onsubmit="app.addMultipleBonds(event)">
+                        <div class="form-group">
+                            <label>Enter Multiple Bond Numbers</label>
+                            <p style="font-size: 12px; color: black !important;">Separate numbers with spaces or commas. Must be exactly 7 digits each.</p>
+                            <textarea id="multiple-bond-input" class="form-control" rows="5" required placeholder="0123456 0987654..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save All Bonds</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- My Bonds View -->
+            <div id="my-bonds-view" class="view-section hidden">
+                <div class="card">
+                    <div class="clearfix mb-3">
+                        <h2 style="float: left;">My Saved Bonds</h2>
+                        <button class="btn btn-secondary pull-right" onclick="app.exportBonds()">Export .txt</button>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Bond Number</th>
+                                <th>Date Added</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="my-bonds-table">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Profile View -->
+            <div id="profile-view" class="view-section hidden">
+                <div class="card">
+                    <h2>My Profile</h2>
+                    <h3 id="profile-display-name"></h3>
+                    <p id="profile-display-id" style="color: black !important;"></p>
+                    <hr style="border:0; border-top:1px solid #ddd; margin: 15px 0;">
+                    
+                    <form id="profile-form" onsubmit="app.updateProfile(event)">
+                        <div class="grid-3" style="margin-bottom: 0;">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="prof-name" class="form-control" required placeholder="e.g. John Doe">
+                            </div>
+                            <div class="form-group">
+                                <label>Date of Birth</label>
+                                <input type="date" id="prof-dob" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" id="prof-phone" class="form-control" placeholder="e.g. 01700000000">
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" id="prof-email" class="form-control" placeholder="e.g. john@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Occupation</label>
+                                <input type="text" id="prof-occ" class="form-control" placeholder="e.g. Teacher">
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <input type="text" id="prof-address" class="form-control" placeholder="e.g. 123 Main St, Dhaka">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Save Profile</button>
+                    </form>
+                </div>
+                
+                <div class="card" style=";">
+                    <h3 style="color: black !important;">Danger Zone</h3>
+                    <p>Permanently delete your account and all associated bond data.</p>
+                    <button class="btn btn-danger" onclick="app.initiateAccountDeletion()">Delete My Account</button>
+                </div>
+            </div>
+
+            <!-- Support Ticket View -->
+            <div id="support-ticket-view" class="view-section hidden">
+                <div class="card">
+                    <h2>Support Center</h2>
+                    <p>If you forgot your User ID or Password, or need help, contact us:</p>
+                    <div style="margin-top: 20px;">
+                        <a id="support-wa-link" href="#" target="_blank" class="btn btn-primary" style="margin-right: 10px;">Message on WhatsApp</a>
+                        <a id="support-email-link" href="#" class="btn btn-secondary">Send Email</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Dashboard View -->
+            <div id="admin-dashboard-view" class="view-section hidden">
+                <h2>Admin Dashboard</h2>
+                <div class="grid-3">
+                    <div class="stat-box">
+                        <p>Total Users</p>
+                        <h3 id="admin-stat-users">0</h3>
+                    </div>
+                    <div class="stat-box">
+                        <p>Active Users</p>
+                        <h3 id="admin-stat-active">0</h3>
+                    </div>
+                    <div class="stat-box">
+                        <p>Total Bonds Tracked</p>
+                        <h3 id="admin-stat-bonds">0</h3>
+                    </div>
+                    <div class="stat-box">
+                        <p>Open Tickets</p>
+                        <h3 id="admin-stat-tickets" style="color: black !important;">0</h3>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <button class="btn btn-secondary" style="margin-right: 10px;" onclick="app.navigate('admin-users-view')"><i class="fa-solid fa-users-gear"></i> Manage Users</button>
+                    <button class="btn btn-secondary" onclick="app.navigate('admin-draws-view')"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Draw</button>
+                </div>
+                <div class="card">
+                    <h3>Support Settings</h3>
+                    <form id="admin-support-form" onsubmit="app.updateSupportInfo(event)">
+                        <div class="grid-3" style="margin-bottom: 0;">
+                            <div class="form-group">
+                                <label>WhatsApp Number</label>
+                                <input type="text" id="admin-support-wa" class="form-control" placeholder="e.g. +8801234567890">
+                            </div>
+                            <div class="form-group">
+                                <label>Support Email</label>
+                                <input type="email" id="admin-support-email" class="form-control" placeholder="e.g. support@easybond.com">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Save Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Admin Users View -->
+            <div id="admin-users-view" class="view-section hidden">
+                <div class="card">
+                    <div class="clearfix mb-3">
+                        <h2 style="float: left;">Manage Users</h2>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Name</th>
+                                <th>Email/Phone</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-table">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Edit User View -->
+            <div id="admin-edit-user-view" class="view-section hidden">
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <div class="clearfix mb-3">
+                        <button class="btn btn-secondary" onclick="app.navigate('admin-users-view')" style="float: left; padding: 5px 12px; font-size: 13px;"><i class="fa-solid fa-arrow-left"></i> Back to Manage Users</button>
+                        <h2 class="text-center" style="margin-left: 20px; display: inline-block;" id="aeuv-title">Edit User</h2>
+                    </div>
+                    <form id="admin-edit-user-form-view" onsubmit="app.adminUpdateUserView(event)">
+                        <input type="hidden" id="aeuv-id">
+                        <div class="grid-3" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="aeuv-name" class="form-control" required placeholder="e.g. John Doe">
+                            </div>
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="aeuv-status" class="form-control">
+                                    <option value="active">Active</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" id="aeuv-email" class="form-control" required placeholder="e.g. john@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" id="aeuv-phone" class="form-control" required placeholder="e.g. 01700000000">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Reset Password (Optional)</label>
+                                <input type="password" id="aeuv-pass" class="form-control" placeholder="Leave blank to keep current">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-save"></i> Save Changes</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Admin Draws View -->
+            <div id="admin-draws-view" class="view-section hidden">
+                <div class="card">
+                    <h2>Upload Draw Results</h2>
+                    <div class="tabs">
+                        <button class="tab-btn active" id="tab-draw-file" onclick="app.switchDrawMode('file')">Upload .txt File</button>
+                        <button class="tab-btn" id="tab-draw-manual" onclick="app.switchDrawMode('manual')">Manual Entry</button>
+                    </div>
+
+                    <form id="draw-upload-form" onsubmit="app.uploadDrawResults(event)">
+                        <div class="grid-3">
+                            <div class="form-group">
+                                <label>Draw Number</label>
+                                <input type="text" id="draw-num-file" class="form-control" required placeholder="e.g. 115">
+                            </div>
+                            <div class="form-group">
+                                <label>Draw Date</label>
+                                <input type="date" id="draw-date-file" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Results File (.txt)</label>
+                            <p style="font-size: 12px; color: black !important;">File must contain exactly 46 numbers (1st, 2nd, two 3rd, two 4th, forty 5th prize numbers).</p>
+                            <input type="file" id="draw-file" accept=".txt" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Process File</button>
+                    </form>
+
+                    <form id="draw-manual-form" class="hidden" onsubmit="app.submitManualDraw(event)">
+                        <div class="compact-form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <div class="form-group-compact">
+                                <label>Draw Number</label>
+                                <input type="text" id="draw-num-man" class="form-control compact" required placeholder="e.g. 115">
+                            </div>
+                            <div class="form-group-compact">
+                                <label>Draw Date</label>
+                                <input type="date" id="draw-date-man" class="form-control compact" required>
+                            </div>
+                        </div>
+                        
+                        <h4 style="margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; color: black !important; font-size: 14px;">Top & Middle Prizes</h4>
+                        <div class="compact-form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <div class="form-group-compact">
+                                <label>1st Prize (1 Number)</label>
+                                <input type="text" class="manual-draw-input form-control compact" data-prize="1st Prize" required pattern="[0-9]{7}" maxlength="7" placeholder="e.g. 1234567">
+                            </div>
+                            <div class="form-group-compact">
+                                <label>2nd Prize (1 Number)</label>
+                                <input type="text" class="manual-draw-input form-control compact" data-prize="2nd Prize" required pattern="[0-9]{7}" maxlength="7" placeholder="e.g. 2345678">
+                            </div>
+                        </div>
+                        <div class="compact-form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <div class="form-group-compact">
+                                <label>3rd Prize #1</label>
+                                <input type="text" class="manual-draw-input form-control compact" data-prize="3rd Prize" required pattern="[0-9]{7}" maxlength="7" placeholder="0000000">
+                            </div>
+                            <div class="form-group-compact">
+                                <label>3rd Prize #2</label>
+                                <input type="text" class="manual-draw-input form-control compact" data-prize="3rd Prize" required pattern="[0-9]{7}" maxlength="7" placeholder="0000000">
+                            </div>
+                        </div>
+                        <div class="compact-form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <div class="form-group-compact">
+                                <label>4th Prize #1</label>
+                                <input type="text" class="manual-draw-input form-control compact" data-prize="4th Prize" required pattern="[0-9]{7}" maxlength="7" placeholder="0000000">
+                            </div>
+                            <div class="form-group-compact">
+                                <label>4th Prize #2</label>
+                                <input type="text" class="manual-draw-input form-control compact" data-prize="4th Prize" required pattern="[0-9]{7}" maxlength="7" placeholder="0000000">
+                            </div>
+                        </div>
+
+                        <h4 style="margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; color: black !important; font-size: 14px;">5th Prize (40 Numbers)</h4>
+                        <div class="fifth-prize-grid" id="fifth-prize-container">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+
+                        <button type="submit" class="btn mt-3"><i class="fa-solid fa-save"></i> Save Draw</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results View -->
+            <div id="results-view" class="view-section hidden">
+                <div class="card">
+                    <h2>Draw Results History</h2>
+                    <p>Select a draw number to view the official results and check for winning matches.</p>
+                    
+                    <div class="grid-3" style="grid-template-columns: 2fr 1fr; gap: 15px; align-items: end; margin-bottom: 20px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Select Draw</label>
+                            <select id="results-draw-select" class="form-control" onchange="app.loadDrawResultsView(this.value)">
+                                <option value="">-- Loading Draws --</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" onclick="app.refreshDrawResults()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+                    </div>
+
+                    <div id="draw-details-container" class="hidden">
+                        <div style="background-color: #f8f9fa; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                            <h3 id="draw-title-display" style="margin-bottom: 5px;">Draw #--</h3>
+                            <p id="draw-date-display" style="margin-bottom: 0; color: black !important; font-size: 14px;">Date: --/--/----</p>
+                        </div>
+
+                        <!-- Wins for current user in this draw -->
+                        <div id="draw-user-wins" class="card hidden" style="border-left: 4px solid var(--success-color); background-color: rgba(46, 213, 115, 0.05);">
+                            <h3 style="color: var(--success-color);"><i class="fa-solid fa-trophy"></i> Congratulations! You Won!</h3>
+                            <table class="table" style="margin-bottom: 0;">
+                                <thead>
+                                    <tr>
+                                        <th>Bond Number</th>
+                                        <th>Prize Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="draw-user-wins-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Full Results Grid -->
+                        <div>
+                            <h3>Draw Winning Numbers</h3>
+                            
+                            <table class="table">
+                                <tr>
+                                    <th style="width: 150px;">1st Prize</th>
+                                    <td id="res-1st" class="font-mono font-bold text-black" style="font-size: 16px;">-</td>
+                                </tr>
+                                <tr>
+                                    <th>2nd Prize</th>
+                                    <td id="res-2nd" class="font-mono font-bold text-black" style="font-size: 16px;">-</td>
+                                </tr>
+                                <tr>
+                                    <th>3rd Prize</th>
+                                    <td id="res-3rd" class="font-mono text-black">-</td>
+                                </tr>
+                                <tr>
+                                    <th>4th Prize</th>
+                                    <td id="res-4th" class="font-mono text-black">-</td>
+                                </tr>
+                            </table>
+
+                            <h4 style="margin-top: 20px; margin-bottom: 10px;">5th Prize Numbers</h4>
+                            <div class="fifth-prize-grid" id="res-5th-container" style="background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
+                                <!-- 5th prize numbers listed here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p id="no-draws-loaded-msg" class="text-center" style="padding: 40px; color: black !important;">No draw results uploaded yet.</p>
+                </div>
+            </div>
+            
+            <div id="admin-tickets-view" class="view-section hidden">
+                <div class="card"><h2 class="text-center" style="color: black !important; padding: 50px;">Support Ticket System<br>(Integration Pending)</h2></div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 EasyBond. All rights reserved. Pick EasyBond to Track, Match, Win.</p>
+    </footer>
+
+    <!-- Container for Modals -->
+    <div id="modal-container"></div>
+    <!-- Container for Toasts -->
+    <div id="toast-container"></div>
+
+    <script>
+/**
+ * Prizebond Project - Frontend Logic
+ */
+
+const app = {
+    currentUser: null,
+    
+    // UI Navigation
+    navigate: function(viewId, isPopState = false) {
+        document.querySelectorAll('.view-section').forEach(el => {
+            el.classList.add('hidden');
+        });
+        const target = document.getElementById(viewId);
+        if(target) {
+            target.classList.remove('hidden');
+            // Re-trigger animation
+            target.style.animation = 'none';
+            void target.offsetWidth; // trigger reflow
+            target.style.animation = null;
+        }
+        
+        // Handle browser history pushState
+        if (!isPopState) {
+            if (typeof google !== 'undefined' && google.script && google.script.history) {
+                google.script.history.push({ viewId: viewId }, {}, viewId);
+            } else {
+                history.pushState({ viewId: viewId }, '', '#' + viewId);
+            }
+        }
+        
+        window.scrollTo(0, 0);
+    },
+
+    navigateDashboard: function(isPopState = false) {
+        if(!this.currentUser) {
+            this.navigate('login-view', isPopState);
+            return;
+        }
+        if(this.currentUser.role === 'admin') {
+            this.navigate('admin-dashboard-view', isPopState);
+            this.updateAdminDashboard();
+        } else {
+            if(this.currentUser.requiresPasswordChange) {
+                this.navigate('change-password-view', isPopState);
+            } else {
+                this.navigate('user-dashboard-view', isPopState);
+                this.updateUserDashboard();
+            }
+        }
+    },
+
+    navigateHome: function() {
+        if (this.currentUser) {
+            this.navigateDashboard();
+        } else {
+            this.navigate('landing-view');
+        }
+    },
+
+    // Custom Popup System
+    showPopup: function(title, message, type = 'info', onConfirm = null) {
+        // type: info, success, warning, error, confirm
+        const icons = {
+            'info': '<i class="fa-solid fa-circle-info" style="font-size: 40px; color: var(--primary-color); margin-bottom: 15px;"></i>',
+            'success': '<i class="fa-solid fa-circle-check" style="font-size: 40px; color: var(--success-color); margin-bottom: 15px;"></i>',
+            'warning': '<i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: var(--warning-color); margin-bottom: 15px;"></i>',
+            'error': '<i class="fa-solid fa-circle-xmark" style="font-size: 40px; color: var(--danger-color); margin-bottom: 15px;"></i>',
+            'confirm': '<i class="fa-solid fa-circle-question" style="font-size: 40px; color: var(--primary-color); margin-bottom: 15px;"></i>'
+        };
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        
+        let buttonsHtml = '';
+        if (type === 'confirm' || onConfirm) {
+            buttonsHtml = `
+                <div style="display: flex; justify-content: center; gap: 15px; width: 100%; margin-top: 20px;">
+                    <button class="popup-cancel btn btn-secondary">Cancel</button>
+                    <button class="popup-confirm btn btn-primary">Confirm</button>
+                </div>
+            `;
+        } else {
+            buttonsHtml = `
+                <div style="margin-top: 20px; width: 100%;">
+                    <button class="popup-close btn btn-primary btn-block">OK</button>
+                </div>
+            `;
+        }
+
+        modal.innerHTML = `
+            <div class="modal-card" style="max-width: 380px; text-align: center;">
+                ${icons[type] || icons['info']}
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 10px; color: black !important;">${title}</h3>
+                <p style="margin-bottom: 15px; color: black !important; font-size: 14px;">${message}</p>
+                ${buttonsHtml}
+            </div>
+        `;
+
+        document.getElementById('modal-container').appendChild(modal);
+
+        if (type === 'confirm' || onConfirm) {
+            modal.querySelector('.popup-cancel').addEventListener('click', () => modal.remove());
+            modal.querySelector('.popup-confirm').addEventListener('click', () => {
+                modal.remove();
+                if(onConfirm) onConfirm();
+            });
+        } else {
+            modal.querySelector('.popup-close').addEventListener('click', () => modal.remove());
+        }
+    },
+
+    // Dropdown Actions Toggling
+    toggleDropdown: function(btn, event) {
+        event.stopPropagation();
+        const content = btn.nextElementSibling;
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-menu-content').forEach(el => {
+            if (el !== content) {
+                el.classList.remove('show');
+            }
+        });
+        
+        content.classList.toggle('show');
+    },
+
+    // Registration UI Helpers
+    toggleRegType: function() {
+        const type = document.querySelector('input[name="reg-type"]:checked').value;
+        const mobileInput = document.getElementById('reg-mobile');
+        const emailInput = document.getElementById('reg-email');
+        
+        if (type === 'mobile') {
+            mobileInput.classList.remove('hidden');
+            mobileInput.setAttribute('required', 'true');
+            emailInput.classList.add('hidden');
+            emailInput.removeAttribute('required');
+            emailInput.value = '';
+        } else {
+            emailInput.classList.remove('hidden');
+            emailInput.setAttribute('required', 'true');
+            mobileInput.classList.add('hidden');
+            mobileInput.removeAttribute('required');
+            mobileInput.value = '';
+        }
+    },
+
+    togglePasswordVisibility: function(id, iconEl) {
+        const input = document.getElementById(id);
+        if (input.type === 'password') {
+            input.type = 'text';
+            iconEl.classList.remove('fa-eye');
+            iconEl.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            iconEl.classList.remove('fa-eye-slash');
+            iconEl.classList.add('fa-eye');
+        }
+    },
+
+    // Auth & Navigation
+    handleRegister: function(e) {
+        e.preventDefault();
+        const name = document.getElementById('reg-name').value;
+        const type = document.querySelector('input[name="reg-type"]:checked').value;
+        const idValue = type === 'mobile' ? document.getElementById('reg-mobile').value : document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-password').value;
+        const confirm = document.getElementById('reg-confirm').value;
+        const errorMsg = document.getElementById('reg-pass-error');
+
+        if (pass !== confirm) {
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+        errorMsg.classList.add('hidden');
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+
+        const data = {
+            id: idValue,
+            name: name,
+            type: type,
+            password: pass
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.showPopup('Registration Successful', 'Your account has been created. You can now login.', 'success', () => {
+                            document.getElementById('register-form').reset();
+                            app.navigate('login-view');
+                        });
+                    } else {
+                        app.showPopup('Registration Failed', res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    app.showPopup('Error', 'Failed to connect to the server. Please try again.', 'error');
+                    console.error(err);
+                })
+                .registerUser(data);
+        } else {
+            // Local mock fallback
+            setTimeout(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                const users = app.db.getUsers();
+                if(users.some(u => u.id === idValue || u.email === idValue)) {
+                    app.showPopup('Registration Failed', 'This User ID is already registered.', 'error');
+                    return;
+                }
+                users.push({
+                    id: idValue,
+                    name: name,
+                    email: type === 'email' ? idValue : '',
+                    phone: type === 'mobile' ? idValue : '',
+                    password: pass,
+                    role: 'user',
+                    status: 'active',
+                    createdAt: new Date().toISOString()
+                });
+                app.db.setUsers(users);
+                app.showPopup('Registration Successful', 'Your account has been created. You can now login.', 'success', () => {
+                    document.getElementById('register-form').reset();
+                    app.navigate('login-view');
+                });
+            }, 500);
+        }
+    },
+
+    // Authentication
+    handleLogin: function(e) {
+        e.preventDefault();
+        const userid = document.getElementById('login-userid').value;
+        const pass = document.getElementById('login-password').value;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.login(res.user);
+                    } else {
+                        app.showPopup('Login Failed', res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    app.showPopup('Error', 'Failed to connect to the server.', 'error');
+                    console.error(err);
+                })
+                .loginUser(userid, pass);
+        } else {
+            // Local mock fallback
+            setTimeout(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                const users = app.db.getUsers();
+                const user = users.find(u => u.id === userid && u.password === pass);
+                if(user) {
+                    app.login(user);
+                } else {
+                    app.showPopup('Login Failed', 'Invalid User ID or Password', 'error');
+                }
+            }, 500);
+        }
+    },
+
+    renderAdminUsers: function() {
+        const tbody = document.getElementById('admin-users-table');
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black"><i class="fa-solid fa-spinner fa-spin"></i> Loading users from sheets...</td></tr>`;
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        app.usersListCache = res.users;
+                        app.displayUsersList(res.users);
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black">Error: ${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler((err) => {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black">Failed to retrieve users.</td></tr>`;
+                })
+                .adminGetUsers();
+        } else {
+            // Local fallback
+            const users = this.db.getUsers().filter(u => u.role === 'user');
+            this.usersListCache = users;
+            this.displayUsersList(users);
+        }
+    },
+
+    displayUsersList: function(users) {
+        const tbody = document.getElementById('admin-users-table');
+        if(users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black">No users found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+            <tr class="hover:bg-slate-100">
+                <td class="px-4 py-3 font-mono text-indigo-600">${u.id}</td>
+                <td class="px-4 py-3 text-black">${u.name}</td>
+                <td class="px-4 py-3 text-black">${u.email || u.phone || 'N/A'}</td>
+                <td class="px-4 py-3">
+                    ${u.status === 'active' ? '<span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Active</span>' : '<span style="background-color: rgba(255, 77, 77, 0.15); color: #ff4d4d; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Disabled</span>'}
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <div class="dropdown-menu-container">
+                        <button class="btn" style="padding: 5px 12px; font-size: 12px;" onclick="app.toggleDropdown(this, event)"><i class="fa-solid fa-ellipsis-vertical"></i> Actions</button>
+                        <div class="dropdown-menu-content">
+                            <button onclick="app.editUserView('${u.id}')"><i class="fa-solid fa-pen"></i> Edit</button>
+                            <button onclick="app.adminDeleteUser('${u.id}')" style="color: var(--danger-color) !important;"><i class="fa-solid fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    editUserView: function(userId) {
+        let user;
+        if (this.usersListCache) {
+            user = this.usersListCache.find(u => u.id === userId);
+        }
+        if (!user) {
+            user = this.db.getUsers().find(u => u.id === userId);
+        }
+        if(!user) return;
+
+        document.getElementById('aeuv-id').value = user.id;
+        document.getElementById('aeuv-title').textContent = `Edit User: ${user.id}`;
+        document.getElementById('aeuv-name').value = user.name || '';
+        document.getElementById('aeuv-email').value = user.email || '';
+        document.getElementById('aeuv-phone').value = user.phone || '';
+        document.getElementById('aeuv-status').value = user.status || 'active';
+        document.getElementById('aeuv-pass').value = '';
+
+        this.navigate('admin-edit-user-view');
+    },
+
+    adminUpdateUserView: function(e) {
+        e.preventDefault();
+        const userId = document.getElementById('aeuv-id').value;
+        const name = document.getElementById('aeuv-name').value;
+        const email = document.getElementById('aeuv-email').value;
+        const phone = document.getElementById('aeuv-phone').value;
+        const status = document.getElementById('aeuv-status').value;
+        const pass = document.getElementById('aeuv-pass').value;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        const data = {
+            id: userId,
+            name: name,
+            email: email,
+            phone: phone,
+            status: status,
+            password: pass
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.showToast('User updated successfully!', 'success');
+                        app.navigate('admin-users-view');
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error updating user', 'error');
+                })
+                .adminUpdateUser(data);
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                const users = app.db.getUsers();
+                const index = users.findIndex(u => u.id === userId);
+                if(index === -1) return;
+
+                users[index].name = name;
+                users[index].email = email;
+                users[index].phone = phone;
+                users[index].status = status;
+                if(pass.trim() !== '') {
+                    users[index].password = pass;
+                }
+                app.db.setUsers(users);
+                app.showToast('User updated successfully!', 'success');
+                app.navigate('admin-users-view');
+            }, 500);
+        }
+    },
+
+    adminDeleteUser: function(userId) {
+        this.showPopup('Delete User', `Are you sure you want to permanently delete user ${userId}? This cannot be undone.`, 'confirm', () => {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (res.success) {
+                            app.showToast('User deleted successfully!', 'success');
+                            app.renderAdminUsers();
+                            app.updateAdminDashboard();
+                        } else {
+                            app.showToast(res.message, 'error');
+                        }
+                    })
+                    .withFailureHandler((err) => {
+                        app.showToast('Server error deleting user', 'error');
+                    })
+                    .adminDeleteUser(userId);
+            } else {
+                // Local fallback
+                let users = this.db.getUsers();
+                users = users.filter(u => u.id !== userId);
+                this.db.setUsers(users);
+
+                localStorage.removeItem(`pb_bonds_${userId}`);
+                
+                let tickets = this.db.getTickets();
+                tickets = tickets.filter(t => t.userId !== userId);
+                this.db.setTickets(tickets);
+
+                this.showToast('User deleted successfully', 'success');
+                this.updateAdminDashboard();
+                this.renderAdminUsers();
+            }
+        });
+    },
+
+    login: function(user) {
+        this.currentUser = user;
+        localStorage.setItem('pb_session', JSON.stringify(user));
+        this.updateNavState();
+        this.navigateDashboard();
+        this.showToast('Logged in successfully', 'success');
+    },
+
+    logout: function() {
+        this.currentUser = null;
+        localStorage.removeItem('pb_session');
+        this.updateNavState();
+        this.navigate('landing-view');
+        this.showToast('Logged out successfully', 'info');
+    },
+
+    handleChangePassword: function(e) {
+        e.preventDefault();
+        const curr = document.getElementById('cp-current').value;
+        const newPass = document.getElementById('cp-new').value;
+        const conf = document.getElementById('cp-confirm').value;
+
+        if(this.currentUser.password !== curr) {
+            this.showToast('Current password is wrong', 'error');
+            return;
+        }
+        if(newPass !== conf) {
+            this.showToast('New passwords do not match', 'error');
+            return;
+        }
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            const data = {
+                id: this.currentUser.id,
+                name: this.currentUser.name,
+                email: this.currentUser.email || '',
+                phone: this.currentUser.phone || '',
+                status: 'active',
+                password: newPass
+            };
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.currentUser.password = newPass;
+                        app.currentUser.requiresPasswordChange = false;
+                        localStorage.setItem('pb_session', JSON.stringify(app.currentUser));
+                        app.showToast('Password updated successfully', 'success');
+                        app.navigateDashboard();
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Failed to change password.', 'error');
+                })
+                .adminUpdateUser(data);
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                const users = app.db.getUsers();
+                const uIndex = users.findIndex(u => u.id === this.currentUser.id);
+                if(uIndex > -1) {
+                    users[uIndex].password = newPass;
+                    users[uIndex].requiresPasswordChange = false;
+                    this.db.setUsers(users);
+                    
+                    this.currentUser.password = newPass;
+                    this.currentUser.requiresPasswordChange = false;
+                    localStorage.setItem('pb_session', JSON.stringify(this.currentUser));
+                    
+                    this.showToast('Password updated successfully', 'success');
+                    this.navigateDashboard();
+                }
+            }, 500);
+        }
+    },
+
+    updateNavState: function() {
+        const unauth = document.getElementById('nav-unauth-links');
+        const auth = document.getElementById('nav-auth-links');
+        const sidebar = document.getElementById('sidebar');
+        
+        if(this.currentUser) {
+            unauth.classList.add('hidden');
+            auth.classList.remove('hidden');
+            auth.classList.add('flex');
+            document.getElementById('nav-username').textContent = `Hi, ${this.currentUser.name}`;
+            
+            this.renderSidebar();
+            sidebar.classList.remove('hidden');
+        } else {
+            unauth.classList.remove('hidden');
+            auth.classList.add('hidden');
+            auth.classList.remove('flex');
+            sidebar.classList.add('hidden');
+        }
+    },
+
+    renderSidebar: function() {
+        const menu = document.getElementById('sidebar-menu');
+        menu.innerHTML = '';
+        
+        const createItem = (icon, text, view) => `
+            <li>
+                <a href="javascript:void(0)" onclick="app.navigate('${view}')" class="flex items-center p-2 text-black rounded-lg hover:bg-slate-100 hover:text-black group transition-colors">
+                    <i class="fa-solid ${icon} w-6 text-black group-hover:text-indigo-600 transition-colors"></i>
+                    <span class="ms-3">${text}</span>
+                </a>
+            </li>
+        `;
+
+        if(this.currentUser.role === 'admin') {
+            menu.innerHTML += '<li class="px-3 py-2 text-xs font-semibold text-black uppercase tracking-wider">Admin Controls</li>';
+            menu.innerHTML += createItem('fa-gauge', 'Dashboard', 'admin-dashboard-view');
+            menu.innerHTML += createItem('fa-users', 'Manage Users', 'admin-users-view');
+            menu.innerHTML += createItem('fa-trophy', 'Draw Results', 'admin-draws-view');
+            menu.innerHTML += createItem('fa-headset', 'Tickets', 'admin-tickets-view');
+            menu.innerHTML += '<li class="px-3 py-2 mt-4 text-xs font-semibold text-black uppercase tracking-wider">My Account</li>';
+        }
+
+        if(this.currentUser.role !== 'admin') {
+            menu.innerHTML += createItem('fa-gauge', 'Dashboard', 'user-dashboard-view');
+        }
+        menu.innerHTML += createItem('fa-plus-circle', 'Add Bonds', 'add-bonds-view');
+        menu.innerHTML += createItem('fa-list', 'My Bonds', 'my-bonds-view');
+        menu.innerHTML += createItem('fa-trophy', 'Results', 'results-view');
+        menu.innerHTML += createItem('fa-user', 'Profile', 'profile-view');
+        menu.innerHTML += createItem('fa-headset', 'Support', 'support-ticket-view');
+    },
+
+    // User Dashboard Actions
+    updateUserDashboard: function() {
+        const totalBondsEl = document.getElementById('stat-total-bonds');
+        const winBondsEl = document.getElementById('stat-win-bonds');
+        const lastDrawEl = document.getElementById('stat-last-draw');
+        const winsTable = document.getElementById('dashboard-wins-table');
+        const noWinsMsg = document.getElementById('no-wins-msg');
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            totalBondsEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+            winBondsEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+            lastDrawEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+            winsTable.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-black"><i class="fa-solid fa-spinner fa-spin"></i> Checking results...</td></tr>`;
+            noWinsMsg.classList.add('hidden');
+
+            google.script.run
+                .withSuccessHandler((resBonds) => {
+                    if (resBonds.success) {
+                        totalBondsEl.textContent = resBonds.bonds.length;
+                        
+                        google.script.run
+                            .withSuccessHandler((resMatches) => {
+                                if (resMatches.success) {
+                                    winBondsEl.textContent = resMatches.matches.length;
+                                    
+                                    if(resMatches.matches.length === 0) {
+                                        winsTable.innerHTML = '';
+                                        noWinsMsg.classList.remove('hidden');
+                                    } else {
+                                        noWinsMsg.classList.add('hidden');
+                                        winsTable.innerHTML = resMatches.matches.map(w => `
+                                            <tr class="border-b border-slate-300/50 hover:bg-slate-100">
+                                                <td class="px-4 py-3">${w.draw} Draw</td>
+                                                <td class="px-4 py-3 font-mono font-bold text-emerald-600">${w.bond}</td>
+                                                <td class="px-4 py-3"><span style="background-color: rgba(76, 209, 55, 0.15); color: var(--primary-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
+                                            </tr>
+                                        `).join('');
+                                    }
+                                }
+                            })
+                            .getMatches(app.currentUser.id);
+                    }
+                })
+                .getBonds(app.currentUser.id);
+
+            google.script.run
+                .withSuccessHandler((resDraws) => {
+                    if (resDraws.success && resDraws.draws.length > 0) {
+                        lastDrawEl.textContent = resDraws.draws[0].number;
+                    } else {
+                        lastDrawEl.textContent = '-';
+                    }
+                })
+                .getDraws();
+        } else {
+            // Local fallback
+            const bonds = this.db.getBonds(this.currentUser.id);
+            totalBondsEl.textContent = bonds.length;
+            
+            const wins = this.db.getMatches(this.currentUser.id);
+            winBondsEl.textContent = wins.length;
+
+            const draws = this.db.getDraws();
+            if(draws.length > 0) {
+                lastDrawEl.textContent = draws[0].number;
+            } else {
+                lastDrawEl.textContent = '-';
+            }
+
+            if(wins.length === 0) {
+                winsTable.innerHTML = '';
+                noWinsMsg.classList.remove('hidden');
+            } else {
+                noWinsMsg.classList.add('hidden');
+                winsTable.innerHTML = wins.map(w => `
+                    <tr class="border-b border-slate-300/50 hover:bg-slate-100">
+                        <td class="px-4 py-3">${w.draw} Draw</td>
+                        <td class="px-4 py-3 font-mono font-bold text-emerald-600">${w.bond}</td>
+                        <td class="px-4 py-3"><span style="background-color: rgba(76, 209, 55, 0.15); color: var(--primary-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+    },
+
+    switchAddMode: function(mode) {
+        if(mode === 'single') {
+            document.getElementById('form-single-entry').classList.remove('hidden');
+            document.getElementById('form-multiple-entry').classList.add('hidden');
+            document.getElementById('tab-single').classList.add('active');
+            document.getElementById('tab-multiple').classList.remove('active');
+        } else {
+            document.getElementById('form-single-entry').classList.add('hidden');
+            document.getElementById('form-multiple-entry').classList.remove('hidden');
+            document.getElementById('tab-multiple').classList.add('active');
+            document.getElementById('tab-single').classList.remove('active');
+        }
+    },
+
+    isValidBond: function(num) {
+        return /^[0-9]{7}$/.test(num.trim());
+    },
+
+    addSingleBond: function(e) {
+        e.preventDefault();
+        const input = document.getElementById('single-bond-input');
+        const num = input.value.trim();
+        
+        if(this.isValidBond(num)) {
+            this.saveBonds([num]);
+            input.value = '';
+        } else {
+            this.showToast('Invalid bond number. Must be exactly 7 digits.', 'error');
+        }
+    },
+
+    addMultipleBonds: function(e) {
+        e.preventDefault();
+        const input = document.getElementById('multiple-bond-input');
+        const rawNums = input.value.split(/[\s,]+/);
+        const validNums = [];
+        let errors = 0;
+
+        rawNums.forEach(n => {
+            if(n.trim() === '') return;
+            if(this.isValidBond(n)) validNums.push(n.trim());
+            else errors++;
+        });
+
+        if(validNums.length > 0) {
+            this.saveBonds(validNums);
+            input.value = '';
+            if(errors > 0) {
+                this.showToast(`Saved ${validNums.length} numbers. Skipped ${errors} invalid entries.`, 'warning');
+            } else {
+                this.showToast(`Successfully saved ${validNums.length} numbers.`, 'success');
+            }
+        } else {
+            this.showToast('No valid 7-digit numbers found.', 'error');
+        }
+    },
+
+    saveBonds: function(numbers) {
+        const submitBtn = document.querySelector('#form-single-entry button[type="submit"]') || document.querySelector('#form-multiple-entry button[type="submit"]');
+        let origText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+        }
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (submitBtn) {
+                        submitBtn.innerHTML = origText;
+                        submitBtn.disabled = false;
+                    }
+                    if (res.success) {
+                        app.showToast(res.message, 'success');
+                        app.navigate('my-bonds-view');
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    if (submitBtn) {
+                        submitBtn.innerHTML = origText;
+                        submitBtn.disabled = false;
+                    }
+                    app.showToast('Failed to save bonds to sheet.', 'error');
+                })
+                .addBonds({ userId: this.currentUser.id, bonds: numbers });
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                if (submitBtn) {
+                    submitBtn.innerHTML = origText;
+                    submitBtn.disabled = false;
+                }
+                const bonds = this.db.getBonds(this.currentUser.id);
+                const date = new Date().toLocaleDateString();
+                let added = 0;
+
+                numbers.forEach(num => {
+                    if(!bonds.some(b => b.number === num)) {
+                        bonds.push({ number: num, dateAdded: date });
+                        added++;
+                    }
+                });
+
+                if(added > 0) {
+                    this.db.setBonds(this.currentUser.id, bonds);
+                    this.showToast(`Added ${added} new bonds!`, 'success');
+                    this.navigate('my-bonds-view');
+                } else {
+                    this.showToast('Numbers are already in your list.', 'info');
+                }
+            }, 500);
+        }
+    },
+
+    renderMyBonds: function() {
+        const tbody = document.getElementById('my-bonds-table');
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-black"><i class="fa-solid fa-spinner fa-spin"></i> Loading saved bonds...</td></tr>`;
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        app.displayMyBondsList(res.bonds);
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-black">Error: ${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler((err) => {
+                    tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-black">Failed to retrieve bonds.</td></tr>`;
+                })
+                .getBonds(this.currentUser.id);
+        } else {
+            // Local fallback
+            const bonds = this.db.getBonds(this.currentUser.id);
+            this.displayMyBondsList(bonds);
+        }
+    },
+
+    displayMyBondsList: function(bonds) {
+        const tbody = document.getElementById('my-bonds-table');
+        if(bonds.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-black">No bonds saved yet.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = bonds.map((b, idx) => `
+            <tr class="hover:bg-slate-100">
+                <td class="px-6 py-3">${idx + 1}</td>
+                <td class="px-6 py-3 font-mono font-bold tracking-wider text-black">${b.number}</td>
+                <td class="px-6 py-3 text-black">${b.dateAdded || ''}</td>
+                <td class="px-6 py-3 text-right">
+                    <button onclick="app.deleteBond('${b.number}')" class="text-danger hover:text-red-400 px-2 py-1" style="background: none; border: none; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    deleteBond: function(bondNumber) {
+        if(confirm(`Delete bond number ${bondNumber}?`)) {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (res.success) {
+                            app.showToast('Bond deleted successfully', 'success');
+                            app.renderMyBonds();
+                        } else {
+                            app.showToast(res.message, 'error');
+                        }
+                    })
+                    .withFailureHandler((err) => {
+                        app.showToast('Server error deleting bond', 'error');
+                    })
+                    .deleteBond({ userId: this.currentUser.id, bondNumber: bondNumber });
+            } else {
+                // Local fallback
+                let bonds = this.db.getBonds(this.currentUser.id);
+                bonds = bonds.filter(b => b.number !== bondNumber);
+                this.db.setBonds(this.currentUser.id, bonds);
+                this.renderMyBonds();
+                this.showToast('Bond deleted', 'info');
+            }
+        }
+    },
+
+    exportBonds: function() {
+        const downloadAction = (bonds) => {
+            if(bonds.length === 0) {
+                app.showToast('No bonds to export', 'error');
+                return;
+            }
+            const text = bonds.map(b => b.number).join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `My_PrizeBonds_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        downloadAction(res.bonds);
+                    }
+                })
+                .getBonds(this.currentUser.id);
+        } else {
+            const bonds = this.db.getBonds(this.currentUser.id);
+            downloadAction(bonds);
+        }
+    },
+
+    renderSupportSettings: function() {
+        const waLink = document.getElementById('support-wa-link');
+        const emLink = document.getElementById('support-email-link');
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        if(waLink) waLink.href = `https://wa.me/${res.stats.whatsapp.replace(/[^0-9]/g, '')}`;
+                        if(emLink) emLink.href = `mailto:${res.stats.email}`;
+                    }
+                })
+                .getAdminStats();
+        } else {
+            const support = this.db.getSupport();
+            if(waLink) waLink.href = `https://wa.me/${support.whatsapp.replace(/[^0-9]/g, '')}`;
+            if(emLink) emLink.href = `mailto:${support.email}`;
+        }
+    },
+
+    updateAdminDashboard: function() {
+        const usersEl = document.getElementById('admin-stat-users');
+        const activeEl = document.getElementById('admin-stat-active');
+        const bondsEl = document.getElementById('admin-stat-bonds');
+        const ticketsEl = document.getElementById('admin-stat-tickets');
+        const waInput = document.getElementById('admin-support-wa');
+        const emailInput = document.getElementById('admin-support-email');
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            usersEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+            activeEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+            bondsEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+            ticketsEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        usersEl.textContent = res.stats.totalUsers;
+                        activeEl.textContent = res.stats.activeUsers;
+                        bondsEl.textContent = res.stats.totalBonds;
+                        ticketsEl.textContent = res.stats.openTickets;
+                        if(waInput) waInput.value = res.stats.whatsapp || '';
+                        if(emailInput) emailInput.value = res.stats.email || '';
+                    }
+                })
+                .getAdminStats();
+        } else {
+            // Local fallback
+            const users = this.db.getUsers();
+            usersEl.textContent = users.length;
+            activeEl.textContent = users.filter(u => u.role === 'user').length;
+            
+            let tb = 0;
+            users.forEach(u => tb += this.db.getBonds(u.id).length);
+            bondsEl.textContent = tb;
+
+            const tickets = this.db.getTickets();
+            ticketsEl.textContent = tickets.filter(t => t.status === 'open').length;
+
+            const support = this.db.getSupport();
+            if(waInput) waInput.value = support.whatsapp || '';
+            if(emailInput) emailInput.value = support.email || '';
+        }
+    },
+
+    updateSupportInfo: function(e) {
+        e.preventDefault();
+        const whatsapp = document.getElementById('admin-support-wa').value;
+        const email = document.getElementById('admin-support-email').value;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.showToast(res.message, 'success');
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error saving support settings', 'error');
+                })
+                .updateSupportSettings({ whatsapp, email });
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                this.db.setSupport({ whatsapp, email });
+                this.showToast('Support info updated', 'success');
+            }, 500);
+        }
+    },
+
+    // Profile Functions
+    renderProfile: function() {
+        if(!this.currentUser) return;
+        document.getElementById('profile-display-name').textContent = this.currentUser.name;
+        document.getElementById('profile-display-id').textContent = `ID: ${this.currentUser.id}`;
+        
+        document.getElementById('prof-name').value = this.currentUser.name || '';
+        document.getElementById('prof-dob').value = this.currentUser.dob || '';
+        document.getElementById('prof-phone').value = this.currentUser.phone || '';
+        document.getElementById('prof-email').value = this.currentUser.email || '';
+        document.getElementById('prof-occ').value = this.currentUser.occupation || '';
+        document.getElementById('prof-address').value = this.currentUser.address || '';
+    },
+
+    updateProfile: function(e) {
+        e.preventDefault();
+        
+        const data = {
+            userId: this.currentUser.id,
+            name: document.getElementById('prof-name').value,
+            dob: document.getElementById('prof-dob').value,
+            phone: document.getElementById('prof-phone').value,
+            email: document.getElementById('prof-email').value,
+            profession: document.getElementById('prof-occ').value,
+            address: document.getElementById('prof-address').value
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.currentUser = { ...app.currentUser, ...data, occupation: data.profession };
+                        localStorage.setItem('pb_session', JSON.stringify(app.currentUser));
+                        app.renderProfile();
+                        app.updateNavState();
+                        app.showPopup('Profile Updated', 'Your profile details have been saved successfully.', 'success');
+                    } else {
+                        app.showPopup('Error', res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showPopup('Error', 'Failed to save profile to sheet.', 'error');
+                })
+                .updateProfile(data);
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                const users = app.db.getUsers();
+                const index = users.findIndex(u => u.id === app.currentUser.id);
+                if(index > -1) {
+                    users[index] = { ...users[index], ...data, occupation: data.profession };
+                    app.db.setUsers(users);
+                }
+                app.currentUser = { ...app.currentUser, ...data, occupation: data.profession };
+                localStorage.setItem('pb_session', JSON.stringify(app.currentUser));
+                app.renderProfile();
+                app.updateNavState();
+                app.showPopup('Profile Updated', 'Your profile details have been saved successfully.', 'success');
+            }, 500);
+        }
+    },
+
+    initiateAccountDeletion: function() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        
+        modal.innerHTML = `
+            <div class="modal-card" style="max-width: 380px;">
+                <button class="popup-cancel" style="position: absolute; top: 15px; right: 15px; background: none; border: none; cursor: pointer;"><i class="fa-solid fa-times text-xl"></i></button>
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: var(--danger-color); margin-bottom: 15px;"></i>
+                    <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 10px; color: black !important;">Verify Account Deletion</h3>
+                    <p style="margin-bottom: 20px; font-size: 13px; color: black !important;">Please verify your credentials to confirm permanent deletion.</p>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>User ID</label>
+                        <input type="text" id="del-auth-id" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="del-auth-pass" class="form-control">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center; width: 100%;">
+                    <button class="popup-cancel btn btn-secondary" style="flex: 1;">Cancel</button>
+                    <button class="popup-confirm btn btn-danger" style="flex: 1;">Delete</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('modal-container').appendChild(modal);
+
+        modal.querySelectorAll('.popup-cancel').forEach(btn => btn.addEventListener('click', () => modal.remove()));
+        
+        modal.querySelector('.popup-confirm').addEventListener('click', () => {
+            const inputId = document.getElementById('del-auth-id').value;
+            const inputPass = document.getElementById('del-auth-pass').value;
+
+            if (inputId === this.currentUser.id && inputPass === this.currentUser.password) {
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            if (res.success) {
+                                modal.remove();
+                                app.logout();
+                                app.showPopup('Account Deleted', 'Your account has been successfully deleted.', 'success');
+                            } else {
+                                alert('Error: ' + res.message);
+                            }
+                        })
+                        .withFailureHandler((err) => {
+                            alert('Server error deleting account.');
+                        })
+                        .adminDeleteUser(app.currentUser.id);
+                } else {
+                    // Local fallback
+                    let users = app.db.getUsers();
+                    users = users.filter(u => u.id !== app.currentUser.id);
+                    app.db.setUsers(users);
+
+                    localStorage.removeItem(`pb_bonds_${app.currentUser.id}`);
+                    
+                    let tickets = app.db.getTickets();
+                    tickets = tickets.filter(t => t.userId !== app.currentUser.id);
+                    app.db.setTickets(tickets);
+
+                    modal.remove();
+                    app.logout();
+                    app.showPopup('Account Deleted', 'Your account has been successfully deleted.', 'success');
+                }
+            } else {
+                alert('Invalid Credentials. Deletion failed.');
+            }
+        });
+    },
+
+    uploadDrawResults: function(e) {
+        e.preventDefault();
+        const dNum = document.getElementById('draw-num-file').value;
+        const dDate = document.getElementById('draw-date-file').value;
+        const fileInput = document.getElementById('draw-file');
+        const file = fileInput.files[0];
+
+        if(!file) return;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+
+        const reader = new FileReader();
+        reader.onload = (eEvent) => {
+            const content = eEvent.target.result;
+            const nums = content.split(/[\s,]+/).filter(n => n.trim() !== '');
+            
+            if(nums.length !== 46) {
+                app.showToast(`File must contain exactly 46 numbers. Found ${nums.length}.`, 'error');
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                return;
+            }
+
+            const invalid = nums.filter(n => !app.isValidBond(n));
+            if(invalid.length > 0) {
+                app.showToast(`Found ${invalid.length} invalid numbers in file. Must be 7 digits.`, 'error');
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                return;
+            }
+
+            const results = [
+                { num: nums[0], prize: '1st Prize' },
+                { num: nums[1], prize: '2nd Prize' },
+                { num: nums[2], prize: '3rd Prize' },
+                { num: nums[3], prize: '3rd Prize' },
+                { num: nums[4], prize: '4th Prize' },
+                { num: nums[5], prize: '4th Prize' },
+                ...nums.slice(6).map(n => ({ num: n, prize: '5th Prize' }))
+            ];
+
+            const drawData = {
+                drawNumber: dNum,
+                drawDate: dDate,
+                results: results
+            };
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        submitBtn.textContent = origText;
+                        submitBtn.disabled = false;
+                        if (res.success) {
+                            app.showToast(res.message, 'success');
+                            document.getElementById('draw-upload-form').reset();
+                            app.updateAdminDashboard();
+                        } else {
+                            app.showToast(res.message, 'error');
+                        }
+                    })
+                    .withFailureHandler((err) => {
+                        submitBtn.textContent = origText;
+                        submitBtn.disabled = false;
+                        app.showToast('Server error uploading draw results.', 'error');
+                    })
+                    .uploadDraw(drawData);
+            } else {
+                // Local fallback
+                const draws = app.db.getDraws();
+                if(draws.some(d => d.number === dNum)) {
+                    app.showToast('Draw number already exists!', 'error');
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+                draws.unshift({ number: dNum, date: dDate, results: results });
+                app.db.setDraws(draws);
+                app.showToast(`Draw ${dNum} processed successfully!`, 'success');
+                document.getElementById('draw-upload-form').reset();
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                app.updateAdminDashboard();
+            }
+        };
+        reader.readAsText(file);
+    },
+
+    switchDrawMode: function(mode) {
+        if(mode === 'file') {
+            document.getElementById('draw-upload-form').classList.remove('hidden');
+            document.getElementById('draw-manual-form').classList.add('hidden');
+            document.getElementById('tab-draw-file').classList.add('active');
+            document.getElementById('tab-draw-manual').classList.remove('active');
+        } else {
+            document.getElementById('draw-upload-form').classList.add('hidden');
+            document.getElementById('draw-manual-form').classList.remove('hidden');
+            document.getElementById('tab-draw-manual').classList.add('active');
+            document.getElementById('tab-draw-file').classList.remove('active');
+        }
+    },
+
+    submitManualDraw: function(e) {
+        e.preventDefault();
+        const dNum = document.getElementById('draw-num-man').value;
+        const dDate = document.getElementById('draw-date-man').value;
+        
+        const inputs = document.querySelectorAll('.manual-draw-input');
+        const results = [];
+        let invalidCount = 0;
+
+        inputs.forEach(input => {
+            const num = input.value.trim();
+            if(app.isValidBond(num)) {
+                results.push({ num: num, prize: input.dataset.prize });
+            } else {
+                invalidCount++;
+            }
+        });
+
+        if(invalidCount > 0) {
+            app.showToast(`Found ${invalidCount} invalid numbers. All 46 must be exactly 7 digits.`, 'error');
+            return;
+        }
+
+        if(results.length !== 46) {
+            app.showToast(`Expected 46 numbers, got ${results.length}.`, 'error');
+            return;
+        }
+
+        const drawData = {
+            drawNumber: dNum,
+            drawDate: dDate,
+            results: results
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.showToast(res.message, 'success');
+                        document.getElementById('draw-manual-form').reset();
+                        app.updateAdminDashboard();
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error saving manual draw.', 'error');
+                })
+                .uploadDraw(drawData);
+        } else {
+            // Local fallback
+            const draws = app.db.getDraws();
+            if(draws.some(d => d.number === dNum)) {
+                app.showToast('Draw number already exists!', 'error');
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                return;
+            }
+            draws.unshift({ number: dNum, date: dDate, results: results });
+            app.db.setDraws(draws);
+            app.showToast(`Manual Draw ${dNum} processed successfully!`, 'success');
+            document.getElementById('draw-manual-form').reset();
+            submitBtn.textContent = origText;
+            submitBtn.disabled = false;
+            app.updateAdminDashboard();
+        }
+    },
+
+    // Results History View Functions
+    refreshDrawResults: function() {
+        const select = document.getElementById('results-draw-select');
+        const noDrawsMsg = document.getElementById('no-draws-loaded-msg');
+        const detailsContainer = document.getElementById('draw-details-container');
+        
+        select.innerHTML = '<option value="">-- Loading Draws --</option>';
+        detailsContainer.classList.add('hidden');
+        noDrawsMsg.classList.add('hidden');
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        app.drawsCache = res.draws;
+                        app.populateDrawsSelect(res.draws);
+                    } else {
+                        select.innerHTML = '<option value="">Error loading draws</option>';
+                    }
+                })
+                .withFailureHandler((err) => {
+                    select.innerHTML = '<option value="">Failed to connect</option>';
+                })
+                .getDraws();
+        } else {
+            // Local fallback
+            const draws = this.db.getDraws();
+            this.drawsCache = draws;
+            this.populateDrawsSelect(draws);
+        }
+    },
+
+    populateDrawsSelect: function(draws) {
+        const select = document.getElementById('results-draw-select');
+        const noDrawsMsg = document.getElementById('no-draws-loaded-msg');
+        
+        if (draws.length === 0) {
+            select.innerHTML = '<option value="">No draws available</option>';
+            noDrawsMsg.classList.remove('hidden');
+            return;
+        }
+
+        select.innerHTML = '<option value="">-- Select Draw --</option>' + draws.map(d => `
+            <option value="${d.number}">${d.number}th Draw (${d.date})</option>
+        `).join('');
+
+        noDrawsMsg.classList.add('hidden');
+    },
+
+    loadDrawResultsView: function(drawNum) {
+        const detailsContainer = document.getElementById('draw-details-container');
+        if (!drawNum || !this.drawsCache) {
+            detailsContainer.classList.add('hidden');
+            return;
+        }
+
+        const draw = this.drawsCache.find(d => d.number.toString() === drawNum.toString());
+        if (!draw) return;
+
+        // Populate details
+        document.getElementById('draw-title-display').textContent = `${draw.number}th Draw Results`;
+        document.getElementById('draw-date-display').textContent = `Draw Date: ${draw.date}`;
+
+        const first = draw.results.filter(r => r.prize === '1st Prize').map(r => r.num).join(', ');
+        const second = draw.results.filter(r => r.prize === '2nd Prize').map(r => r.num).join(', ');
+        const third = draw.results.filter(r => r.prize === '3rd Prize').map(r => r.num).join(', ');
+        const fourth = draw.results.filter(r => r.prize === '4th Prize').map(r => r.num).join(', ');
+        const fifth = draw.results.filter(r => r.prize === '5th Prize').map(r => r.num);
+
+        document.getElementById('res-1st').textContent = first || '-';
+        document.getElementById('res-2nd').textContent = second || '-';
+        document.getElementById('res-3rd').textContent = third || '-';
+        document.getElementById('res-4th').textContent = fourth || '-';
+
+        const fifthContainer = document.getElementById('res-5th-container');
+        fifthContainer.innerHTML = fifth.map(num => `
+            <span class="font-mono text-black" style="padding: 4px 8px; border: 1px solid #eee; background: #fafafa; border-radius: 4px; text-align: center; font-size: 13px;">${num}</span>
+        `).join('');
+
+        const winsDiv = document.getElementById('draw-user-wins');
+        const winsTbody = document.getElementById('draw-user-wins-tbody');
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            winsDiv.classList.add('hidden');
+            google.script.run
+                .withSuccessHandler((resBonds) => {
+                    if (resBonds.success) {
+                        const userBonds = resBonds.bonds.map(b => b.number);
+                        const userWins = draw.results.filter(res => userBonds.includes(res.num));
+                        
+                        if (userWins.length > 0) {
+                            winsTbody.innerHTML = userWins.map(w => `
+                                <tr>
+                                    <td class="font-mono font-bold text-emerald-600">${w.num}</td>
+                                    <td><span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
+                                </tr>
+                            `).join('');
+                            winsDiv.classList.remove('hidden');
+                        }
+                    }
+                })
+                .getBonds(app.currentUser.id);
+        } else {
+            // Local fallback
+            const userBonds = this.db.getBonds(this.currentUser.id).map(b => b.number);
+            const userWins = draw.results.filter(res => userBonds.includes(res.num));
+            
+            if (userWins.length > 0) {
+                winsTbody.innerHTML = userWins.map(w => `
+                    <tr>
+                        <td class="font-mono font-bold text-emerald-600">${w.num}</td>
+                        <td><span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
+                    </tr>
+                `).join('');
+                winsDiv.classList.remove('hidden');
+            } else {
+                winsDiv.classList.add('hidden');
+            }
+        }
+
+        detailsContainer.classList.remove('hidden');
+    },
+
+    // UI Helpers
+    showToast: function(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let icon = 'fa-info-circle';
+        if(type==='success') icon = 'fa-check-circle';
+        if(type==='error') icon = 'fa-exclamation-circle';
+        if(type==='warning') icon = 'fa-triangle-exclamation';
+
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    },
+
+    // Mock Database using LocalStorage for Prototype
+    db: {
+        init: () => {
+            if(!localStorage.getItem('pb_users')) {
+                localStorage.setItem('pb_users', JSON.stringify([{id:'admin', password:'admin', role:'admin', name:'Super Admin'}]));
+            }
+            if(!localStorage.getItem('pb_draws')) {
+                localStorage.setItem('pb_draws', JSON.stringify([]));
+            }
+            if(!localStorage.getItem('pb_tickets')) {
+                localStorage.setItem('pb_tickets', JSON.stringify([]));
+            }
+            if(!localStorage.getItem('pb_support')) {
+                localStorage.setItem('pb_support', JSON.stringify({
+                    whatsapp: '+8801234567890',
+                    email: 'support@easybond.com'
+                }));
+            }
+        },
+        getUsers: () => JSON.parse(localStorage.getItem('pb_users')),
+        setUsers: (data) => localStorage.setItem('pb_users', JSON.stringify(data)),
+        getBonds: (userId) => JSON.parse(localStorage.getItem(`pb_bonds_${userId}`) || '[]'),
+        setBonds: (userId, data) => localStorage.setItem(`pb_bonds_${userId}`, JSON.stringify(data)),
+        getDraws: () => JSON.parse(localStorage.getItem('pb_draws')),
+        setDraws: (data) => localStorage.setItem('pb_draws', JSON.stringify(data)),
+        getTickets: () => JSON.parse(localStorage.getItem('pb_tickets')),
+        setTickets: (data) => localStorage.setItem('pb_tickets', JSON.stringify(data)),
+        getSupport: () => JSON.parse(localStorage.getItem('pb_support')),
+        setSupport: (data) => localStorage.setItem('pb_support', JSON.stringify(data)),
+
+        getMatches: function(userId) {
+            const bonds = this.getBonds(userId);
+            const draws = this.getDraws();
+            const matches = [];
+
+            draws.forEach(draw => {
+                draw.results.forEach(res => {
+                    if(bonds.some(b => b.number === res.num)) {
+                        matches.push({ draw: draw.number, bond: res.num, prize: res.prize });
+                    }
+                });
+            });
+            return matches;
+        }
+    },
+
+    init: function() {
+        this.db.init();
+
+        // Generate 5th prize fields
+        const fifthContainer = document.getElementById('fifth-prize-container');
+        if(fifthContainer) {
+            let html = '';
+            for(let i=0; i<40; i++) {
+                html += `<input type="text" class="manual-draw-input form-control compact" data-prize="5th Prize" required pattern="[0-9]{7}" maxlength="7" placeholder="No ${i+1}">`;
+            }
+            fifthContainer.innerHTML = html;
+        }
+
+        // Intercept navigate to render specific view data
+        const originalNavigate = this.navigate.bind(this);
+        this.navigate = (viewId, isPopState = false) => {
+            originalNavigate(viewId, isPopState);
+            if(viewId === 'my-bonds-view') this.renderMyBonds();
+            if(viewId === 'admin-users-view') this.renderAdminUsers();
+            if(viewId === 'profile-view') this.renderProfile();
+            if(viewId === 'support-ticket-view') this.renderSupportSettings();
+            if(viewId === 'results-view') this.refreshDrawResults();
+        };
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu-content').forEach(el => {
+                el.classList.remove('show');
+            });
+        });
+
+        // Handle browser Back/Forward navigation
+        if (typeof google !== 'undefined' && google.script && google.script.history) {
+            google.script.history.setChangeHandler((e) => {
+                const viewId = (e.state && e.state.viewId) || e.location.hash;
+                if (viewId) {
+                    this.navigate(viewId, true);
+                } else {
+                    if (this.currentUser) {
+                        this.navigateDashboard(true);
+                    } else {
+                        this.navigate('landing-view', true);
+                    }
+                }
+            });
+        } else {
+            window.addEventListener('popstate', (e) => {
+                const hash = window.location.hash.substring(1);
+                if (e.state && e.state.viewId) {
+                    this.navigate(e.state.viewId, true);
+                } else if (hash && document.getElementById(hash)) {
+                    this.navigate(hash, true);
+                } else {
+                    if (this.currentUser) {
+                        this.navigateDashboard(true);
+                    } else {
+                        this.navigate('landing-view', true);
+                    }
+                }
+            });
+        }
+
+        const session = localStorage.getItem('pb_session');
+        if(session) {
+            this.currentUser = JSON.parse(session);
+            this.updateNavState();
+            
+            const hash = window.location.hash.substring(1);
+            if (hash && document.getElementById(hash)) {
+                this.navigate(hash);
+            } else {
+                this.navigateDashboard();
+            }
+        } else {
+            const hash = window.location.hash.substring(1);
+            if (hash && document.getElementById(hash)) {
+                this.navigate(hash);
+            } else {
+                this.navigate('landing-view');
+            }
+        }
+    }
+};
+
+// Initialize App
+document.addEventListener('DOMContentLoaded', () => {
+    app.init();
+});
+</script>
+</body>
+</html>
