@@ -584,3 +584,211 @@ function updateSupportSettings(data) {
   }
   return { success: true, message: 'Support settings saved successfully.' };
 }
+
+// ----------------------------------------------------
+// Support Ticket System Functions
+// ----------------------------------------------------
+
+function createTicket(data) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ticketSheet = ss.getSheetByName('Tickets');
+  
+  const timestamp = new Date().toISOString();
+  const ticketId = 'TKT' + Math.floor(100000 + Math.random() * 900000);
+  const userId = String(data.userId).trim();
+  
+  // Prefix ticketId and userId with ' to preserve leading zeros in sheets
+  ticketSheet.appendRow([
+    "'" + ticketId,
+    "'" + userId,
+    data.subject || data.name || '',
+    data.category || '',
+    data.description || '',
+    'open',
+    timestamp,
+    userId,
+    timestamp,
+    userId
+  ]);
+  
+  return { success: true, message: 'Ticket created successfully.', ticketId: ticketId };
+}
+
+function getUserTickets(userId) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ticketSheet = ss.getSheetByName('Tickets');
+  const values = ticketSheet.getDataRange().getValues();
+  const list = [];
+  
+  const targetUserId = String(userId).trim();
+  const cleanTargetUserId = targetUserId.replace(/^0+/, '');
+  
+  for (let i = 1; i < values.length; i++) {
+    const dbUserId = String(values[i][1]).trim();
+    if (dbUserId === targetUserId || dbUserId.replace(/^0+/, '') === cleanTargetUserId) {
+      list.push({
+        ticketId: String(values[i][0]).trim(),
+        userId: dbUserId,
+        subject: values[i][2],
+        category: values[i][3],
+        description: values[i][4],
+        status: values[i][5],
+        created_at: values[i][6],
+        updated_at: values[i][8]
+      });
+    }
+  }
+  
+  // Sort by created_at descending
+  list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return { success: true, tickets: list };
+}
+
+function getTicketDetails(ticketId) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ticketSheet = ss.getSheetByName('Tickets');
+  const repliesSheet = ss.getSheetByName('TicketReplies');
+  
+  const tValues = ticketSheet.getDataRange().getValues();
+  const rValues = repliesSheet.getDataRange().getValues();
+  
+  const targetTicketId = String(ticketId).trim();
+  let ticket = null;
+  
+  for (let i = 1; i < tValues.length; i++) {
+    const dbTicketId = String(tValues[i][0]).trim();
+    if (dbTicketId === targetTicketId) {
+      ticket = {
+        ticketId: dbTicketId,
+        userId: String(tValues[i][1]).trim(),
+        subject: tValues[i][2],
+        category: tValues[i][3],
+        description: tValues[i][4],
+        status: tValues[i][5],
+        created_at: tValues[i][6],
+        updated_at: tValues[i][8]
+      };
+      break;
+    }
+  }
+  
+  if (!ticket) {
+    return { success: false, message: 'Ticket not found.' };
+  }
+  
+  const replies = [];
+  for (let j = 1; j < rValues.length; j++) {
+    const dbTicketId = String(rValues[j][1]).trim();
+    if (dbTicketId === targetTicketId) {
+      replies.push({
+        replyId: String(rValues[j][0]).trim(),
+        ticketId: dbTicketId,
+        senderRole: rValues[j][2],
+        message: rValues[j][3],
+        created_at: rValues[j][4],
+        created_by: String(rValues[j][5]).trim()
+      });
+    }
+  }
+  
+  // Sort replies by created_at ascending (chronological thread)
+  replies.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  
+  return { success: true, ticket: ticket, replies: replies };
+}
+
+function addTicketReply(data) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ticketSheet = ss.getSheetByName('Tickets');
+  const repliesSheet = ss.getSheetByName('TicketReplies');
+  
+  const ticketId = String(data.ticketId).trim();
+  const senderId = String(data.senderId).trim();
+  const timestamp = new Date().toISOString();
+  const replyId = 'RPY' + Math.floor(100000 + Math.random() * 900000);
+  
+  // Append reply. Prefix replyId and ticketId with '
+  repliesSheet.appendRow([
+    "'" + replyId,
+    "'" + ticketId,
+    data.senderRole,
+    data.message,
+    timestamp,
+    senderId,
+    timestamp,
+    senderId
+  ]);
+  
+  // Update Tickets updated_at and updated_by
+  const tValues = ticketSheet.getDataRange().getValues();
+  for (let i = 1; i < tValues.length; i++) {
+    if (String(tValues[i][0]).trim() === ticketId) {
+      const row = i + 1;
+      ticketSheet.getRange(row, 9).setValue(timestamp); // updated_at
+      ticketSheet.getRange(row, 10).setValue(senderId); // updated_by
+      break;
+    }
+  }
+  
+  return { success: true, message: 'Reply sent successfully.' };
+}
+
+function adminGetTickets() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ticketSheet = ss.getSheetByName('Tickets');
+  const profileSheet = ss.getSheetByName('UserProfiles');
+  
+  const tValues = ticketSheet.getDataRange().getValues();
+  const pValues = profileSheet.getDataRange().getValues();
+  const list = [];
+  
+  for (let i = 1; i < tValues.length; i++) {
+    const ticketId = String(tValues[i][0]).trim();
+    const userId = String(tValues[i][1]).trim();
+    
+    // Lookup user name
+    let userName = 'N/A';
+    for (let j = 1; j < pValues.length; j++) {
+      if (String(pValues[j][0]).trim() === userId) {
+        userName = pValues[j][1] || 'N/A';
+        break;
+      }
+    }
+    
+    list.push({
+      ticketId: ticketId,
+      userId: userId,
+      userName: userName,
+      subject: tValues[i][2],
+      category: tValues[i][3],
+      description: tValues[i][4],
+      status: tValues[i][5],
+      created_at: tValues[i][6],
+      updated_at: tValues[i][8]
+    });
+  }
+  
+  // Sort by updated_at descending
+  list.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  return { success: true, tickets: list };
+}
+
+function adminUpdateTicketStatus(data) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ticketSheet = ss.getSheetByName('Tickets');
+  const tValues = ticketSheet.getDataRange().getValues();
+  const ticketId = String(data.ticketId).trim();
+  const timestamp = new Date().toISOString();
+  const adminId = String(data.adminId).trim();
+  
+  for (let i = 1; i < tValues.length; i++) {
+    if (String(tValues[i][0]).trim() === ticketId) {
+      const row = i + 1;
+      ticketSheet.getRange(row, 6).setValue(data.status); // Status
+      ticketSheet.getRange(row, 9).setValue(timestamp); // updated_at
+      ticketSheet.getRange(row, 10).setValue(adminId); // updated_by
+      return { success: true, message: 'Ticket status updated to ' + data.status + '.' };
+    }
+  }
+  return { success: false, message: 'Ticket not found.' };
+}

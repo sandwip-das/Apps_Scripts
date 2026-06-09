@@ -713,12 +713,77 @@
 
             <!-- Support Ticket View -->
             <div id="support-ticket-view" class="view-section hidden">
-                <div class="card">
-                    <h2>Support Center</h2>
-                    <p>If you forgot your User ID or Password, or need help, contact us:</p>
-                    <div style="margin-top: 20px;">
-                        <a id="support-wa-link" href="#" target="_blank" class="btn btn-primary" style="margin-right: 10px;">Message on WhatsApp</a>
-                        <a id="support-email-link" href="#" class="btn btn-secondary">Send Email</a>
+                <div id="user-login-to-ticket-msg" class="card text-center hidden" style="padding: 40px;">
+                    <i class="fa-solid fa-lock" style="font-size: 40px; color: var(--warning-color); margin-bottom: 15px;"></i>
+                    <h3>Login Required</h3>
+                    <p style="color: #000000; margin-bottom: 20px;">Please login to submit support tickets and track their status online.</p>
+                    <button class="btn btn-primary" onclick="app.navigate('login-view')">Go to Login</button>
+                    <div style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <p style="color: #000000; font-size: 14px; margin-bottom: 15px;">Or contact us directly:</p>
+                        <a id="support-wa-link-unauth" href="#" target="_blank" class="btn btn-primary" style="margin-right: 10px;"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a>
+                        <a id="support-email-link-unauth" href="#" class="btn btn-secondary"><i class="fa-regular fa-envelope"></i> Send Email</a>
+                    </div>
+                </div>
+
+                <div id="user-support-dashboard" class="hidden">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+                        <!-- Ticket Form & List -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div class="card">
+                                <h2>Create a Support Ticket</h2>
+                                <form id="create-ticket-form" onsubmit="app.submitTicket(event)">
+                                    <div class="form-group">
+                                        <label>Subject</label>
+                                        <input type="text" id="ticket-subject" class="form-control" required placeholder="Brief summary of the issue" style="color: #000000;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Category</label>
+                                        <select id="ticket-category" class="form-control" required style="color: #000000;">
+                                            <option value="General Enquiry">General Enquiry</option>
+                                            <option value="Account Issue">Account Issue / Login Problems</option>
+                                            <option value="Prize Bond Tracking">Prize Bond Tracking Question</option>
+                                            <option value="Bug Report">Bug Report</option>
+                                            <option value="Feedback">Feedback</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Description</label>
+                                        <textarea id="ticket-description" class="form-control" rows="5" required placeholder="Describe your issue in detail..." style="color: #000000;"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Submit Ticket</button>
+                                </form>
+                            </div>
+                            
+                            <div class="card">
+                                <h3>My Support Tickets</h3>
+                                <table class="table" style="margin-top: 15px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Ticket ID</th>
+                                            <th>Subject</th>
+                                            <th>Category</th>
+                                            <th>Status</th>
+                                            <th>Last Updated</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="user-tickets-tbody" style="color: #000000;">
+                                        <!-- JS Populated -->
+                                    </tbody>
+                                </table>
+                                <p id="no-tickets-msg" class="text-center hidden" style="padding: 20px 0; color: #000000;">You have not created any support tickets yet.</p>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Contact Card -->
+                        <div class="card">
+                            <h2>Direct Contact</h2>
+                            <p style="font-size: 14px; margin-bottom: 20px; color: #000000;">For urgent issues or pre-login support, reach out directly:</p>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <a id="support-wa-link" href="#" target="_blank" class="btn btn-primary" style="text-align: center;"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a>
+                                <a id="support-email-link" href="#" class="btn btn-secondary" style="text-align: center;"><i class="fa-regular fa-envelope"></i> Send Email</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -982,8 +1047,82 @@
                 </div>
             </div>
             
+            <!-- Admin Tickets View -->
             <div id="admin-tickets-view" class="view-section hidden">
-                <div class="card"><h2 class="text-center" style="color: black !important; padding: 50px;">Support Ticket System<br>(Integration Pending)</h2></div>
+                <div class="card">
+                    <h2>Manage Support Tickets</h2>
+                    <p style="margin-bottom: 20px; color: #000000;">Review and reply to user support queries.</p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>User ID</th>
+                                <th>Name</th>
+                                <th>Subject</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-tickets-tbody" style="color: #000000;">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                    <p id="admin-no-tickets-msg" class="text-center hidden" style="padding: 40px; color: #000000;">No support tickets found in the system.</p>
+                </div>
+            </div>
+
+            <!-- Ticket Detail View -->
+            <div id="ticket-detail-view" class="view-section hidden">
+                <div class="card" style="max-width: 800px; margin: 0 auto;">
+                    <div class="clearfix mb-3" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                        <button class="btn btn-secondary" id="ticket-back-btn" onclick="app.goBackFromTicket()" style="padding: 5px 12px; font-size: 13px;"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                        <h2 style="margin: 0; color: #000000;" id="tdv-ticket-id">Ticket Details</h2>
+                        <div id="tdv-admin-actions" class="hidden">
+                            <!-- Admin close/reopen button -->
+                            <button id="tdv-toggle-status-btn" class="btn btn-secondary" style="padding: 5px 12px; font-size: 13px;" onclick="app.toggleTicketStatus()"></button>
+                        </div>
+                    </div>
+                    
+                    <!-- Ticket Header Details -->
+                    <div style="background-color: #f8f9fa; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; margin-bottom: 20px; color: #000000;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span style="font-weight: bold; font-size: 16px; color: #000000;" id="tdv-subject">Subject: --</span>
+                            <span id="tdv-status-badge">Status: --</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #000000;">
+                            <div style="color: #000000;"><strong style="color: #000000;">Category:</strong> <span id="tdv-category">--</span></div>
+                            <div style="color: #000000;"><strong style="color: #000000;">User ID:</strong> <span id="tdv-user-id">--</span></div>
+                            <div style="color: #000000;"><strong style="color: #000000;">Created At:</strong> <span id="tdv-created-at">--</span></div>
+                            <div style="color: #000000;"><strong style="color: #000000;">Last Updated:</strong> <span id="tdv-updated-at">--</span></div>
+                        </div>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); color: #000000;">
+                            <strong style="color: #000000;">Description:</strong>
+                            <p id="tdv-description" style="margin-top: 5px; white-space: pre-wrap; font-size: 14px; color: #000000;"></p>
+                        </div>
+                    </div>
+
+                    <!-- Conversation Thread -->
+                    <h3 style="color: #000000;">Replies</h3>
+                    <div id="tdv-thread-container" style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px; max-height: 400px; overflow-y: auto; padding: 15px; border: 1px solid var(--border-color); border-radius: 4px; background: #fafafa; color: #000000;">
+                        <!-- JS populated with chat bubbles -->
+                    </div>
+                    
+                    <!-- Reply Form -->
+                    <div class="card" id="tdv-reply-card" style="margin-top: 20px; padding: 15px; border-style: dashed;">
+                        <h4 style="margin-bottom: 10px; color: #000000;">Post a Reply</h4>
+                        <form id="ticket-reply-form" onsubmit="app.submitTicketReply(event)">
+                            <div class="form-group">
+                                <textarea id="ticket-reply-message" class="form-control" rows="3" required placeholder="Type your reply here..." style="color: #000000;"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-reply"></i> Send Reply</button>
+                        </form>
+                    </div>
+                    <div id="tdv-closed-msg" class="hidden text-center" style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <p style="color: #000000; font-weight: bold; margin-bottom: 0;"><i class="fa-solid fa-lock"></i> This ticket is closed. Reopen it to post replies.</p>
+                    </div>
+                </div>
             </div>
 
         </main>
@@ -1901,20 +2040,541 @@ const app = {
     renderSupportSettings: function() {
         const waLink = document.getElementById('support-wa-link');
         const emLink = document.getElementById('support-email-link');
+        const waLinkUnauth = document.getElementById('support-wa-link-unauth');
+        const emLinkUnauth = document.getElementById('support-email-link-unauth');
+        
+        const setLinks = (whatsapp, email) => {
+            const cleanWa = whatsapp.replace(/[^0-9]/g, '');
+            if(waLink) waLink.href = `https://wa.me/${cleanWa}`;
+            if(emLink) emLink.href = `mailto:${email}`;
+            if(waLinkUnauth) waLinkUnauth.href = `https://wa.me/${cleanWa}`;
+            if(emLinkUnauth) emLinkUnauth.href = `mailto:${email}`;
+        };
 
         if (typeof google !== 'undefined' && google.script && google.script.run) {
             google.script.run
                 .withSuccessHandler((res) => {
                     if (res.success) {
-                        if(waLink) waLink.href = `https://wa.me/${res.stats.whatsapp.replace(/[^0-9]/g, '')}`;
-                        if(emLink) emLink.href = `mailto:${res.stats.email}`;
+                        setLinks(res.stats.whatsapp, res.stats.email);
                     }
                 })
                 .getAdminStats();
         } else {
             const support = this.db.getSupport();
-            if(waLink) waLink.href = `https://wa.me/${support.whatsapp.replace(/[^0-9]/g, '')}`;
-            if(emLink) emLink.href = `mailto:${support.email}`;
+            setLinks(support.whatsapp, support.email);
+        }
+
+        const unauthDiv = document.getElementById('user-login-to-ticket-msg');
+        const authDiv = document.getElementById('user-support-dashboard');
+        
+        if (this.currentUser) {
+            if (unauthDiv) unauthDiv.classList.add('hidden');
+            if (authDiv) authDiv.classList.remove('hidden');
+            this.renderUserTickets();
+        } else {
+            if (unauthDiv) unauthDiv.classList.remove('hidden');
+            if (authDiv) authDiv.classList.add('hidden');
+        }
+    },
+
+    submitTicket: function(e) {
+        e.preventDefault();
+        const subject = document.getElementById('ticket-subject').value.trim();
+        const category = document.getElementById('ticket-category').value;
+        const description = document.getElementById('ticket-description').value.trim();
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+        submitBtn.disabled = true;
+
+        const data = {
+            userId: this.currentUser.id,
+            subject: subject,
+            category: category,
+            description: description
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.innerHTML = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.showToast('Ticket submitted successfully', 'success');
+                        document.getElementById('create-ticket-form').reset();
+                        app.renderUserTickets();
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.innerHTML = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error submitting ticket.', 'error');
+                })
+                .createTicket(data);
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.innerHTML = origText;
+                submitBtn.disabled = false;
+                
+                const tickets = this.db.getTickets();
+                const ticketId = 'TKT' + Math.floor(100000 + Math.random() * 900000);
+                const timestamp = new Date().toISOString();
+                
+                tickets.unshift({
+                    ticketId: ticketId,
+                    userId: this.currentUser.id,
+                    subject: subject,
+                    category: category,
+                    description: description,
+                    status: 'open',
+                    created_at: timestamp,
+                    updated_at: timestamp
+                });
+                
+                this.db.setTickets(tickets);
+                app.showToast('Ticket submitted successfully (local mock)', 'success');
+                document.getElementById('create-ticket-form').reset();
+                app.renderUserTickets();
+            }, 500);
+        }
+    },
+
+    renderUserTickets: function() {
+        const tbody = document.getElementById('user-tickets-tbody');
+        const noMsg = document.getElementById('no-tickets-msg');
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-black"><i class="fa-solid fa-spinner fa-spin"></i> Loading tickets...</td></tr>`;
+            noMsg.classList.add('hidden');
+            
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        app.displayUserTickets(res.tickets);
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-black">Error: ${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler((err) => {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-black">Server error loading tickets.</td></tr>`;
+                })
+                .getUserTickets(this.currentUser.id);
+        } else {
+            // Local fallback
+            const tickets = this.db.getTickets().filter(t => {
+                const targetUserId = String(this.currentUser.id).trim();
+                const cleanTargetUserId = targetUserId.replace(/^0+/, '');
+                const dbUserId = String(t.userId).trim();
+                return dbUserId === targetUserId || dbUserId.replace(/^0+/, '') === cleanTargetUserId;
+            });
+            // Sort by created_at desc
+            tickets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            this.displayUserTickets(tickets);
+        }
+    },
+
+    displayUserTickets: function(tickets) {
+        const tbody = document.getElementById('user-tickets-tbody');
+        const noMsg = document.getElementById('no-tickets-msg');
+        
+        if (tickets.length === 0) {
+            tbody.innerHTML = '';
+            noMsg.classList.remove('hidden');
+            return;
+        }
+        
+        noMsg.classList.add('hidden');
+        tbody.innerHTML = tickets.map(t => {
+            const statusBadge = t.status === 'open' 
+                ? `<span style="background-color: rgba(76, 209, 55, 0.15); color: var(--primary-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Open</span>`
+                : `<span style="background-color: rgba(120, 120, 120, 0.15); color: #777777; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Closed</span>`;
+            
+            const lastUpdated = this.formatDateTime(t.updated_at || t.created_at);
+            
+            return `
+                <tr>
+                    <td class="font-mono text-black">${t.ticketId}</td>
+                    <td class="text-black">${t.subject}</td>
+                    <td class="text-black">${t.category}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-black">${lastUpdated}</td>
+                    <td>
+                        <button class="btn" style="padding: 4px 10px; font-size: 12px;" onclick="app.viewTicket('${t.ticketId}')"><i class="fa-solid fa-eye"></i> View</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    renderAdminTickets: function() {
+        const tbody = document.getElementById('admin-tickets-tbody');
+        const noMsg = document.getElementById('admin-no-tickets-msg');
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-black"><i class="fa-solid fa-spinner fa-spin"></i> Loading support queue...</td></tr>`;
+            noMsg.classList.add('hidden');
+            
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        app.displayAdminTickets(res.tickets);
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-black">Error: ${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler((err) => {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-black">Server error loading tickets.</td></tr>`;
+                })
+                .adminGetTickets();
+        } else {
+            // Local fallback
+            const tickets = this.db.getTickets();
+            const users = this.db.getUsers();
+            
+            // Map user names
+            const mapped = tickets.map(t => {
+                const u = users.find(user => String(user.id).trim() === String(t.userId).trim());
+                return {
+                    ...t,
+                    userName: u ? u.name : 'N/A'
+                };
+            });
+            // Sort by updated_at desc
+            mapped.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+            
+            this.displayAdminTickets(mapped);
+        }
+    },
+
+    displayAdminTickets: function(tickets) {
+        const tbody = document.getElementById('admin-tickets-tbody');
+        const noMsg = document.getElementById('admin-no-tickets-msg');
+        
+        if (tickets.length === 0) {
+            tbody.innerHTML = '';
+            noMsg.classList.remove('hidden');
+            return;
+        }
+        
+        noMsg.classList.add('hidden');
+        tbody.innerHTML = tickets.map(t => {
+            const statusBadge = t.status === 'open' 
+                ? `<span style="background-color: rgba(76, 209, 55, 0.15); color: var(--primary-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Open</span>`
+                : `<span style="background-color: rgba(255, 77, 77, 0.15); color: var(--danger-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Closed</span>`;
+            
+            const lastUpdated = this.formatDateTime(t.updated_at || t.created_at);
+            
+            return `
+                <tr class="hover:bg-slate-100">
+                    <td class="font-mono text-black">${t.ticketId}</td>
+                    <td class="font-mono text-indigo-600">${t.userId}</td>
+                    <td class="text-black">${t.userName}</td>
+                    <td class="text-black">${t.subject}</td>
+                    <td class="text-black">${t.category}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-black">${lastUpdated}</td>
+                    <td>
+                        <button class="btn" style="padding: 4px 10px; font-size: 12px;" onclick="app.viewTicket('${t.ticketId}')"><i class="fa-solid fa-reply"></i> Reply</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    viewTicket: function(ticketId) {
+        // Track where we came from to handle "Back" button correctly
+        this.currentTicketSource = (this.currentUser && this.currentUser.role === 'admin') 
+            ? 'admin-tickets-view' 
+            : 'support-ticket-view';
+
+        this.activeTicketId = ticketId;
+        
+        // Reset view details
+        document.getElementById('tdv-ticket-id').textContent = `Ticket: ${ticketId}`;
+        document.getElementById('tdv-subject').textContent = `Subject: Loading...`;
+        document.getElementById('tdv-status-badge').innerHTML = '';
+        document.getElementById('tdv-category').textContent = 'Loading...';
+        document.getElementById('tdv-user-id').textContent = 'Loading...';
+        document.getElementById('tdv-created-at').textContent = 'Loading...';
+        document.getElementById('tdv-updated-at').textContent = 'Loading...';
+        document.getElementById('tdv-description').textContent = 'Loading...';
+        document.getElementById('tdv-thread-container').innerHTML = `<p class="text-center py-4 text-black"><i class="fa-solid fa-spinner fa-spin"></i> Loading conversation...</p>`;
+        
+        // Hide form and closed message initially
+        document.getElementById('tdv-reply-card').classList.add('hidden');
+        document.getElementById('tdv-closed-msg').classList.add('hidden');
+        document.getElementById('tdv-admin-actions').classList.add('hidden');
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        app.displayTicketDetails(res.ticket, res.replies);
+                    } else {
+                        app.showToast(res.message, 'error');
+                        app.navigate(app.currentTicketSource);
+                    }
+                })
+                .withFailureHandler((err) => {
+                    app.showToast('Server error loading ticket details.', 'error');
+                })
+                .getTicketDetails(ticketId);
+        } else {
+            // Local fallback
+            const ticket = this.db.getTickets().find(t => String(t.ticketId).trim() === String(ticketId).trim());
+            if (!ticket) {
+                app.showToast('Ticket not found', 'error');
+                app.navigate(app.currentTicketSource);
+                return;
+            }
+            const replies = this.db.getTicketReplies().filter(r => String(r.ticketId).trim() === String(ticketId).trim());
+            replies.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            
+            this.displayTicketDetails(ticket, replies);
+        }
+        
+        this.navigate('ticket-detail-view');
+    },
+
+    displayTicketDetails: function(ticket, replies) {
+        document.getElementById('tdv-subject').textContent = `Subject: ${ticket.subject}`;
+        
+        const isOpen = ticket.status === 'open';
+        const statusHtml = isOpen
+            ? `<span style="background-color: rgba(76, 209, 55, 0.15); color: var(--primary-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Open</span>`
+            : `<span style="background-color: rgba(255, 77, 77, 0.15); color: var(--danger-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Closed</span>`;
+        
+        document.getElementById('tdv-status-badge').innerHTML = statusHtml;
+        document.getElementById('tdv-category').textContent = ticket.category;
+        document.getElementById('tdv-user-id').textContent = ticket.userId;
+        document.getElementById('tdv-created-at').textContent = this.formatDateTime(ticket.created_at);
+        document.getElementById('tdv-updated-at').textContent = this.formatDateTime(ticket.updated_at || ticket.created_at);
+        document.getElementById('tdv-description').textContent = ticket.description;
+
+        // Populate thread
+        const threadContainer = document.getElementById('tdv-thread-container');
+        if (replies.length === 0) {
+            threadContainer.innerHTML = `<p class="text-center text-black" style="padding: 20px 0; font-style: italic;">No replies yet. Type a response below to start the thread.</p>`;
+        } else {
+            threadContainer.innerHTML = replies.map(r => {
+                const isAdmin = r.senderRole === 'admin';
+                const senderName = isAdmin ? 'Support Team (Admin)' : `User (${r.created_by})`;
+                
+                // Styling bubbles
+                const bubbleStyle = isAdmin 
+                    ? `background-color: rgba(76, 209, 55, 0.08); border: 1px solid rgba(76, 209, 55, 0.25); border-left: 4px solid var(--primary-color);`
+                    : `background-color: #f1f2f6; border: 1px solid #dfe4ea; border-left: 4px solid #747d8c;`;
+                
+                return `
+                    <div style="padding: 12px; border-radius: 6px; ${bubbleStyle}">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: #555555;">
+                            <strong>${senderName}</strong>
+                            <span>${this.formatDateTime(r.created_at)}</span>
+                        </div>
+                        <p style="white-space: pre-wrap; font-size: 13px; color: #000000; margin-bottom: 0;">${r.message}</p>
+                    </div>
+                `;
+            }).join('');
+            
+            // Scroll thread to bottom
+            setTimeout(() => {
+                threadContainer.scrollTop = threadContainer.scrollHeight;
+            }, 100);
+        }
+
+        // Show/hide reply actions based on ticket status
+        if (isOpen) {
+            document.getElementById('tdv-reply-card').classList.remove('hidden');
+            document.getElementById('tdv-closed-msg').classList.add('hidden');
+        } else {
+            document.getElementById('tdv-reply-card').classList.add('hidden');
+            document.getElementById('tdv-closed-msg').classList.remove('hidden');
+        }
+
+        // Setup Admin toggles
+        const adminActions = document.getElementById('tdv-admin-actions');
+        if (this.currentUser && this.currentUser.role === 'admin') {
+            adminActions.classList.remove('hidden');
+            const toggleBtn = document.getElementById('tdv-toggle-status-btn');
+            if (isOpen) {
+                toggleBtn.innerHTML = `<i class="fa-solid fa-lock"></i> Close Ticket`;
+                toggleBtn.className = 'btn btn-secondary';
+            } else {
+                toggleBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> Reopen Ticket`;
+                toggleBtn.className = 'btn btn-primary';
+            }
+        } else {
+            adminActions.classList.add('hidden');
+        }
+    },
+
+    submitTicketReply: function(e) {
+        e.preventDefault();
+        const textarea = document.getElementById('ticket-reply-message');
+        const msg = textarea.value.trim();
+        if(!msg) return;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+        submitBtn.disabled = true;
+
+        const data = {
+            ticketId: this.activeTicketId,
+            senderId: this.currentUser.id,
+            senderRole: this.currentUser.role,
+            message: msg
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.innerHTML = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.showToast('Reply posted successfully', 'success');
+                        textarea.value = '';
+                        app.viewTicket(app.activeTicketId);
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.innerHTML = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error sending reply.', 'error');
+                })
+                .addTicketReply(data);
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.innerHTML = origText;
+                submitBtn.disabled = false;
+
+                const replies = this.db.getTicketReplies();
+                const replyId = 'RPY' + Math.floor(100000 + Math.random() * 900000);
+                const timestamp = new Date().toISOString();
+
+                replies.push({
+                    replyId: replyId,
+                    ticketId: this.activeTicketId,
+                    senderRole: this.currentUser.role,
+                    message: msg,
+                    created_at: timestamp,
+                    created_by: this.currentUser.id
+                });
+                this.db.setTicketReplies(replies);
+
+                // Update ticket updated_at
+                const tickets = this.db.getTickets();
+                const ticketIndex = tickets.findIndex(t => String(t.ticketId).trim() === String(this.activeTicketId).trim());
+                if (ticketIndex > -1) {
+                    tickets[ticketIndex].updated_at = timestamp;
+                    this.db.setTickets(tickets);
+                }
+
+                app.showToast('Reply posted successfully (local mock)', 'success');
+                textarea.value = '';
+                app.viewTicket(app.activeTicketId);
+            }, 500);
+        }
+    },
+
+    toggleTicketStatus: function() {
+        if (!this.activeTicketId) return;
+
+        const toggleBtn = document.getElementById('tdv-toggle-status-btn');
+        const origText = toggleBtn.innerHTML;
+        toggleBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        toggleBtn.disabled = true;
+
+        const performToggle = (status) => {
+            const data = {
+                ticketId: this.activeTicketId,
+                status: status,
+                adminId: this.currentUser.id
+            };
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        toggleBtn.disabled = false;
+                        if (res.success) {
+                            app.showToast(res.message, 'success');
+                            app.viewTicket(app.activeTicketId);
+                        } else {
+                            toggleBtn.innerHTML = origText;
+                            app.showToast(res.message, 'error');
+                        }
+                    })
+                    .withFailureHandler((err) => {
+                        toggleBtn.disabled = false;
+                        toggleBtn.innerHTML = origText;
+                        app.showToast('Server error changing ticket status.', 'error');
+                    })
+                    .adminUpdateTicketStatus(data);
+            } else {
+                // Local fallback
+                setTimeout(() => {
+                    toggleBtn.disabled = false;
+                    
+                    const tickets = this.db.getTickets();
+                    const ticketIndex = tickets.findIndex(t => String(t.ticketId).trim() === String(this.activeTicketId).trim());
+                    if (ticketIndex > -1) {
+                        tickets[ticketIndex].status = status;
+                        tickets[ticketIndex].updated_at = new Date().toISOString();
+                        this.db.setTickets(tickets);
+                        app.showToast(`Ticket status updated to ${status} (local mock)`, 'success');
+                        app.viewTicket(app.activeTicketId);
+                    } else {
+                        toggleBtn.innerHTML = origText;
+                        app.showToast('Ticket not found', 'error');
+                    }
+                }, 500);
+            }
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        const newStatus = res.ticket.status === 'open' ? 'closed' : 'open';
+                        performToggle(newStatus);
+                    } else {
+                        toggleBtn.disabled = false;
+                        toggleBtn.innerHTML = origText;
+                        app.showToast('Failed to check status', 'error');
+                    }
+                })
+                .getTicketDetails(this.activeTicketId);
+        } else {
+            const ticket = this.db.getTickets().find(t => String(t.ticketId).trim() === String(this.activeTicketId).trim());
+            if (ticket) {
+                const newStatus = ticket.status === 'open' ? 'closed' : 'open';
+                performToggle(newStatus);
+            } else {
+                toggleBtn.disabled = false;
+                toggleBtn.innerHTML = origText;
+                app.showToast('Ticket not found in local db', 'error');
+            }
+        }
+    },
+
+    goBackFromTicket: function() {
+        this.navigate(this.currentTicketSource || 'support-ticket-view');
+    },
+
+    formatDateTime: function(isoString) {
+        if (!isoString) return '';
+        try {
+            const d = new Date(isoString);
+            return d.toLocaleString();
+        } catch(e) {
+            return isoString;
         }
     },
 
@@ -2484,6 +3144,9 @@ const app = {
             if(!localStorage.getItem('pb_tickets')) {
                 localStorage.setItem('pb_tickets', JSON.stringify([]));
             }
+            if(!localStorage.getItem('pb_ticket_replies')) {
+                localStorage.setItem('pb_ticket_replies', JSON.stringify([]));
+            }
             if(!localStorage.getItem('pb_support')) {
                 localStorage.setItem('pb_support', JSON.stringify({
                     whatsapp: '+8801234567890',
@@ -2499,6 +3162,8 @@ const app = {
         setDraws: (data) => localStorage.setItem('pb_draws', JSON.stringify(data)),
         getTickets: () => JSON.parse(localStorage.getItem('pb_tickets')),
         setTickets: (data) => localStorage.setItem('pb_tickets', JSON.stringify(data)),
+        getTicketReplies: () => JSON.parse(localStorage.getItem('pb_ticket_replies') || '[]'),
+        setTicketReplies: (data) => localStorage.setItem('pb_ticket_replies', JSON.stringify(data)),
         getSupport: () => JSON.parse(localStorage.getItem('pb_support')),
         setSupport: (data) => localStorage.setItem('pb_support', JSON.stringify(data)),
 
@@ -2540,6 +3205,7 @@ const app = {
             if(viewId === 'profile-view') this.renderProfile();
             if(viewId === 'support-ticket-view') this.renderSupportSettings();
             if(viewId === 'results-view') this.refreshDrawResults();
+            if(viewId === 'admin-tickets-view') this.renderAdminTickets();
         };
 
         // Close dropdowns when clicking outside
