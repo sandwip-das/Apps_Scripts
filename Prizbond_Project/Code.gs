@@ -94,6 +94,18 @@ function doPost(e) {
       case 'uploadDraw':
         response = uploadDraw(JSON.parse(e.postData.contents));
         break;
+      case 'verifyRecoveryIdentifier':
+        response = verifyRecoveryIdentifier(JSON.parse(e.postData.contents));
+        break;
+      case 'verifyRecoveryProfile':
+        response = verifyRecoveryProfile(JSON.parse(e.postData.contents));
+        break;
+      case 'resetRecoveryPassword':
+        response = resetRecoveryPassword(JSON.parse(e.postData.contents));
+        break;
+      case 'updateBond':
+        response = updateBond(JSON.parse(e.postData.contents));
+        break;
     }
   } catch (err) {
     response.message = err.message;
@@ -231,6 +243,16 @@ function setupDatabase() {
         sheet.getRange(1, 1, 1, table.headers.length).setFontWeight("bold");
       }
     }
+    
+    // Apply plain text formatting (@) to preserve leading zeros in bond columns
+    const maxRows = sheet.getMaxRows();
+    if (table.name === 'PrizeBonds') {
+      sheet.getRange(1, 3, maxRows, 1).setNumberFormat("@");
+    } else if (table.name === 'DrawResults') {
+      sheet.getRange(1, 3, maxRows, 1).setNumberFormat("@");
+    } else if (table.name === 'WinningMatches') {
+      sheet.getRange(1, 5, maxRows, 1).setNumberFormat("@");
+    }
   });
   
   // Seed Support Settings if empty
@@ -362,6 +384,69 @@ function loginUser(userid, password) {
   }
   
   return { success: false, message: 'Invalid credentials.' };
+}
+
+function verifyRecoveryIdentifier(data) {
+  const ss = getSpreadsheet();
+  const { values: users } = getSheetData('Users');
+  const identifier = String(data.identifier).trim();
+  const cleanIdentifier = identifier.replace(/^0+/, '');
+  
+  for (let i = 1; i < users.length; i++) {
+    const dbEmailOrMobile = String(users[i][1]).trim();
+    if (dbEmailOrMobile === identifier || dbEmailOrMobile.replace(/^0+/, '') === cleanIdentifier) {
+      return { success: true, userId: String(users[i][0]).trim() };
+    }
+  }
+  return { success: false, message: 'No registered user matches the provided identifier.' };
+}
+
+function verifyRecoveryProfile(data) {
+  const ss = getSpreadsheet();
+  const { values: profiles } = getSheetData('Profiles');
+  const name = String(data.name).trim().toLowerCase();
+  const dob = String(data.dob).trim();
+  const profession = String(data.profession).trim().toLowerCase();
+  
+  for (let i = 1; i < profiles.length; i++) {
+    const dbUserId = String(profiles[i][1]).trim();
+    const dbName = String(profiles[i][2]).trim().toLowerCase();
+    const dbDob = String(profiles[i][3]).trim();
+    const dbProfession = String(profiles[i][5]).trim().toLowerCase();
+    
+    // Convert dates to ISO-like comparison
+    let dobMatch = (dbDob === dob);
+    if (!dobMatch && dbDob && dob) {
+      dobMatch = new Date(dbDob).getTime() === new Date(dob).getTime();
+    }
+    
+    if (dbName === name && dobMatch && dbProfession === profession) {
+      return { success: true, userId: dbUserId };
+    }
+  }
+  return { success: false, message: 'Verification failed. Profile details do not match.' };
+}
+
+function resetRecoveryPassword(data) {
+  const ss = getSpreadsheet();
+  const userSheet = ss.getSheetByName('Users');
+  const users = userSheet.getDataRange().getValues();
+  const userId = String(data.userId).trim();
+  const newPassword = String(data.password).trim();
+  const timestamp = new Date().toISOString();
+  
+  for (let i = 1; i < users.length; i++) {
+    if (String(users[i][0]).trim() === userId) {
+      const row = i + 1;
+      userSheet.getRange(row, 3).setValue(newPassword);
+      userSheet.getRange(row, 8).setValue(timestamp);
+      userSheet.getRange(row, 9).setValue(userId);
+      
+      logAuditEvent(userId, 'reset_password', 'Password reset successfully through account recovery.');
+      return { success: true, message: 'Your password has been successfully reset.' };
+    }
+  }
+  return { success: false, message: 'User not found.' };
 }
 
 function updateProfile(data) {
@@ -539,7 +624,7 @@ function addBonds(data) {
   data.bonds.forEach(bondNum => {
     if(/^[0-9]{7}$/.test(bondNum)) {
       const prizeBondId = generatePrimaryKey('PrizeBonds', 'PRI');
-      sheet.appendRow(["'" + prizeBondId, "'" + userId, bondNum, timestamp, userId, timestamp, userId]);
+      sheet.appendRow(["'" + prizeBondId, "'" + userId, "'" + bondNum, timestamp, userId, timestamp, userId]);
       added++;
     }
   });
@@ -559,7 +644,7 @@ function getBonds(userId) {
   for(let i=1; i<values.length; i++) {
     if(String(values[i][1]).trim() === targetUserId) {
       userBonds.push({
-        number: values[i][2],
+        number: padBondNumber(values[i][2]),
         dateAdded: values[i][3] ? new Date(values[i][3]).toLocaleDateString() : ''
       });
     }
@@ -572,11 +657,11 @@ function deleteBond(data) {
   const sheet = ss.getSheetByName('PrizeBonds');
   const values = sheet.getDataRange().getValues();
   const targetUserId = String(data.userId).trim();
-  const bondNumber = String(data.bondNumber).trim();
+  const bondNumber = padBondNumber(data.bondNumber);
   let deleted = 0;
   
   for(let i = values.length - 1; i >= 1; i--) {
-    if(String(values[i][1]).trim() === targetUserId && String(values[i][2]).trim() === bondNumber) {
+    if(String(values[i][1]).trim() === targetUserId && padBondNumber(values[i][2]) === bondNumber) {
       sheet.deleteRow(i + 1);
       deleted++;
     }
@@ -613,21 +698,21 @@ function uploadDraw(data) {
   
   data.results.forEach(res => {
     const drawResultId = generatePrimaryKey('DrawResults', 'DRA');
-    resSheet.appendRow(["'" + drawResultId, "'" + drawId, res.num, res.prize, timestamp, 'admin', timestamp, 'admin']);
+    resSheet.appendRow(["'" + drawResultId, "'" + drawId, "'" + res.num, res.prize, timestamp, 'admin', timestamp, 'admin']);
     
     // Check if any user tracks this bond
     for (let i = 1; i < bondList.length; i++) {
       const dbUserId = String(bondList[i][1]).trim();
       const dbBondNum = String(bondList[i][2]).trim();
       
-      if (dbBondNum === res.num) {
+      if (padBondNumber(dbBondNum) === padBondNumber(res.num)) {
         const winningMatchId = generatePrimaryKey('WinningMatches', 'WIN');
         matchesSheet.appendRow([
           "'" + winningMatchId,
           "'" + dbUserId,
           "'" + drawId,
           "'" + drawResultId,
-          res.num,
+          "'" + res.num,
           res.prize,
           timestamp,
           'system',
@@ -657,7 +742,7 @@ function getDraws() {
     const results = [];
     for(let j=1; j<resultsData.length; j++) {
       if(String(resultsData[j][1]).trim() === drawId) {
-        results.push({ num: resultsData[j][2], prize: resultsData[j][3] });
+        results.push({ num: padBondNumber(resultsData[j][2]), prize: resultsData[j][3] });
       }
     }
     draws.push({ id: drawId, number: drawNum, date: drawDate, results: results });
@@ -688,7 +773,7 @@ function getMatches(userId) {
       
       matches.push({
         draw: drawNum,
-        bond: matchesData[i][4],
+        bond: padBondNumber(matchesData[i][4]),
         prize: matchesData[i][5]
       });
     }
@@ -961,18 +1046,63 @@ function adminUpdateTicketStatus(data) {
   const tValues = ticketSheet.getDataRange().getValues();
   const ticketId = String(data.ticketId).trim();
   const timestamp = new Date().toISOString();
-  const adminId = String(data.adminId).trim();
+  const actorId = String(data.adminId || data.userId || 'system').trim();
   
   for (let i = 1; i < tValues.length; i++) {
     if (String(tValues[i][0]).trim() === ticketId) {
       const row = i + 1;
       ticketSheet.getRange(row, 6).setValue(data.status);
       ticketSheet.getRange(row, 9).setValue(timestamp);
-      ticketSheet.getRange(row, 10).setValue(adminId);
+      ticketSheet.getRange(row, 10).setValue(actorId);
       
-      logAuditEvent(adminId, 'update_ticket_status', 'Updated status of ticket ID: ' + ticketId + ' to: ' + data.status);
+      logAuditEvent(actorId, 'update_ticket_status', 'Updated status of ticket ID: ' + ticketId + ' to: ' + data.status);
       return { success: true, message: 'Ticket status updated to ' + data.status + '.' };
     }
   }
   return { success: false, message: 'Ticket not found.' };
+}
+
+function updateBond(data) {
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName('PrizeBonds');
+  const values = sheet.getDataRange().getValues();
+  const userId = String(data.userId).trim();
+  const oldNum = padBondNumber(data.oldNumber);
+  const newNum = padBondNumber(data.newNumber);
+  const timestamp = new Date().toISOString();
+  
+  if(!/^[0-9]{7}$/.test(newNum)) {
+    return { success: false, message: 'Invalid new bond number. Must be exactly 7 digits.' };
+  }
+  
+  // Check if user already tracks the new number
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][1]).trim() === userId && padBondNumber(values[i][2]) === newNum) {
+      return { success: false, message: 'You are already tracking the new bond number.' };
+    }
+  }
+  
+  // Find the row with the old number for this user
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][1]).trim() === userId && padBondNumber(values[i][2]) === oldNum) {
+      const row = i + 1;
+      sheet.getRange(row, 3).setValue("'" + newNum);
+      sheet.getRange(row, 6).setValue(timestamp);
+      sheet.getRange(row, 7).setValue(userId);
+      
+      logAuditEvent(userId, 'edit_bond', 'Updated prize bond number from ' + oldNum + ' to ' + newNum);
+      return { success: true, message: 'Prize bond number updated successfully.' };
+    }
+  }
+  
+  return { success: false, message: 'Prize bond not found.' };
+}
+
+function padBondNumber(num) {
+  let str = String(num).trim();
+  if (!str || str === 'undefined' || str === 'null') return '';
+  while (str.length < 7) {
+    str = '0' + str;
+  }
+  return str;
 }

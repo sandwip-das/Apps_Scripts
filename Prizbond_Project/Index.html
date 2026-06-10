@@ -209,23 +209,35 @@
         }
         .btn-block { display: block; width: 100%; }
 
-        /* Tables */
+        /* Tables (Spreadsheet styled) */
         .table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            background-color: #ffffff;
         }
         .table th, .table td {
-            padding: 12px;
-            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
             text-align: left;
+            color: #000000 !important;
         }
         .table th {
-            background-color: #f4f4f4;
-            font-weight: bold;
+            background-color: #f1f5f9;
+            color: #1e293b !important;
+            font-weight: 700;
+            border-bottom: 2px solid #94a3b8;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        .table tbody tr:nth-child(even) {
+            background-color: #f8fafc;
         }
         .table tbody tr:hover {
-            background-color: #f9f9f9;
+            background-color: #e8f0fe;
         }
 
         /* Tabs */
@@ -643,9 +655,114 @@
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Sign In</button>
                         <div class="text-center mt-3">
-                            <a href="#" onclick="app.navigate('support-ticket-view')">Forgot password? Open a Support Ticket</a>
+                            <a href="javascript:void(0)" onclick="app.navigate('forgot-password-view')" style="font-weight: 500; color: var(--primary-color);">Forgot Password? Recover Account</a>
+                        </div>
+                        
+                        <!-- Support links for guest users -->
+                        <div class="mt-4 pt-3 text-center" style="border-top: 1px dashed var(--border-color);">
+                            <p style="font-size: 13px; color: #000000; margin-bottom: 8px;"><i class="fa-solid fa-headset"></i> Need Help?</p>
+                            <div style="display: flex; justify-content: center; gap: 20px; font-size: 14px;">
+                                <a href="javascript:void(0)" id="guest-support-wa" target="_blank" style="color: #25D366; font-weight: bold;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+                                <a href="javascript:void(0)" id="guest-support-email" style="color: #22A6B3; font-weight: bold;"><i class="fa-solid fa-envelope"></i> Email Support</a>
+                            </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Forgot Password / Account Recovery View -->
+            <div id="forgot-password-view" class="view-section hidden">
+                <div class="card card-center" style="max-width: 550px; margin: 0 auto; color: #000000;">
+                    <div class="clearfix mb-3" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                        <button class="btn btn-secondary" onclick="app.navigate('login-view')" style="padding: 5px 12px; font-size: 13px;"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                        <h2 style="margin: 0; color: #000000; font-size: 20px;">Forgot Password</h2>
+                        <div style="width: 50px;"></div>
+                    </div>
+                    
+                    <!-- Recovery Wizard Step 1: Input registered Email or Phone -->
+                    <div id="recovery-step-1" class="recovery-step">
+                        <p style="color: #000000; margin-bottom: 20px; font-size: 14px;">Please enter your registered Email Address or Phone Number to verify your account.</p>
+                        <form onsubmit="app.handleRecoveryStep1(event)">
+                            <div class="form-group">
+                                <label>Email Address or Phone Number</label>
+                                <input type="text" id="recovery-identifier" class="form-control" required placeholder="e.g. user@example.com or 01700000000" style="color: #000000;">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Verify Identifier</button>
+                            <div class="text-center mt-3">
+                                <a href="javascript:void(0)" onclick="app.switchRecoveryStep(3)" style="font-weight: 500; color: var(--primary-color); font-size: 13px;">Forgot email & phone? Recover via Profile Details</a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Recovery Wizard Step 2: Verification Question -->
+                    <div id="recovery-step-2" class="recovery-step hidden">
+                        <p style="color: #000000; margin-bottom: 20px; font-size: 14px;">For identity verification, please provide the Full Name registered on your account profile.</p>
+                        <form onsubmit="app.handleRecoveryStep2(event)">
+                            <input type="hidden" id="recovery-userId">
+                            <div class="form-group">
+                                <label>Registered Full Name</label>
+                                <input type="text" id="recovery-verify-name" class="form-control" required placeholder="e.g. John Doe" style="color: #000000;">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Verify Profile Name</button>
+                            <div class="text-center mt-3">
+                                <a href="javascript:void(0)" onclick="app.switchRecoveryStep(5)" style="font-weight: 500; color: var(--primary-color); font-size: 13px;">Still stuck? Recover via Support Team</a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Recovery Wizard Step 3: Forgot Email/Phone entirely (Profile detail recovery) -->
+                    <div id="recovery-step-3" class="recovery-step hidden">
+                        <p style="color: #000000; margin-bottom: 20px; font-size: 14px;">To recover your account using profile details, enter the registered parameters exactly as saved in your profile:</p>
+                        <form onsubmit="app.handleRecoveryProfile(event)">
+                            <div class="form-group">
+                                <label>Registered Full Name</label>
+                                <input type="text" id="recovery-prof-name" class="form-control" required placeholder="e.g. John Doe" style="color: #000000;">
+                            </div>
+                            <div class="form-group">
+                                <label>Date of Birth</label>
+                                <input type="date" id="recovery-prof-dob" class="form-control" required style="color: #000000;">
+                            </div>
+                            <div class="form-group">
+                                <label>Profession</label>
+                                <input type="text" id="recovery-prof-profession" class="form-control" required placeholder="e.g. Student" style="color: #000000;">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Verify Profile Identity</button>
+                            <div class="text-center mt-3">
+                                <a href="javascript:void(0)" onclick="app.switchRecoveryStep(5)" style="font-weight: 500; color: var(--primary-color); font-size: 13px;">Forgot profile details? Contact Support</a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Recovery Wizard Step 4: Reset Password -->
+                    <div id="recovery-step-4" class="recovery-step hidden">
+                        <p style="color: #22a6b3; margin-bottom: 20px; font-weight: bold; font-size: 14px;"><i class="fa-solid fa-circle-check"></i> Identity Verified! Choose a new password for your account.</p>
+                        <form onsubmit="app.onSubmitRecoveryReset(event)">
+                            <input type="hidden" id="recovery-reset-userId">
+                            <div class="form-group" style="position: relative;">
+                                <label>New Password</label>
+                                <input type="password" id="recovery-new-password" class="form-control" required placeholder="New Password" minlength="6" style="color: #000000;">
+                                <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('recovery-new-password', this)"></i>
+                            </div>
+                            <div class="form-group" style="position: relative;">
+                                <label>Confirm New Password</label>
+                                <input type="password" id="recovery-confirm-password" class="form-control" required placeholder="Confirm New Password" minlength="6" style="color: #000000;">
+                                <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('recovery-confirm-password', this)"></i>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Reset Password</button>
+                        </form>
+                    </div>
+
+                    <!-- Recovery Wizard Step 5: Support Coordinates -->
+                    <div id="recovery-step-5" class="recovery-step hidden text-center">
+                        <i class="fa-solid fa-headset" style="font-size: 50px; color: var(--primary-color); margin-bottom: 15px;"></i>
+                        <h3 style="color: #000000; font-size: 18px; margin-bottom: 10px;">Contact Support</h3>
+                        <p style="color: #000000; margin-bottom: 25px; font-size: 14px;">We could not verify your identity automatically. Please contact our Support Team directly to restore your account access.</p>
+                        <div style="display: flex; flex-direction: column; gap: 12px; max-width: 300px; margin: 0 auto;">
+                            <a id="recovery-support-wa" href="#" target="_blank" class="btn btn-primary"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a>
+                            <a id="recovery-support-email" href="#" class="btn btn-secondary"><i class="fa-regular fa-envelope"></i> Email Support</a>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -761,13 +878,14 @@
                     <div class="tabs">
                         <button class="tab-btn active" id="tab-single" onclick="app.switchAddMode('single')">Single Entry</button>
                         <button class="tab-btn" id="tab-multiple" onclick="app.switchAddMode('multiple')">Multiple Entry</button>
+                        <button class="tab-btn" id="tab-file" onclick="app.switchAddMode('file')">File Upload</button>
                     </div>
 
                     <!-- Single Entry Form -->
                     <form id="form-single-entry" onsubmit="app.addSingleBond(event)">
                         <div class="form-group">
                             <label>Enter 7-Digit Bond Number</label>
-                            <input type="text" id="single-bond-input" class="form-control" pattern="[0-9]{7}" maxlength="7" required placeholder="e.g. 0123456">
+                            <input type="text" id="single-bond-input" class="form-control" pattern="[0-9]{7}" maxlength="7" required placeholder="e.g. 0123456" style="color: #000000;">
                         </div>
                         <button type="submit" class="btn btn-primary">Save Bond</button>
                     </form>
@@ -776,10 +894,20 @@
                     <form id="form-multiple-entry" class="hidden" onsubmit="app.addMultipleBonds(event)">
                         <div class="form-group">
                             <label>Enter Multiple Bond Numbers</label>
-                            <p style="font-size: 12px; color: black !important;">Separate numbers with spaces or commas. Must be exactly 7 digits each.</p>
-                            <textarea id="multiple-bond-input" class="form-control" rows="5" required placeholder="0123456 0987654..."></textarea>
+                            <p style="font-size: 12px; color: black !important;">Separate Prize Bond numbers with spaces. Each space denotes a distinct Prize Bond number.</p>
+                            <textarea id="multiple-bond-input" class="form-control" rows="5" required placeholder="0123456 0987654 1122334" style="color: #000000;"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">Save All Bonds</button>
+                    </form>
+
+                    <!-- File Upload Form -->
+                    <form id="form-file-entry" class="hidden" onsubmit="app.addFileBonds(event)">
+                        <div class="form-group">
+                            <label>Upload .txt File</label>
+                            <p style="font-size: 12px; color: black !important;">Upload a .txt file containing 7-digit numbers arranged in a column format (one number per line).</p>
+                            <input type="file" id="file-bond-input" class="form-control" accept=".txt" required style="color: #000000;">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload and Save Bonds</button>
                     </form>
                 </div>
             </div>
@@ -1199,8 +1327,8 @@
                             </table>
 
                             <h4 style="margin-top: 20px; margin-bottom: 10px;">5th Prize Numbers</h4>
-                            <div class="fifth-prize-grid" id="res-5th-container" style="background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
-                                <!-- 5th prize numbers listed here -->
+                            <div id="res-5th-container" style="overflow-x: auto; margin-top: 10px;">
+                                <!-- 5th prize numbers table dynamically generated here -->
                             </div>
                         </div>
                     </div>
@@ -1338,6 +1466,16 @@
 
 const app = {
     currentUser: null,
+    
+    // Helper to pad bond numbers to 7 digits
+    padBondNumber: function(num) {
+        let str = String(num).trim();
+        if (!str || str === 'undefined' || str === 'null') return '';
+        while (str.length < 7) {
+            str = '0' + str;
+        }
+        return str;
+    },
     
     // UI Navigation
     navigate: function(viewId, isPopState = false) {
@@ -1594,7 +1732,7 @@ const app = {
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                     if (res.success) {
-                        app.login(res.user);
+                        app.login(res.user, pass);
                     } else {
                         app.showPopup('Login Failed', res.message, 'error');
                     }
@@ -1614,7 +1752,7 @@ const app = {
                 const users = app.db.getUsers();
                 const user = users.find(u => (u.id === userid || u.emailOrMobile === userid || u.email === userid || u.phone === userid) && u.password === pass);
                 if(user) {
-                    app.login(user);
+                    app.login(user, pass);
                 } else {
                     app.showPopup('Login Failed', 'Invalid User ID or Password', 'error');
                 }
@@ -1814,12 +1952,360 @@ const app = {
         });
     },
 
-    login: function(user) {
+    login: function(user, enteredPassword) {
         this.currentUser = user;
         localStorage.setItem('pb_session', JSON.stringify(user));
         this.updateNavState();
         this.navigateDashboard();
         this.showToast('Logged in successfully', 'success');
+
+        // Check if credentials are already saved
+        const saved = localStorage.getItem('pb_saved_credentials');
+        let alreadySaved = false;
+        if (saved) {
+            try {
+                const creds = JSON.parse(saved);
+                if (creds.userid === user.id && creds.password === enteredPassword) {
+                    alreadySaved = true;
+                }
+            } catch(e) {}
+        }
+
+        if (!alreadySaved && enteredPassword) {
+            // Wait 1 second before prompting to let dashboard load smoothly
+            setTimeout(() => {
+                this.showPopup('Save Password?', 'Would you like to save this User ID and Password in the browser for future logins?', 'confirm', () => {
+                    localStorage.setItem('pb_saved_credentials', JSON.stringify({
+                        userid: user.id || user.emailOrMobile || document.getElementById('login-userid').value,
+                        password: enteredPassword
+                    }));
+                    this.showToast('Credentials saved successfully in the browser!', 'success');
+                    
+                    // Try to save using native Credential Management API (if supported)
+                    if (window.PasswordCredential && navigator.credentials && navigator.credentials.store) {
+                        try {
+                            const cred = new PasswordCredential({
+                                id: user.id || user.emailOrMobile || document.getElementById('login-userid').value,
+                                password: enteredPassword
+                            });
+                            navigator.credentials.store(cred);
+                        } catch(err) {
+                            console.warn("Credential Management API not supported in this frame:", err);
+                        }
+                    }
+                });
+            }, 1000);
+        }
+    },
+
+    autofillSavedCredentials: function() {
+        const saved = localStorage.getItem('pb_saved_credentials');
+        if (saved) {
+            try {
+                const creds = JSON.parse(saved);
+                const userEl = document.getElementById('login-userid');
+                const passEl = document.getElementById('login-password');
+                if (userEl && passEl) {
+                    userEl.value = creds.userid || '';
+                    passEl.value = creds.password || '';
+                }
+            } catch(e) {}
+        }
+    },
+
+    addFileBonds: function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('file-bond-input');
+        const file = fileInput.files[0];
+        if (!file) {
+            this.showToast('Please select a file to upload.', 'error');
+            return;
+        }
+
+        if (!file.name.endsWith('.txt')) {
+            this.showToast('Only .txt files are accepted.', 'error');
+            return;
+        }
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn ? submitBtn.innerHTML : 'Upload and Save Bonds';
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing File...';
+            submitBtn.disabled = true;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target.result;
+            const lines = content.split(/\r?\n/);
+            const validNums = [];
+            let errors = 0;
+
+            lines.forEach(line => {
+                let trimmed = line.trim();
+                if (trimmed === '') return;
+                if (/^[0-9]+$/.test(trimmed) && trimmed.length <= 7) {
+                    trimmed = this.padBondNumber(trimmed);
+                }
+                if (this.isValidBond(trimmed)) {
+                    validNums.push(trimmed);
+                } else {
+                    errors++;
+                }
+            });
+
+            if (validNums.length > 0) {
+                this.saveBonds(validNums);
+                fileInput.value = '';
+                if (submitBtn) {
+                    submitBtn.innerHTML = origText;
+                    submitBtn.disabled = false;
+                }
+                if (errors > 0) {
+                    this.showToast(`Uploaded ${validNums.length} numbers. Skipped ${errors} invalid rows.`, 'warning');
+                } else {
+                    this.showToast(`Successfully uploaded ${validNums.length} numbers.`, 'success');
+                }
+            } else {
+                if (submitBtn) {
+                    submitBtn.innerHTML = origText;
+                    submitBtn.disabled = false;
+                }
+                this.showToast('No valid 7-digit numbers found in the file.', 'error');
+            }
+        };
+        reader.onerror = () => {
+            if (submitBtn) {
+                submitBtn.innerHTML = origText;
+                submitBtn.disabled = false;
+            }
+            this.showToast('Failed to read file.', 'error');
+        };
+        reader.readAsText(file);
+    },
+
+    switchRecoveryStep: function(step) {
+        document.querySelectorAll('.recovery-step').forEach(el => {
+            el.classList.add('hidden');
+        });
+        const target = document.getElementById('recovery-step-' + step);
+        if (target) {
+            target.classList.remove('hidden');
+        }
+    },
+
+    handleRecoveryStep1: function(e) {
+        e.preventDefault();
+        const identifier = document.getElementById('recovery-identifier').value.trim();
+        if (!identifier) return;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        document.getElementById('recovery-userId').value = res.userId;
+                        document.getElementById('recovery-reset-userId').value = res.userId;
+                        app.switchRecoveryStep(2);
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error during identifier verification.', 'error');
+                })
+                .verifyRecoveryIdentifier({ identifier });
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                const users = this.db.getUsers();
+                const user = users.find(u => u.emailOrMobile === identifier || u.email === identifier || u.phone === identifier || u.id === identifier);
+                if (user) {
+                    document.getElementById('recovery-userId').value = user.id;
+                    document.getElementById('recovery-reset-userId').value = user.id;
+                    app.switchRecoveryStep(2);
+                } else {
+                    app.showToast('Identifier not registered.', 'error');
+                }
+            }, 500);
+        }
+    },
+
+    handleRecoveryStep2: function(e) {
+        e.preventDefault();
+        const userId = document.getElementById('recovery-userId').value;
+        const name = document.getElementById('recovery-verify-name').value.trim();
+        if (!name) return;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.switchRecoveryStep(4);
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error verifying profile details.', 'error');
+                })
+                .verifyRecoveryProfile({ name, dob: '', profession: '' }); // Uses general lookup on backend
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                const users = this.db.getUsers();
+                const user = users.find(u => u.id === userId);
+                if (user && String(user.name).toLowerCase() === name.toLowerCase()) {
+                    app.switchRecoveryStep(4);
+                } else {
+                    app.showToast('Verification failed. Name does not match.', 'error');
+                }
+            }, 500);
+        }
+    },
+
+    handleRecoveryProfile: function(e) {
+        e.preventDefault();
+        const name = document.getElementById('recovery-prof-name').value.trim();
+        const dob = document.getElementById('recovery-prof-dob').value;
+        const profession = document.getElementById('recovery-prof-profession').value.trim();
+
+        if (!name || !dob || !profession) return;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        document.getElementById('recovery-reset-userId').value = res.userId;
+                        app.switchRecoveryStep(4);
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error verifying profile details.', 'error');
+                })
+                .verifyRecoveryProfile({ name, dob, profession });
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                const users = this.db.getUsers();
+                const user = users.find(u => {
+                    const dobMatch = u.dob === dob;
+                    const nameMatch = String(u.name).toLowerCase() === name.toLowerCase();
+                    const profMatch = String(u.occupation || u.profession || '').toLowerCase() === profession.toLowerCase();
+                    return nameMatch && dobMatch && profMatch;
+                });
+                if (user) {
+                    document.getElementById('recovery-reset-userId').value = user.id;
+                    app.switchRecoveryStep(4);
+                } else {
+                    app.showToast('No account matches these profile details.', 'error');
+                }
+            }, 500);
+        }
+    },
+
+    onSubmitRecoveryReset: function(e) {
+        e.preventDefault();
+        const userId = document.getElementById('recovery-reset-userId').value;
+        const password = document.getElementById('recovery-new-password').value;
+        const confirmPassword = document.getElementById('recovery-confirm-password').value;
+        if (!userId || !password) return;
+
+        if (password !== confirmPassword) {
+            this.showToast('Passwords do not match.', 'error');
+            return;
+        }
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn.textContent;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting...';
+        submitBtn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    if (res.success) {
+                        app.showPopup('Success', res.message, 'success', () => {
+                            // Reset forms
+                            document.getElementById('recovery-identifier').value = '';
+                            document.getElementById('recovery-verify-name').value = '';
+                            document.getElementById('recovery-prof-name').value = '';
+                            document.getElementById('recovery-prof-profession').value = '';
+                            document.getElementById('recovery-new-password').value = '';
+                            document.getElementById('recovery-confirm-password').value = '';
+                            app.navigate('login-view');
+                        });
+                    } else {
+                        app.showToast(res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                    app.showToast('Server error resetting password.', 'error');
+                })
+                .resetRecoveryPassword({ userId, password });
+        } else {
+            // Local fallback
+            setTimeout(() => {
+                submitBtn.textContent = origText;
+                submitBtn.disabled = false;
+                const users = this.db.getUsers();
+                const index = users.findIndex(u => u.id === userId);
+                if (index > -1) {
+                    users[index].password = password;
+                    this.db.setUsers(users);
+                    this.db.logAuditEvent(userId, 'RESET_PASSWORD', 'Password reset successfully through account recovery.');
+                    app.showPopup('Success', 'Password has been reset successfully.', 'success', () => {
+                        document.getElementById('recovery-identifier').value = '';
+                        document.getElementById('recovery-verify-name').value = '';
+                        document.getElementById('recovery-prof-name').value = '';
+                        document.getElementById('recovery-prof-profession').value = '';
+                        document.getElementById('recovery-new-password').value = '';
+                        document.getElementById('recovery-confirm-password').value = '';
+                        app.navigate('login-view');
+                    });
+                } else {
+                    app.showToast('User not found.', 'error');
+                }
+            }, 500);
+        }
     },
 
     logout: function() {
@@ -1989,7 +2475,7 @@ const app = {
                                         winsTable.innerHTML = resMatches.matches.map(w => `
                                             <tr class="border-b border-slate-300/50 hover:bg-slate-100">
                                                 <td class="px-4 py-3">${w.draw} Draw</td>
-                                                <td class="px-4 py-3 font-mono font-bold text-emerald-600">${w.bond}</td>
+                                                <td class="px-4 py-3 font-mono font-bold text-emerald-600">${app.padBondNumber(w.bond)}</td>
                                                 <td class="px-4 py-3"><span style="background-color: rgba(76, 209, 55, 0.15); color: var(--primary-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
                                             </tr>
                                         `).join('');
@@ -2033,7 +2519,7 @@ const app = {
                 winsTable.innerHTML = wins.map(w => `
                     <tr class="border-b border-slate-300/50 hover:bg-slate-100">
                         <td class="px-4 py-3">${w.draw} Draw</td>
-                        <td class="px-4 py-3 font-mono font-bold text-emerald-600">${w.bond}</td>
+                        <td class="px-4 py-3 font-mono font-bold text-emerald-600">${app.padBondNumber(w.bond)}</td>
                         <td class="px-4 py-3"><span style="background-color: rgba(76, 209, 55, 0.15); color: var(--primary-color); padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
                     </tr>
                 `).join('');
@@ -2042,16 +2528,22 @@ const app = {
     },
 
     switchAddMode: function(mode) {
+        document.getElementById('form-single-entry').classList.add('hidden');
+        document.getElementById('form-multiple-entry').classList.add('hidden');
+        document.getElementById('form-file-entry').classList.add('hidden');
+        document.getElementById('tab-single').classList.remove('active');
+        document.getElementById('tab-multiple').classList.remove('active');
+        document.getElementById('tab-file').classList.remove('active');
+
         if(mode === 'single') {
             document.getElementById('form-single-entry').classList.remove('hidden');
-            document.getElementById('form-multiple-entry').classList.add('hidden');
             document.getElementById('tab-single').classList.add('active');
-            document.getElementById('tab-multiple').classList.remove('active');
-        } else {
-            document.getElementById('form-single-entry').classList.add('hidden');
+        } else if(mode === 'multiple') {
             document.getElementById('form-multiple-entry').classList.remove('hidden');
             document.getElementById('tab-multiple').classList.add('active');
-            document.getElementById('tab-single').classList.remove('active');
+        } else if(mode === 'file') {
+            document.getElementById('form-file-entry').classList.remove('hidden');
+            document.getElementById('tab-file').classList.add('active');
         }
     },
 
@@ -2062,7 +2554,10 @@ const app = {
     addSingleBond: function(e) {
         e.preventDefault();
         const input = document.getElementById('single-bond-input');
-        const num = input.value.trim();
+        let num = input.value.trim();
+        if (/^[0-9]+$/.test(num) && num.length <= 7) {
+            num = this.padBondNumber(num);
+        }
         
         if(this.isValidBond(num)) {
             this.saveBonds([num]);
@@ -2075,13 +2570,17 @@ const app = {
     addMultipleBonds: function(e) {
         e.preventDefault();
         const input = document.getElementById('multiple-bond-input');
-        const rawNums = input.value.split(/[\s,]+/);
+        const rawNums = input.value.split(/\s+/);
         const validNums = [];
         let errors = 0;
 
         rawNums.forEach(n => {
-            if(n.trim() === '') return;
-            if(this.isValidBond(n)) validNums.push(n.trim());
+            let trimmed = n.trim();
+            if(trimmed === '') return;
+            if (/^[0-9]+$/.test(trimmed) && trimmed.length <= 7) {
+                trimmed = this.padBondNumber(trimmed);
+            }
+            if(this.isValidBond(trimmed)) validNums.push(trimmed);
             else errors++;
         });
 
@@ -2099,7 +2598,7 @@ const app = {
     },
 
     saveBonds: function(numbers) {
-        const submitBtn = document.querySelector('#form-single-entry button[type="submit"]') || document.querySelector('#form-multiple-entry button[type="submit"]');
+        const submitBtn = document.querySelector('#form-single-entry button[type="submit"]') || document.querySelector('#form-multiple-entry button[type="submit"]') || document.querySelector('#form-file-entry button[type="submit"]');
         let origText = submitBtn ? submitBtn.innerHTML : '';
         if (submitBtn) {
             submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
@@ -2189,20 +2688,29 @@ const app = {
             return;
         }
 
-        tbody.innerHTML = bonds.map((b, idx) => `
-            <tr class="hover:bg-slate-100">
-                <td class="px-6 py-3">${idx + 1}</td>
-                <td class="px-6 py-3 font-mono font-bold tracking-wider text-black">${b.number}</td>
-                <td class="px-6 py-3 text-black">${b.dateAdded || ''}</td>
-                <td class="px-6 py-3 text-right">
-                    <button onclick="app.deleteBond('${b.number}')" class="text-danger hover:text-red-400 px-2 py-1" style="background: none; border: none; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = bonds.map((b, idx) => {
+            const paddedNum = app.padBondNumber(b.number);
+            return `
+                <tr class="hover:bg-slate-100">
+                    <td class="px-6 py-3 text-center" style="width: 60px;">${idx + 1}</td>
+                    <td class="px-6 py-3 font-mono font-bold tracking-wider text-black text-center" style="font-size: 14px;">${paddedNum}</td>
+                    <td class="px-6 py-3 text-black text-center">${b.dateAdded || ''}</td>
+                    <td class="px-6 py-3 text-center" style="width: 120px;">
+                        <div class="dropdown-menu-container">
+                            <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 12px;" onclick="app.toggleDropdown(this, event)"><i class="fa-solid fa-ellipsis-vertical"></i> Actions</button>
+                            <div class="dropdown-menu-content">
+                                <button onclick="app.editBond('${paddedNum}')"><i class="fa-solid fa-pen text-primary"></i> Edit</button>
+                                <button onclick="app.deleteBond('${paddedNum}')" style="color: var(--danger-color) !important;"><i class="fa-solid fa-trash text-danger"></i> Delete</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     },
 
     deleteBond: function(bondNumber) {
-        if(confirm(`Delete bond number ${bondNumber}?`)) {
+        this.showPopup('Delete Bond', `Are you sure you want to permanently delete prize bond number ${bondNumber}?`, 'confirm', () => {
             if (typeof google !== 'undefined' && google.script && google.script.run) {
                 google.script.run
                     .withSuccessHandler((res) => {
@@ -2226,7 +2734,76 @@ const app = {
                 this.renderMyBonds();
                 this.showToast('Bond deleted', 'info');
             }
-        }
+        });
+    },
+
+    editBond: function(bondNumber) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-card" style="max-width: 380px; text-align: left; color: #000000;">
+                <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: black !important; text-align: center;"><i class="fa-solid fa-pen"></i> Edit Prize Bond</h3>
+                <form id="edit-bond-form">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="color: black !important; font-weight: 500;">Bond Number</label>
+                        <input type="text" id="edit-bond-input" class="form-control" pattern="[0-9]{7}" maxlength="7" required value="${bondNumber}" style="color: #000000; font-family: monospace; font-size: 16px; font-weight: bold; text-align: center;">
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 15px; width: 100%; margin-top: 20px;">
+                        <button type="button" class="popup-cancel btn btn-secondary">Cancel</button>
+                        <button type="submit" class="popup-confirm btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.getElementById('modal-container').appendChild(modal);
+
+        modal.querySelector('.popup-cancel').addEventListener('click', () => modal.remove());
+        modal.querySelector('#edit-bond-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            let newNum = document.getElementById('edit-bond-input').value.trim();
+            if (/^[0-9]+$/.test(newNum) && newNum.length <= 7) {
+                newNum = this.padBondNumber(newNum);
+            }
+            if(!this.isValidBond(newNum)) {
+                this.showToast('Invalid bond number. Must be exactly 7 digits.', 'error');
+                return;
+            }
+
+            modal.remove();
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (res.success) {
+                            app.showToast(res.message, 'success');
+                            app.renderMyBonds();
+                        } else {
+                            app.showToast(res.message, 'error');
+                        }
+                    })
+                    .withFailureHandler((err) => {
+                        app.showToast('Server error editing bond', 'error');
+                    })
+                    .updateBond({ userId: this.currentUser.id, oldNumber: bondNumber, newNumber: newNum });
+            } else {
+                // Local fallback
+                let bonds = this.db.getBonds(this.currentUser.id);
+                const index = bonds.findIndex(b => app.padBondNumber(b.number) === app.padBondNumber(bondNumber));
+                if(index > -1) {
+                    if (bonds.some((b, idx) => idx !== index && app.padBondNumber(b.number) === app.padBondNumber(newNum))) {
+                        this.showToast('You are already tracking the new bond number.', 'error');
+                        return;
+                    }
+                    bonds[index].number = newNum;
+                    this.db.setBonds(this.currentUser.id, bonds);
+                    this.db.logAuditEvent(this.currentUser.id, 'EDIT_PRIZEBOND', `Updated prize bond ${bondNumber} to ${newNum}`);
+                    this.renderMyBonds();
+                    this.showToast('Bond updated successfully', 'success');
+                } else {
+                    this.showToast('Bond not found', 'error');
+                }
+            }
+        });
     },
 
     exportBonds: function() {
@@ -2269,6 +2846,16 @@ const app = {
             if(emLink) emLink.href = `mailto:${email}`;
             if(waLinkUnauth) waLinkUnauth.href = `https://wa.me/${cleanWa}`;
             if(emLinkUnauth) emLinkUnauth.href = `mailto:${email}`;
+            
+            const guestWa = document.getElementById('guest-support-wa');
+            const guestEm = document.getElementById('guest-support-email');
+            if(guestWa) guestWa.href = `https://wa.me/${cleanWa}`;
+            if(guestEm) guestEm.href = `mailto:${email}`;
+
+            const recWa = document.getElementById('recovery-support-wa');
+            const recEm = document.getElementById('recovery-support-email');
+            if(recWa) recWa.href = `https://wa.me/${cleanWa}`;
+            if(recEm) recEm.href = `mailto:${email}`;
         };
 
         if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -2618,29 +3205,46 @@ const app = {
             document.getElementById('tdv-closed-msg').classList.remove('hidden');
         }
 
-        // Setup Admin toggles and audit info
+        // Setup Admin/User toggles and audit info
         const adminActions = document.getElementById('tdv-admin-actions');
         const auditCreatedByContainer = document.getElementById('tdv-audit-created-by-container');
         const auditUpdatedByContainer = document.getElementById('tdv-audit-updated-by-container');
         
-        if (this.currentUser && this.currentUser.role === 'admin') {
-            adminActions.classList.remove('hidden');
-            if (auditCreatedByContainer) {
-                auditCreatedByContainer.classList.remove('hidden');
-                document.getElementById('tdv-created-by').textContent = ticket.created_by || 'N/A';
-            }
-            if (auditUpdatedByContainer) {
-                auditUpdatedByContainer.classList.remove('hidden');
-                document.getElementById('tdv-updated-by').textContent = ticket.updated_by || 'N/A';
-            }
+        if (this.currentUser) {
+            const isAdmin = this.currentUser.role === 'admin';
+            const isOwner = ticket.userId === this.currentUser.id;
             
-            const toggleBtn = document.getElementById('tdv-toggle-status-btn');
-            if (isOpen) {
-                toggleBtn.innerHTML = `<i class="fa-solid fa-lock"></i> Close Ticket`;
+            if (isAdmin) {
+                adminActions.classList.remove('hidden');
+                const toggleBtn = document.getElementById('tdv-toggle-status-btn');
+                if (isOpen) {
+                    toggleBtn.innerHTML = `<i class="fa-solid fa-lock"></i> Close Ticket`;
+                    toggleBtn.className = 'btn btn-secondary';
+                } else {
+                    toggleBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> Reopen Ticket`;
+                    toggleBtn.className = 'btn btn-primary';
+                }
+            } else if (isOwner && isOpen) {
+                adminActions.classList.remove('hidden');
+                const toggleBtn = document.getElementById('tdv-toggle-status-btn');
+                toggleBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Close Ticket`;
                 toggleBtn.className = 'btn btn-secondary';
             } else {
-                toggleBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> Reopen Ticket`;
-                toggleBtn.className = 'btn btn-primary';
+                adminActions.classList.add('hidden');
+            }
+
+            if (isAdmin) {
+                if (auditCreatedByContainer) {
+                    auditCreatedByContainer.classList.remove('hidden');
+                    document.getElementById('tdv-created-by').textContent = ticket.created_by || 'N/A';
+                }
+                if (auditUpdatedByContainer) {
+                    auditUpdatedByContainer.classList.remove('hidden');
+                    document.getElementById('tdv-updated-by').textContent = ticket.updated_by || 'N/A';
+                }
+            } else {
+                if (auditCreatedByContainer) auditCreatedByContainer.classList.add('hidden');
+                if (auditUpdatedByContainer) auditUpdatedByContainer.classList.add('hidden');
             }
         } else {
             adminActions.classList.add('hidden');
@@ -2837,6 +3441,12 @@ const app = {
                 .withSuccessHandler((res) => {
                     if (res.success) {
                         const newStatus = res.ticket.status === 'open' ? 'closed' : 'open';
+                        if (this.currentUser.role !== 'admin' && newStatus !== 'closed') {
+                            app.showToast('You cannot reopen a closed ticket.', 'error');
+                            toggleBtn.disabled = false;
+                            toggleBtn.innerHTML = origText;
+                            return;
+                        }
                         performToggle(newStatus);
                     } else {
                         toggleBtn.disabled = false;
@@ -3124,7 +3734,13 @@ const app = {
         const reader = new FileReader();
         reader.onload = (eEvent) => {
             const content = eEvent.target.result;
-            const nums = content.split(/[\s,]+/).filter(n => n.trim() !== '');
+            const nums = content.split(/[\s,]+/).filter(n => n.trim() !== '').map(n => {
+                let trimmed = n.trim();
+                if (/^[0-9]+$/.test(trimmed) && trimmed.length <= 7) {
+                    trimmed = app.padBondNumber(trimmed);
+                }
+                return trimmed;
+            });
             
             if(nums.length !== 46) {
                 app.showToast(`File must contain exactly 46 numbers. Found ${nums.length}.`, 'error');
@@ -3222,7 +3838,10 @@ const app = {
         let invalidCount = 0;
 
         inputs.forEach(input => {
-            const num = input.value.trim();
+            let num = input.value.trim();
+            if (/^[0-9]+$/.test(num) && num.length <= 7) {
+                num = app.padBondNumber(num);
+            }
             if(app.isValidBond(num)) {
                 results.push({ num: num, prize: input.dataset.prize });
             } else {
@@ -3353,11 +3972,11 @@ const app = {
         document.getElementById('draw-title-display').textContent = `${draw.number}th Draw Results`;
         document.getElementById('draw-date-display').textContent = `Draw Date: ${draw.date}`;
 
-        const first = draw.results.filter(r => r.prize === '1st Prize').map(r => r.num).join(', ');
-        const second = draw.results.filter(r => r.prize === '2nd Prize').map(r => r.num).join(', ');
-        const third = draw.results.filter(r => r.prize === '3rd Prize').map(r => r.num).join(', ');
-        const fourth = draw.results.filter(r => r.prize === '4th Prize').map(r => r.num).join(', ');
-        const fifth = draw.results.filter(r => r.prize === '5th Prize').map(r => r.num);
+        const first = draw.results.filter(r => r.prize === '1st Prize').map(r => app.padBondNumber(r.num)).join(', ');
+        const second = draw.results.filter(r => r.prize === '2nd Prize').map(r => app.padBondNumber(r.num)).join(', ');
+        const third = draw.results.filter(r => r.prize === '3rd Prize').map(r => app.padBondNumber(r.num)).join(', ');
+        const fourth = draw.results.filter(r => r.prize === '4th Prize').map(r => app.padBondNumber(r.num)).join(', ');
+        const fifth = draw.results.filter(r => r.prize === '5th Prize').map(r => app.padBondNumber(r.num));
 
         document.getElementById('res-1st').textContent = first || '-';
         document.getElementById('res-2nd').textContent = second || '-';
@@ -3365,9 +3984,18 @@ const app = {
         document.getElementById('res-4th').textContent = fourth || '-';
 
         const fifthContainer = document.getElementById('res-5th-container');
-        fifthContainer.innerHTML = fifth.map(num => `
-            <span class="font-mono text-black" style="padding: 4px 8px; border: 1px solid #eee; background: #fafafa; border-radius: 4px; text-align: center; font-size: 13px;">${num}</span>
-        `).join('');
+        let fifthTableHtml = '<table class="table" style="text-align: center; font-family: monospace; font-size: 13px; width: 100%;"><tbody>';
+        for (let row = 0; row < 5; row++) {
+            fifthTableHtml += '<tr>';
+            for (let col = 0; col < 8; col++) {
+                const idx = row * 8 + col;
+                const num = fifth[idx] ? app.padBondNumber(fifth[idx]) : '';
+                fifthTableHtml += `<td style="text-align: center; font-weight: bold; color: black !important; padding: 8px; border: 1px solid #cbd5e1; background: #ffffff;">${num}</td>`;
+            }
+            fifthTableHtml += '</tr>';
+        }
+        fifthTableHtml += '</tbody></table>';
+        fifthContainer.innerHTML = fifthTableHtml;
 
         const winsDiv = document.getElementById('draw-user-wins');
         const winsTbody = document.getElementById('draw-user-wins-tbody');
@@ -3383,7 +4011,7 @@ const app = {
                         if (userWins.length > 0) {
                             winsTbody.innerHTML = userWins.map(w => `
                                 <tr>
-                                    <td class="font-mono font-bold text-emerald-600">${w.num}</td>
+                                    <td class="font-mono font-bold text-emerald-600">${app.padBondNumber(w.num)}</td>
                                     <td><span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
                                 </tr>
                             `).join('');
@@ -3400,7 +4028,7 @@ const app = {
             if (userWins.length > 0) {
                 winsTbody.innerHTML = userWins.map(w => `
                     <tr>
-                        <td class="font-mono font-bold text-emerald-600">${w.num}</td>
+                        <td class="font-mono font-bold text-emerald-600">${app.padBondNumber(w.num)}</td>
                         <td><span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
                     </tr>
                 `).join('');
@@ -3526,6 +4154,7 @@ const app = {
         const originalNavigate = this.navigate.bind(this);
         this.navigate = (viewId, isPopState = false) => {
             originalNavigate(viewId, isPopState);
+            if(viewId === 'login-view') this.autofillSavedCredentials();
             if(viewId === 'my-bonds-view') this.renderMyBonds();
             if(viewId === 'admin-users-view') this.renderAdminUsers();
             if(viewId === 'profile-view') this.renderProfile();
@@ -3533,6 +4162,7 @@ const app = {
             if(viewId === 'results-view') this.refreshDrawResults();
             if(viewId === 'admin-tickets-view') this.renderAdminTickets();
             if(viewId === 'admin-audit-logs-view') this.renderAdminAuditLogs();
+            if(viewId === 'forgot-password-view') this.switchRecoveryStep(1);
         };
 
         // Close dropdowns when clicking outside
@@ -3573,6 +4203,58 @@ const app = {
             });
         }
 
+        // Dynamic password matching validation message for all confirm fields
+        const passPairs = [
+            { passId: 'reg-password', confirmId: 'reg-confirm' },
+            { passId: 'cp-new', confirmId: 'cp-confirm' },
+            { passId: 'recovery-new-password', confirmId: 'recovery-confirm-password' }
+        ];
+
+        passPairs.forEach(pair => {
+            const passEl = document.getElementById(pair.passId);
+            const confirmEl = document.getElementById(pair.confirmId);
+            
+            if (passEl && confirmEl) {
+                const msgEl = document.createElement('small');
+                msgEl.className = 'password-match-msg';
+                msgEl.style.display = 'block';
+                msgEl.style.marginTop = '5px';
+                msgEl.style.fontSize = '12px';
+                msgEl.style.fontWeight = '500';
+                confirmEl.parentNode.appendChild(msgEl);
+
+                const updateMessage = () => {
+                    const passVal = passEl.value;
+                    const confirmVal = confirmEl.value;
+
+                    if (!confirmVal) {
+                        msgEl.textContent = '';
+                        msgEl.style.color = '';
+                        return;
+                    }
+
+                    if (!passVal) {
+                        msgEl.textContent = 'A password must be entered first.';
+                        msgEl.style.color = '#ff4d4d';
+                        return;
+                    }
+
+                    if (passVal !== confirmVal) {
+                        msgEl.textContent = 'Passwords do not match.';
+                        msgEl.style.color = '#ff4d4d';
+                    } else {
+                        msgEl.textContent = 'Password matched.';
+                        msgEl.style.color = '#2ed573';
+                    }
+                };
+
+                passEl.addEventListener('input', updateMessage);
+                confirmEl.addEventListener('input', updateMessage);
+            }
+        });
+
+        this.renderSupportSettings();
+        this.autofillSavedCredentials();
         const session = localStorage.getItem('pb_session');
         if(session) {
             this.currentUser = JSON.parse(session);
