@@ -148,6 +148,43 @@ function doGet(e) {
 // Database Utilities & Key Generators (Normalized RDBMS)
 // ----------------------------------------------------
 
+function formatBackendDate(val) {
+  if (!val) return '';
+  try {
+    if (val instanceof Date || (typeof val === 'object' && typeof val.getMonth === 'function')) {
+      return val.toISOString();
+    }
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString();
+    }
+  } catch (e) {
+    // Ignore error
+  }
+  return String(val);
+}
+
+function formatDOB(val) {
+  if (!val) return '';
+  try {
+    let d;
+    if (val instanceof Date || (typeof val === 'object' && typeof val.getMonth === 'function')) {
+      d = val;
+    } else {
+      d = new Date(val);
+    }
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {
+    // Ignore error
+  }
+  return String(val);
+}
+
 function generatePrimaryKey(tableName, customPrefix) {
   const rawPrefix = customPrefix || String(tableName).substring(0, 3);
   const prefix = rawPrefix.toUpperCase();
@@ -217,7 +254,7 @@ function setupDatabase() {
   const ss = getSpreadsheet();
   const tables = [
     { name: 'Users', headers: ['UserId', 'EmailOrMobile', 'Password', 'Role', 'Status', 'created_at', 'created_by', 'updated_at', 'updated_by'] },
-    { name: 'Profiles', headers: ['ProfileId', 'UserId', 'FullName', 'DOB', 'Address', 'Profession', 'MobileNumber', 'EmailAddress', 'ProfilePhoto', 'created_at', 'created_by', 'updated_at', 'updated_by'] },
+    { name: 'Profiles', headers: ['ProfileId', 'UserId', 'FullName', 'DOB', 'Address', 'Profession', 'MobileNumber', 'EmailAddress', 'ProfilePhoto', 'created_at', 'created_by', 'updated_at', 'updated_by', 'HomeDistrict', 'EntryBalance'] },
     { name: 'PrizeBonds', headers: ['PrizeBondId', 'UserId', 'BondNumber', 'created_at', 'created_by', 'updated_at', 'updated_by'] },
     { name: 'Draws', headers: ['DrawId', 'DrawNumber', 'DrawDate', 'created_at', 'created_by', 'updated_at', 'updated_by'] },
     { name: 'DrawResults', headers: ['DrawResultId', 'DrawId', 'BondNumber', 'PrizeLevel', 'created_at', 'created_by', 'updated_at', 'updated_by'] },
@@ -319,7 +356,7 @@ function registerUser(data) {
   // Insert Profiles
   const mobile = data.type === 'mobile' ? targetId : '';
   const email = data.type === 'email' ? targetId : '';
-  profileSheet.appendRow(["'" + profileId, "'" + userId, data.name, '', '', '', mobile ? "'" + mobile : '', email, '', timestamp, userId, timestamp, userId]);
+  profileSheet.appendRow(["'" + profileId, "'" + userId, data.name, '', '', '', mobile ? "'" + mobile : '', email, '', timestamp, userId, timestamp, userId, '', 5]);
   
   logAuditEvent(userId, 'user_registration', 'Registered new user account with login identifier: ' + targetId);
   
@@ -355,28 +392,37 @@ function loginUser(userid, password) {
       }
       
       // Get profile
-      let profile = { name: '', dob: '', address: '', profession: '', phone: '', email: '' };
+      let profile = { name: '', dob: '', address: '', profession: '', phone: '', email: '', profilePhoto: '', homeDistrict: '', entryBalance: 5 };
+      let profileCreatedAt = '';
       for (let j = 1; j < profiles.length; j++) {
         if (String(profiles[j][1]).trim() === dbUserId) {
           profile = {
             name: profiles[j][2],
-            dob: profiles[j][3],
+            dob: formatDOB(profiles[j][3]),
             address: profiles[j][4],
             profession: profiles[j][5],
             phone: profiles[j][6],
-            email: profiles[j][7]
+            email: profiles[j][7],
+            profilePhoto: profiles[j][8] || '',
+            homeDistrict: profiles[j][13] || '',
+            entryBalance: profiles[j][14] !== undefined && profiles[j][14] !== '' ? Number(profiles[j][14]) : 5
           };
+          profileCreatedAt = profiles[j][9]; // Column 10 of Profile sheet
           break;
         }
       }
       
       logAuditEvent(dbUserId, 'user_login', 'User logged in successfully.');
       
+      const rawCreatedAt = users[i][5] || profileCreatedAt || '';
+      
       return { 
         success: true, 
         user: {
           id: dbUserId,
           role: dbRole,
+          createdAt: formatBackendDate(rawCreatedAt),
+          emailOrMobile: dbEmailOrMobile,
           ...profile
         }
       };
@@ -464,8 +510,10 @@ function updateProfile(data) {
       profileSheet.getRange(rowIndex, 6).setValue(data.profession || '');
       profileSheet.getRange(rowIndex, 7).setValue(data.phone || '');
       profileSheet.getRange(rowIndex, 8).setValue(data.email || '');
+      profileSheet.getRange(rowIndex, 9).setValue(data.profilePhoto || '');
       profileSheet.getRange(rowIndex, 11).setValue(timestamp);
       profileSheet.getRange(rowIndex, 12).setValue(data.userId);
+      profileSheet.getRange(rowIndex, 14).setValue(data.homeDistrict || '');
       
       logAuditEvent(data.userId, 'update_profile', 'Updated profile information.');
       return { success: true, message: 'Profile updated successfully' };
@@ -486,6 +534,7 @@ function adminCreateUser(data) {
 function adminGetUsers() {
   const { values: users } = getSheetData('Users');
   const { values: profiles } = getSheetData('Profiles');
+  const { values: bonds } = getSheetData('PrizeBonds');
   const userList = [];
   
   for (let i = 1; i < users.length; i++) {
@@ -494,23 +543,33 @@ function adminGetUsers() {
     const password = users[i][2];
     const role = users[i][3];
     const status = users[i][4];
-    const createdAt = users[i][5];
+    const createdAt = formatBackendDate(users[i][5]);
     const createdBy = users[i][6];
-    const updatedAt = users[i][7];
+    const updatedAt = formatBackendDate(users[i][7]);
     const updatedBy = users[i][8];
     
     if (role === 'admin') continue;
     
-    let profile = { name: '', email: '', phone: '', dob: '', address: '', profession: '' };
+    let totalBonds = 0;
+    for (let k = 1; k < bonds.length; k++) {
+      if (String(bonds[k][1]).trim() === uId) {
+        totalBonds++;
+      }
+    }
+    
+    let profile = { name: '', email: '', phone: '', dob: '', address: '', profession: '', profilePhoto: '', homeDistrict: '', entryBalance: 5 };
     for (let j = 1; j < profiles.length; j++) {
       if (String(profiles[j][1]).trim() === uId) {
         profile = {
           name: profiles[j][2],
-          dob: profiles[j][3],
+          dob: formatDOB(profiles[j][3]),
           address: profiles[j][4],
           profession: profiles[j][5],
           phone: profiles[j][6],
-          email: profiles[j][7]
+          email: profiles[j][7],
+          profilePhoto: profiles[j][8] || '',
+          homeDistrict: profiles[j][13] || '',
+          entryBalance: profiles[j][14] !== undefined && profiles[j][14] !== '' ? Number(profiles[j][14]) : 5
         };
         break;
       }
@@ -526,6 +585,7 @@ function adminGetUsers() {
       createdBy: createdBy,
       updatedAt: updatedAt,
       updatedBy: updatedBy,
+      totalBonds: totalBonds,
       ...profile
     });
   }
@@ -645,7 +705,7 @@ function getBonds(userId) {
     if(String(values[i][1]).trim() === targetUserId) {
       userBonds.push({
         number: padBondNumber(values[i][2]),
-        dateAdded: values[i][3] ? new Date(values[i][3]).toLocaleDateString() : ''
+        dateAdded: formatBackendDate(values[i][3])
       });
     }
   }
@@ -861,7 +921,7 @@ function adminGetAuditLogs() {
       userName: userName,
       action: values[i][2],
       details: values[i][3],
-      created_at: values[i][4]
+      created_at: formatBackendDate(values[i][4])
     });
   }
   // Sort descending (most recent first)
@@ -912,8 +972,8 @@ function getUserTickets(userId) {
         category: values[i][3],
         description: values[i][4],
         status: values[i][5],
-        created_at: values[i][6],
-        updated_at: values[i][8]
+        created_at: formatBackendDate(values[i][6]),
+        updated_at: formatBackendDate(values[i][8])
       });
     }
   }
@@ -938,8 +998,8 @@ function getTicketDetails(ticketId) {
         category: tValues[i][3],
         description: tValues[i][4],
         status: tValues[i][5],
-        created_at: tValues[i][6],
-        updated_at: tValues[i][8],
+        created_at: formatBackendDate(tValues[i][6]),
+        updated_at: formatBackendDate(tValues[i][8]),
         created_by: String(tValues[i][7]).trim(),
         updated_by: String(tValues[i][9]).trim()
       };
@@ -960,7 +1020,7 @@ function getTicketDetails(ticketId) {
         ticketId: dbTicketId,
         senderRole: rValues[j][2],
         message: rValues[j][3],
-        created_at: rValues[j][4],
+        created_at: formatBackendDate(rValues[j][4]),
         created_by: String(rValues[j][5]).trim()
       });
     }
@@ -1031,8 +1091,8 @@ function adminGetTickets() {
       category: tValues[i][3],
       description: tValues[i][4],
       status: tValues[i][5],
-      created_at: tValues[i][6],
-      updated_at: tValues[i][8]
+      created_at: formatBackendDate(tValues[i][6]),
+      updated_at: formatBackendDate(tValues[i][8])
     });
   }
   

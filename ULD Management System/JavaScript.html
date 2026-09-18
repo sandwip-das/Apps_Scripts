@@ -1,0 +1,610 @@
+<script>
+  // Application State
+  const AppState = {
+    token: localStorage.getItem('uld_session_token') || null,
+    user: null,
+    prefixes: [],
+    transactions: [],
+    stock: [],
+    activeTab: 'landing'
+  };
+
+  // DOM Loaded Listener
+  document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+  });
+
+  function initApp() {
+    setupEventListeners();
+    if (AppState.token) {
+      // Validate Token
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          if (res) {
+            AppState.user = res;
+            onLoginSuccess();
+          } else {
+            logout();
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          logout();
+        })
+        .verifySession(AppState.token);
+    } else {
+      showLandingPage();
+    }
+  }
+
+  // Password Show/Hide Eye Icon Toggle Helper
+  function togglePasswordVisibility(inputId, btnElement) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (btnElement) btnElement.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      if (btnElement) btnElement.textContent = '👁️';
+    }
+  }
+
+  function setupEventListeners() {
+    // Mobile Drawer Toggle
+    document.getElementById('mobile-toggle-btn').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // Profile Dropdown Toggle
+    document.getElementById('profile-trigger').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('dropdown-menu').classList.toggle('show');
+    });
+
+    document.addEventListener('click', () => {
+      document.getElementById('dropdown-menu').classList.remove('show');
+    });
+
+    // Login Form Submit
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+      const errorHint = document.getElementById('login-error-hint');
+      
+      errorHint.classList.remove('show');
+
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          if (res.success) {
+            closeLoginModal();
+            AppState.token = res.token;
+            AppState.user = res.user;
+            localStorage.setItem('uld_session_token', res.token);
+            showToast('Login successful!', 'success');
+            onLoginSuccess();
+          } else {
+            // Display "Contact your administrator"
+            errorHint.textContent = res.message || 'Contact your administrator';
+            errorHint.classList.add('show');
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          errorHint.textContent = 'Contact your administrator';
+          errorHint.classList.add('show');
+        })
+        .loginUser(email, pass);
+    });
+
+    // OTP Reset Form Submit (3 Fields)
+    document.getElementById('otp-reset-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const currPass = document.getElementById('otp-current-pass').value;
+      const newPass = document.getElementById('otp-new-pass').value;
+      const confirmPass = document.getElementById('otp-confirm-pass').value;
+
+      if (newPass !== confirmPass) {
+        showToast('New passwords do not match.', 'error');
+        return;
+      }
+
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          if (res.success) {
+            showToast(res.message, 'success');
+            document.getElementById('otp-modal').classList.remove('show');
+            AppState.user.isOtp = false;
+            loadDashboardData();
+          } else {
+            showToast(res.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          showToast('Error resetting password: ' + err.message, 'error');
+        })
+        .changePassword(AppState.token, currPass, newPass);
+    });
+
+    // Admin Reset OTP Form Submit
+    document.getElementById('admin-reset-otp-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const targetUserId = document.getElementById('admin-target-userid-input').value;
+      const newOtp = document.getElementById('admin-new-otp-input').value;
+
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          if (res.success) {
+            showToast(res.message, 'success');
+            closeAdminResetOtpModal();
+            loadAdminUsers();
+          } else {
+            showToast(res.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          showToast('Error resetting OTP: ' + err.message, 'error');
+        })
+        .adminResetUserOtp(AppState.token, targetUserId, newOtp);
+    });
+
+    // Transaction Form Submit
+    document.getElementById('txn-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const prefix = document.getElementById('txn-prefix').value;
+      const number = document.getElementById('txn-number').value;
+      const txnType = document.getElementById('txn-type').value;
+      const qty = document.getElementById('txn-qty').value;
+      const remarks = document.getElementById('txn-remarks').value;
+
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          if (res.success) {
+            showToast(res.message, 'success');
+            document.getElementById('txn-form').reset();
+            loadInventoryData();
+          } else {
+            showToast(res.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          showToast('Error recording transaction: ' + err.message, 'error');
+        })
+        .addInventoryTransaction(AppState.token, prefix, number, txnType, qty, remarks);
+    });
+
+    // Admin Create User Form
+    document.getElementById('admin-create-user-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('user-name').value;
+      const email = document.getElementById('user-email').value;
+      const role = document.getElementById('user-role').value;
+      const otp = document.getElementById('user-otp').value;
+
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          if (res.success) {
+            showToast(res.message, 'success');
+            document.getElementById('admin-create-user-form').reset();
+            loadAdminUsers();
+          } else {
+            showToast(res.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          showToast('Error creating user: ' + err.message, 'error');
+        })
+        .adminCreateUser(AppState.token, name, email, role, otp);
+    });
+
+    // Admin Add ULD Prefix Form
+    document.getElementById('admin-add-prefix-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = document.getElementById('prefix-code').value;
+      const type = document.getElementById('prefix-type').value;
+      const desc = document.getElementById('prefix-desc').value;
+
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          if (res.success) {
+            showToast(res.message, 'success');
+            document.getElementById('admin-add-prefix-form').reset();
+            loadPrefixes();
+          } else {
+            showToast(res.message, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          showToast('Error adding prefix: ' + err.message, 'error');
+        })
+        .adminAddUldPrefix(AppState.token, code, type, desc);
+    });
+  }
+
+  function onLoginSuccess() {
+    document.getElementById('nav-login-btn').style.display = 'none';
+    document.getElementById('user-profile-menu').style.display = 'flex';
+    document.getElementById('sidebar').style.display = 'flex';
+
+    const contentArea = document.getElementById('content-area');
+    if (contentArea) contentArea.classList.remove('full-width');
+
+    // Set User Profile UI Info
+    document.getElementById('user-display-name').textContent = AppState.user.name;
+    document.getElementById('user-display-role').textContent = AppState.user.role;
+    document.getElementById('user-avatar').textContent = AppState.user.name.charAt(0).toUpperCase();
+
+    // Setup Navigation Links based on Role
+    setupRoleNavigation();
+
+    // Check mandatory OTP reset
+    if (AppState.user.isOtp) {
+      document.getElementById('otp-modal').classList.add('show');
+    } else {
+      loadDashboardData();
+    }
+  }
+
+  function setupRoleNavigation() {
+    const adminNavs = document.querySelectorAll('.admin-only-nav');
+    if (AppState.user.role === 'ADMIN') {
+      adminNavs.forEach(el => el.style.display = 'block');
+    } else {
+      adminNavs.forEach(el => el.style.display = 'none');
+    }
+    // Default navigate to My Profile
+    navigateTo('my-profile');
+  }
+
+  function navigateToLanding() {
+    if (!AppState.user) {
+      showLandingPage();
+    } else {
+      navigateTo('my-profile');
+    }
+  }
+
+  function showLandingPage() {
+    document.getElementById('nav-login-btn').style.display = 'inline-flex';
+    document.getElementById('user-profile-menu').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'none';
+    
+    const contentArea = document.getElementById('content-area');
+    if (contentArea) contentArea.classList.add('full-width');
+
+    document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-landing').classList.add('active');
+  }
+
+  function openLoginModal() {
+    document.getElementById('login-form').reset();
+    const errorHint = document.getElementById('login-error-hint');
+    if (errorHint) errorHint.classList.remove('show');
+    document.getElementById('login-modal').classList.add('show');
+  }
+
+  function closeLoginModal() {
+    document.getElementById('login-modal').classList.remove('show');
+  }
+
+  function openAdminResetOtpModal(userId) {
+    document.getElementById('admin-target-userid-label').textContent = userId;
+    document.getElementById('admin-target-userid-input').value = userId;
+    document.getElementById('admin-new-otp-input').value = '';
+    document.getElementById('admin-reset-otp-modal').classList.add('show');
+  }
+
+  function closeAdminResetOtpModal() {
+    document.getElementById('admin-reset-otp-modal').classList.remove('show');
+  }
+
+  function navigateTo(tabId) {
+    AppState.activeTab = tabId;
+
+    // Update Nav Links Active Class
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    const activeLink = document.querySelector(`[data-tab="${tabId}"]`);
+    if (activeLink) activeLink.classList.add('active');
+
+    // Hide all Page Views
+    document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+    
+    // Show Target View
+    const targetView = document.getElementById(`view-${tabId}`);
+    if (targetView) targetView.classList.add('active');
+
+    // Close Mobile Sidebar
+    document.getElementById('sidebar').classList.remove('open');
+
+    // Load Tab Specific Data
+    if (tabId === 'my-profile') {
+      renderProfileView();
+    } else if (tabId === 'inventory') {
+      loadPrefixes();
+      loadInventoryData();
+    } else if (tabId === 'stock') {
+      loadInventoryData();
+    } else if (tabId === 'reports') {
+      fetchReport('DAILY');
+    } else if (tabId === 'admin-users') {
+      loadAdminUsers();
+    } else if (tabId === 'admin-prefixes') {
+      loadPrefixes();
+    } else if (tabId === 'admin-audit') {
+      loadAuditLogs();
+    }
+  }
+
+  function renderProfileView() {
+    document.getElementById('profile-card-name').textContent = AppState.user.name;
+    document.getElementById('profile-card-email').textContent = AppState.user.email;
+    document.getElementById('profile-card-role').textContent = AppState.user.role;
+    document.getElementById('profile-card-id').textContent = AppState.user.userId;
+  }
+
+  function loadPrefixes() {
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          AppState.prefixes = res.prefixes;
+          populatePrefixDropdown(res.prefixes);
+          renderPrefixTable(res.prefixes);
+        }
+      })
+      .getActiveUldPrefixes(AppState.token);
+  }
+
+  function populatePrefixDropdown(prefixes) {
+    const dropdown = document.getElementById('txn-prefix');
+    dropdown.innerHTML = '<option value="">Select Prefix</option>';
+    prefixes.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.prefixCode;
+      opt.textContent = `${p.prefixCode} (${p.type})`;
+      dropdown.appendChild(opt);
+    });
+  }
+
+  function renderPrefixTable(prefixes) {
+    const tbody = document.getElementById('prefix-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    prefixes.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${p.prefixCode}</strong></td>
+        <td><span class="badge ${p.type === 'Container' ? 'badge-container' : 'badge-palette'}">${p.type}</span></td>
+        <td>${p.description || '-'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function loadInventoryData() {
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if (res.success) {
+          AppState.transactions = res.transactions;
+          AppState.stock = res.stock;
+          renderTransactionsTable(res.transactions);
+          renderStockTables(res.stock);
+          renderDashboardMetrics(res.stock);
+        }
+      })
+      .withFailureHandler(err => {
+        showLoading(false);
+      })
+      .getInventoryData(AppState.token);
+  }
+
+  function renderDashboardMetrics(stock) {
+    let containerStock = 0;
+    let paletteStock = 0;
+
+    stock.forEach(s => {
+      if (s.type === 'Container') containerStock += s.currentStock;
+      else if (s.type === 'Palette') paletteStock += s.currentStock;
+    });
+
+    const cElem = document.getElementById('metric-container-stock');
+    const pElem = document.getElementById('metric-palette-stock');
+    const tElem = document.getElementById('metric-total-stock');
+
+    if (cElem) cElem.textContent = containerStock;
+    if (pElem) pElem.textContent = paletteStock;
+    if (tElem) tElem.textContent = containerStock + paletteStock;
+  }
+
+  function renderStockTables(stock) {
+    const containerTbody = document.getElementById('stock-container-tbody');
+    const paletteTbody = document.getElementById('stock-palette-tbody');
+
+    if (containerTbody) containerTbody.innerHTML = '';
+    if (paletteTbody) paletteTbody.innerHTML = '';
+
+    stock.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${s.fullUldNumber}</strong></td>
+        <td>${s.prefix}</td>
+        <td>${s.number}</td>
+        <td>${s.totalIn}</td>
+        <td>${s.totalOut}</td>
+        <td><strong>${s.currentStock}</strong></td>
+      `;
+
+      if (s.type === 'Container' && containerTbody) {
+        containerTbody.appendChild(tr);
+      } else if (s.type === 'Palette' && paletteTbody) {
+        paletteTbody.appendChild(tr);
+      }
+    });
+  }
+
+  function renderTransactionsTable(transactions) {
+    const tbody = document.getElementById('txn-history-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    transactions.forEach(t => {
+      const tr = document.createElement('tr');
+      const formattedDate = new Date(t.created_at).toLocaleString();
+      tr.innerHTML = `
+        <td>${formattedDate}</td>
+        <td><strong>${t.full_uld_number}</strong></td>
+        <td><span class="badge ${t.type === 'Container' ? 'badge-container' : 'badge-palette'}">${t.type}</span></td>
+        <td><span class="badge ${t.transaction_type === 'ULD In' ? 'badge-in' : 'badge-out'}">${t.transaction_type}</span></td>
+        <td>${t.quantity}</td>
+        <td>${t.remarks || '-'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function fetchReport(type) {
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if (res.success) {
+          renderReportData(res);
+        }
+      })
+      .withFailureHandler(err => showLoading(false))
+      .getReportData(AppState.token, type, null);
+  }
+
+  function renderReportData(res) {
+    document.getElementById('report-container-in').textContent = res.containerSummary.totalIn;
+    document.getElementById('report-container-out').textContent = res.containerSummary.totalOut;
+    document.getElementById('report-container-net').textContent = res.containerSummary.netChange;
+    document.getElementById('report-container-count').textContent = res.containerSummary.uniqueCount;
+
+    document.getElementById('report-palette-in').textContent = res.paletteSummary.totalIn;
+    document.getElementById('report-palette-out').textContent = res.paletteSummary.totalOut;
+    document.getElementById('report-palette-net').textContent = res.paletteSummary.netChange;
+    document.getElementById('report-palette-count').textContent = res.paletteSummary.uniqueCount;
+
+    const tbody = document.getElementById('report-table-tbody');
+    tbody.innerHTML = '';
+
+    res.transactions.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${new Date(t.created_at).toLocaleString()}</td>
+        <td><strong>${t.full_uld_number}</strong></td>
+        <td>${t.type}</td>
+        <td><span class="badge ${t.transaction_type === 'ULD In' ? 'badge-in' : 'badge-out'}">${t.transaction_type}</span></td>
+        <td>${t.quantity}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function loadAdminUsers() {
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if (res.success) {
+          const tbody = document.getElementById('admin-users-tbody');
+          tbody.innerHTML = '';
+          res.users.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${u.userId}</td>
+              <td><strong>${u.name}</strong></td>
+              <td>${u.email}</td>
+              <td><span class="badge badge-container">${u.role}</span></td>
+              <td>${u.isOtp === 'TRUE' ? '<span class="badge badge-out">OTP Pending</span>' : '<span class="badge badge-in">Active</span>'}</td>
+              <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+              <td>
+                <button class="btn btn-secondary btn-sm" onclick="openAdminResetOtpModal('${u.userId}')">
+                  🔑 Reset OTP
+                </button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      })
+      .withFailureHandler(err => showLoading(false))
+      .adminGetUsers(AppState.token);
+  }
+
+  function loadAuditLogs() {
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if (res.success) {
+          const tbody = document.getElementById('audit-logs-tbody');
+          tbody.innerHTML = '';
+          res.logs.forEach(l => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${new Date(l.timestamp).toLocaleString()}</td>
+              <td>${l.user_email}</td>
+              <td><strong>${l.action}</strong></td>
+              <td>${l.details}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      })
+      .withFailureHandler(err => showLoading(false))
+      .adminGetAuditLogs(AppState.token);
+  }
+
+  function loadDashboardData() {
+    loadPrefixes();
+    loadInventoryData();
+  }
+
+  function logout() {
+    AppState.token = null;
+    AppState.user = null;
+    localStorage.removeItem('uld_session_token');
+    showLandingPage();
+    showToast('Logged out successfully.', 'info');
+  }
+
+  function showLoading(show) {
+    const el = document.getElementById('spinner-overlay');
+    if (show) el.classList.add('show');
+    else el.classList.remove('show');
+  }
+
+  function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.remove();
+    }, 4000);
+  }
+</script>

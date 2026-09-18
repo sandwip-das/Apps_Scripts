@@ -4,9 +4,67 @@ const ALL_COUNTRY_CODES = [
 ];
 
 /**
+ * Universal Date Parser & Formatter for Client UI
+ * Enforces "dd mmm yyyy" format across the entire application UI
+ */
+window.parseDate = function(val) {
+  if (!val || val === '-' || val === 'null' || val === 'undefined') return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'number') {
+    if (val >= 10000000 && val <= 99999999) {
+      var s = String(val);
+      return new Date(parseInt(s.substring(4, 8), 10), parseInt(s.substring(2, 4), 10) - 1, parseInt(s.substring(0, 2), 10));
+    } else if (val > 10000 && val < 100000) {
+      return new Date(Math.round((val - 25569) * 86400 * 1000));
+    }
+  }
+  var s = String(val).trim();
+  if (s.startsWith("'")) s = s.substring(1).trim();
+  if (!s || s === '-') return null;
+
+  // 8 digits DDMMYYYY
+  if (/^\d{8}$/.test(s)) {
+    var day = parseInt(s.substring(0, 2), 10);
+    var month = parseInt(s.substring(2, 4), 10) - 1;
+    var year = parseInt(s.substring(4, 8), 10);
+    var d = new Date(year, month, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // DD MMM YYYY or DD-MMM-YYYY or DD/MMM/YYYY
+  var m = s.match(/^(\d{1,2})[-/\s]([A-Za-z]{3})[-/\s](\d{4})$/);
+  if (m) {
+    var months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    var day = parseInt(m[1], 10);
+    var mIdx = months.indexOf(m[2].toLowerCase());
+    var year = parseInt(m[3], 10);
+    if (mIdx !== -1) {
+      var d = new Date(year, mIdx, day);
+      return isNaN(d.getTime()) ? null : d;
+    }
+  }
+
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+window.formatToDDMmmYYYY = function(val) {
+  if (!val || val === '-' || val === 'null' || val === 'undefined') return '-';
+  var d = window.parseDate(val);
+  if (!d || isNaN(d.getTime())) return String(val);
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var day = String(d.getDate()).padStart(2, '0');
+  var month = months[d.getMonth()];
+  var year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+/**
  * UI Components & Formatters
  */
-const Components = {
+var Components = window.Components = {
+  parseDate: window.parseDate,
+  formatToDDMmmYYYY: window.formatToDDMmmYYYY,
   gridState: {},
 
   /**
@@ -99,32 +157,117 @@ const Components = {
 
   handleDependentDropdowns: function(sourceSelect) {
     const form = sourceSelect.closest('form');
+    if (!form) return;
     const changedName = sourceSelect.name;
     const changedVal = sourceSelect.value;
     const sourceData = window.currentFormSourceData;
     if (!sourceData) return;
 
-    if (changedName === 'station_id') {
+    if (changedName === 'dir_id') {
+      const depSelect = form.querySelector('[name="dep_id"]');
+      if (depSelect && sourceData['departments']) {
+        const prevVal = depSelect.value;
+        const deps = sourceData['departments'].filter(d => !changedVal || String(d.dir_id) === String(changedVal));
+        depSelect.innerHTML = '<option value="">-- Select --</option>';
+        deps.forEach(d => {
+          depSelect.innerHTML += `<option value="${d.dep_id}">${d.dep_name}</option>`;
+        });
+        if (prevVal && deps.some(d => String(d.dep_id) === String(prevVal))) {
+          depSelect.value = prevVal;
+        }
+      }
+    }
+
+    if (changedName === 'dep_id') {
+      // Auto-populate dir_id from selected department if empty
+      const dirSelect = form.querySelector('[name="dir_id"]');
+      if (dirSelect && changedVal && sourceData['departments']) {
+        const matchedDep = sourceData['departments'].find(d => String(d.dep_id) === String(changedVal));
+        if (matchedDep && matchedDep.dir_id && (!dirSelect.value || dirSelect.value !== matchedDep.dir_id)) {
+          dirSelect.value = matchedDep.dir_id;
+        }
+      }
+
       const secSelect = form.querySelector('[name="sec_id"]');
       if (secSelect && sourceData['sections']) {
-        const sections = sourceData['sections'].filter(s => String(s.station_id) === String(changedVal));
+        const sections = sourceData['sections'].filter(s => !changedVal || String(s.dep_id) === String(changedVal));
         const prevVal = secSelect.value;
         secSelect.innerHTML = '<option value="">-- Select --</option>';
         sections.forEach(s => {
           secSelect.innerHTML += `<option value="${s.sec_id}">${s.sec_letter_code}</option>`;
         });
-        if (prevVal) secSelect.value = prevVal; // Attempt restore for edit mode
+        if (prevVal && sections.some(s => String(s.sec_id) === String(prevVal))) {
+          secSelect.value = prevVal;
+        }
+      }
+
+      // Filter Pay Groups & Designations if present
+      const pgSelect = form.querySelector('[name="pay_group_id"]');
+      const desigSelect = form.querySelector('[name="designation_id"]');
+      if ((pgSelect || desigSelect) && sourceData['pay_groups']) {
+        const pgs = sourceData['pay_groups'].filter(p => !changedVal || !p.dep_id || String(p.dep_id) === String(changedVal));
+        if (pgSelect) {
+          const prevPg = pgSelect.value;
+          pgSelect.innerHTML = '<option value="">-- Select --</option>';
+          pgs.forEach(p => {
+            pgSelect.innerHTML += `<option value="${p.pg_id}">${p.pay_group}</option>`;
+          });
+          if (prevPg && pgs.some(p => String(p.pg_id) === String(prevPg))) {
+            pgSelect.value = prevPg;
+          }
+        }
+        if (desigSelect) {
+          const prevDesig = desigSelect.value;
+          desigSelect.innerHTML = '<option value="">-- Select --</option>';
+          pgs.forEach(p => {
+            desigSelect.innerHTML += `<option value="${p.pg_id}">${p.designation_short}</option>`;
+          });
+          if (prevDesig && pgs.some(p => String(p.pg_id) === String(prevDesig))) {
+            desigSelect.value = prevDesig;
+          }
+        }
+      }
+    }
+
+    if (changedName === 'station_id') {
+      const secSelect = form.querySelector('[name="sec_id"]');
+      if (secSelect && sourceData['sections']) {
+        const sections = sourceData['sections'].filter(s => !changedVal || String(s.station_id) === String(changedVal));
+        const prevVal = secSelect.value;
+        secSelect.innerHTML = '<option value="">-- Select --</option>';
+        sections.forEach(s => {
+          secSelect.innerHTML += `<option value="${s.sec_id}">${s.sec_letter_code}</option>`;
+        });
+        if (prevVal && sections.some(s => String(s.sec_id) === String(prevVal))) {
+          secSelect.value = prevVal;
+        }
       }
       
       const shiftSelect = form.querySelector('[name="shift_id"]');
       if (shiftSelect && sourceData['shifts']) {
-        const shifts = sourceData['shifts'].filter(s => String(s.station_id) === String(changedVal));
+        const shifts = sourceData['shifts'].filter(s => !changedVal || String(s.station_id) === String(changedVal));
         const prevVal = shiftSelect.value;
         shiftSelect.innerHTML = '<option value="">-- Select --</option>';
         shifts.forEach(s => {
           shiftSelect.innerHTML += `<option value="${s.shift_id}">${s.shift_name}</option>`;
         });
-        if (prevVal) shiftSelect.value = prevVal;
+        if (prevVal && shifts.some(s => String(s.shift_id) === String(prevVal))) {
+          shiftSelect.value = prevVal;
+        }
+      }
+    }
+
+    if (changedName === 'pay_group_id') {
+      const desigSelect = form.querySelector('[name="designation_id"]');
+      if (desigSelect && changedVal) {
+        desigSelect.value = changedVal;
+      }
+    }
+
+    if (changedName === 'designation_id') {
+      const pgSelect = form.querySelector('[name="pay_group_id"]');
+      if (pgSelect && changedVal) {
+        pgSelect.value = changedVal;
       }
     }
   },
@@ -190,31 +333,46 @@ const Components = {
       input.removeAttribute('name'); 
       input.parentNode.insertBefore(hiddenInput, input.nextSibling);
 
-      // If pre-filled by rowData, initialize hidden input
+      // If pre-filled by rowData, initialize hidden input & display formatted date
       if (input.dataset.isoValue) {
-        hiddenInput.value = input.dataset.isoValue;
+        const formatted = window.formatToDDMmmYYYY(input.dataset.isoValue);
+        if (formatted && formatted !== '-') {
+          hiddenInput.value = formatted;
+          input.value = formatted;
+        } else {
+          hiddenInput.value = input.dataset.isoValue;
+        }
       }
 
       input.addEventListener('blur', (e) => {
-        const val = e.target.value.replace(/[^0-9]/g, '');
-        if (val.length === 8) {
-          const day = val.substring(0, 2);
-          const month = val.substring(2, 4);
-          const year = val.substring(4, 8);
+        const raw = e.target.value.trim();
+        const digits = raw.replace(/[^0-9]/g, '');
+        if (digits.length === 8) {
+          const day = digits.substring(0, 2);
+          const month = digits.substring(2, 4);
+          const year = digits.substring(4, 8);
           const dateObj = new Date(year, parseInt(month)-1, day);
           
           if (!isNaN(dateObj.getTime())) {
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            e.target.value = `${day}-${months[dateObj.getMonth()]}-${year}`;
-            hiddenInput.value = dateObj.toISOString();
+            const formatted = window.formatToDDMmmYYYY(dateObj);
+            e.target.value = formatted;
+            hiddenInput.value = formatted;
             e.target.classList.remove('border-red-500');
           } else {
             e.target.classList.add('border-red-500');
             app.toast('Invalid Date', 'error');
           }
-        } else if (val.length > 0) {
-          e.target.classList.add('border-red-500');
-          app.toast('Date must be DDMMYYYY', 'error');
+        } else if (raw) {
+          const parsed = window.parseDate(raw);
+          if (parsed && !isNaN(parsed.getTime())) {
+            const formatted = window.formatToDDMmmYYYY(parsed);
+            e.target.value = formatted;
+            hiddenInput.value = formatted;
+            e.target.classList.remove('border-red-500');
+          } else {
+            e.target.classList.add('border-red-500');
+            app.toast('Date must be DDMMYYYY or dd mmm yyyy', 'error');
+          }
         } else {
           hiddenInput.value = '';
           e.target.classList.remove('border-red-500');
@@ -222,9 +380,10 @@ const Components = {
       });
 
       input.addEventListener('focus', (e) => {
-        if (hiddenInput.value) {
-          const d = new Date(hiddenInput.value);
-          if (!isNaN(d.getTime())) {
+        const currentVal = hiddenInput.value || e.target.value;
+        if (currentVal) {
+          const d = window.parseDate(currentVal);
+          if (d && !isNaN(d.getTime())) {
             const day = String(d.getDate()).padStart(2, '0');
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const year = d.getFullYear();
@@ -234,7 +393,7 @@ const Components = {
       });
       
       // Fire blur to format pre-filled data
-      if (input.dataset.isoValue) {
+      if (input.dataset.isoValue && !input.value) {
         input.dispatchEvent(new Event('focus'));
         input.dispatchEvent(new Event('blur'));
       }
@@ -265,6 +424,18 @@ const Components = {
                     <form id="form-${schemaKey}" class="space-y-3">
                       <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">`;
 
+    if (schemaKey === 'promotions' && !isUpdate) {
+      html += `
+        <div class="col-span-full bg-blue-50 p-2.5 rounded border border-blue-200 flex items-center space-x-3 mb-1 shadow-sm">
+          <input type="checkbox" id="promotion-bulk-toggle" class="h-4 w-4 text-blue-950 border-gray-300 rounded focus:ring-blue-900 cursor-pointer">
+          <div>
+            <label for="promotion-bulk-toggle" class="text-xs font-bold text-blue-950 uppercase cursor-pointer selection:bg-transparent">Bulk Entry Mode</label>
+            <p class="text-[10px] text-gray-600 leading-normal">Enable to promote multiple employees simultaneously using their Staff IDs and Sequence Numbers.</p>
+          </div>
+        </div>
+      `;
+    }
+
     // Fetch dropdown data concurrently
     const selects = schema.fields.filter(f => f.type === 'select' && f.source);
     const sourceData = {};
@@ -281,13 +452,18 @@ const Components = {
       
       // Dynamic Col Span for denser layout
       let colSpan = 'col-span-1 md:col-span-2 lg:col-span-2';
-      if (f.name.endsWith('_code') || f.name.endsWith('_id') || f.type === 'date_custom' || f.name === 'pay_group') {
+      if (f.name.endsWith('_code') || (f.name.endsWith('_id') && !f.label.includes('Name') && f.type !== 'select') || f.type === 'date_custom' || f.name === 'pay_group') {
         colSpan = 'col-span-1 md:col-span-1 lg:col-span-1'; // small codes & dates
-      } else if (f.name.includes('name') || f.name.includes('email') || f.name.includes('remarks')) {
+      } else if (f.name.includes('name') || f.name.includes('email') || f.name.includes('remarks') || f.label.includes('Name')) {
         colSpan = 'col-span-1 md:col-span-3 lg:col-span-3'; // wider fields
       }
 
-      html += `<div class="${colSpan}"><label class="block text-xs font-bold text-gray-600 mb-0.5 uppercase tracking-tighter">${f.label} ${requiredHtml}</label>`;
+      let wrapperClass = '';
+      if (schemaKey === 'promotions' && !isUpdate && (f.name === 'emp_id' || f.name === 'sequence_no')) {
+        wrapperClass = 'promotion-single-field';
+      }
+
+      html += `<div class="${colSpan} ${wrapperClass}"><label class="block text-xs font-bold text-gray-600 mb-0.5 uppercase tracking-tighter">${f.label} ${requiredHtml}</label>`;
 
       if (f.type === 'select') {
         html += `<select name="${f.name}" data-source="${f.source || ''}" onchange="Components.handleDependentDropdowns(this)" class="w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>
@@ -329,6 +505,17 @@ const Components = {
       html += `</div>`;
     });
 
+    if (schemaKey === 'promotions' && !isUpdate) {
+      html += `
+        <div class="col-span-1 md:col-span-3 lg:col-span-3 promotion-bulk-field hidden">
+          <label class="block text-xs font-bold text-gray-600 mb-0.5 uppercase tracking-tighter">
+            Bulk Staff IDs & Sequence Numbers <span class="text-red-500">*</span>
+          </label>
+          <textarea id="bulk_staff_data" name="bulk_staff_data" rows="1" placeholder="Format: StaffID1 Seq1 StaffID2 Seq2 ... (e.g. S101 1 S102 1 S103 2)" class="w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50 h-[28px] resize-y min-h-[28px]"></textarea>
+        </div>
+      `;
+    }
+
     html += `</div>
               <div class="mt-4 flex justify-between items-center pt-2 border-t border-gray-200">
                 <div>
@@ -345,26 +532,69 @@ const Components = {
 
     const form = document.getElementById(`form-${schemaKey}`);
 
+    // Setup Promotion Bulk Toggle behavior
+    if (schemaKey === 'promotions' && !isUpdate) {
+      const bulkToggle = document.getElementById('promotion-bulk-toggle');
+      const singleFields = container.querySelectorAll('.promotion-single-field');
+      const bulkFields = container.querySelectorAll('.promotion-bulk-field');
+      const bulkTextarea = document.getElementById('bulk_staff_data');
+      
+      const updateVisibility = () => {
+        if (bulkToggle.checked) {
+          singleFields.forEach(el => {
+            el.classList.add('hidden');
+            const input = el.querySelector('input');
+            if (input) input.removeAttribute('required');
+          });
+          bulkFields.forEach(el => el.classList.remove('hidden'));
+          if (bulkTextarea) bulkTextarea.setAttribute('required', 'required');
+        } else {
+          singleFields.forEach(el => {
+            el.classList.remove('hidden');
+            const input = el.querySelector('input');
+            if (input) input.setAttribute('required', 'required');
+          });
+          bulkFields.forEach(el => el.classList.add('hidden'));
+          if (bulkTextarea) bulkTextarea.removeAttribute('required');
+        }
+      };
+      
+      if (bulkToggle) {
+        bulkToggle.addEventListener('change', updateVisibility);
+        form.addEventListener('reset', () => {
+          setTimeout(updateVisibility, 0);
+        });
+        updateVisibility(); // run once on initialization
+      }
+    }
+
     // Bind Contact Number Dropdown Synchronization
     schema.fields.forEach(f => {
-        if (f.name.includes('contact')) {
-          const ccSelect = document.getElementById(`${f.name}_cc`);
-          const numInput = document.getElementById(`${f.name}_num`);
-          const hiddenInput = document.getElementById(`${f.name}_hidden`);
-          const syncContact = () => {
-            let numStr = numInput.value.replace(/[^0-9]/g, '');
-            if (numStr.length > 4) {
-              numInput.value = numStr.substring(0,4) + '-' + numStr.substring(4);
-            } else {
-              numInput.value = numStr;
-            }
-            if (!numStr) hiddenInput.value = '';
-            else hiddenInput.value = `${ccSelect.value} ${numInput.value}`;
-          };
-          if (ccSelect && numInput) {
-            ccSelect.addEventListener('change', syncContact);
-            numInput.addEventListener('input', syncContact);
+      if (f.name.includes('contact')) {
+        const ccSelect = document.getElementById(`${f.name}_cc`);
+        const numInput = document.getElementById(`${f.name}_num`);
+        const hiddenInput = document.getElementById(`${f.name}_hidden`);
+        const syncContact = () => {
+          let raw = numInput.value.replace(/[^0-9]/g, '');
+          if (ccSelect.value === '+880' && raw.startsWith('0')) {
+            raw = raw.substring(1);
           }
+          if (raw.length > 4) {
+            numInput.value = raw.substring(0, 4) + '-' + raw.substring(4);
+          } else {
+            numInput.value = raw;
+          }
+          if (!raw) {
+            hiddenInput.value = '';
+          } else {
+            // Clean E.164 without space, hyphen, or apostrophe
+            hiddenInput.value = `${ccSelect.value}${raw}`;
+          }
+        };
+        if (ccSelect && numInput) {
+          ccSelect.addEventListener('change', syncContact);
+          numInput.addEventListener('input', syncContact);
+        }
       } else if (f.type === 'image') {
         const fileInput = document.getElementById(`${f.name}_file`);
         const hiddenInput = document.getElementById(`${f.name}_hidden`);
@@ -389,47 +619,84 @@ const Components = {
     // Pre-populate fields in UPDATE mode
     if (isUpdate) {
       schema.fields.forEach(f => {
-        if (rowData[f.name] !== undefined) {
+        let rawVal = rowData[f.name];
+        if (f.name === 'pg_id' && (rawVal === undefined || rawVal === null || rawVal === '')) {
+          rawVal = rowData.designation_short || rowData.designation;
+        }
+
+        if (rawVal !== undefined && rawVal !== null) {
           const input = form.elements[f.name];
-          if (input) {
-            if (f.type === 'date_custom') {
-               // Store ISO value to data attribute so initDateInputs can catch it
-               if (rowData[f.name] && rowData[f.name] !== '-') {
-                 input.dataset.isoValue = rowData[f.name];
-               }
-              } else if (f.name.includes('contact')) {
-                 let val = rowData[f.name] || '';
-                 val = String(val);
-                 const ccSelect = document.getElementById(`${f.name}_cc`);
-                 const numInput = document.getElementById(`${f.name}_num`);
-                 
-                 let rawNum = val.replace(/[^\+0-9]/g, '');
-                 if (rawNum.startsWith('+') && rawNum.length > 4) {
-                   let cc = rawNum.substring(0, 4);
-                   let num = rawNum.substring(4);
-                   if (ccSelect) ccSelect.value = cc;
-                   if (numInput) {
-                     if (num.length > 4) {
-                       numInput.value = num.substring(0,4) + '-' + num.substring(4);
-                     } else {
-                       numInput.value = num;
-                     }
-                   }
-                 } else {
-                   if (numInput) numInput.value = val;
-                 }
-                 if (input) input.value = val; // Set the hidden input's value
-            } else if (f.type === 'image') {
-               const val = rowData[f.name] || '';
-               input.value = val;
-            } else {
-               input.value = rowData[f.name];
+          if (f.type === 'date_custom') {
+            if (input && rawVal && rawVal !== '-') {
+              input.dataset.isoValue = rawVal;
             }
+          } else if (f.name.includes('contact')) {
+            let val = rawVal || '';
+            val = String(val).replace(/['"]/g, '').trim();
+            const ccSelect = document.getElementById(`${f.name}_cc`);
+            const numInput = document.getElementById(`${f.name}_num`);
+            const hiddenInput = document.getElementById(`${f.name}_hidden`);
+            
+            let digits = val.replace(/[^\+0-9]/g, '');
+            if (digits.startsWith('+880') && digits.length > 4) {
+              let cc = '+880';
+              let num = digits.substring(4);
+              if (ccSelect) ccSelect.value = cc;
+              if (numInput) {
+                if (num.length > 4) numInput.value = num.substring(0, 4) + '-' + num.substring(4);
+                else numInput.value = num;
+              }
+              if (hiddenInput) hiddenInput.value = `+880${num}`;
+            } else if (digits.startsWith('+') && digits.length > 4) {
+              let cc = digits.substring(0, 4);
+              let num = digits.substring(4);
+              if (ccSelect) ccSelect.value = cc;
+              if (numInput) {
+                if (num.length > 4) numInput.value = num.substring(0, 4) + '-' + num.substring(4);
+                else numInput.value = num;
+              }
+              if (hiddenInput) hiddenInput.value = digits;
+            } else if (digits.length === 11 && digits.startsWith('01')) {
+              let cc = '+880';
+              let num = digits.substring(1);
+              if (ccSelect) ccSelect.value = cc;
+              if (numInput) numInput.value = num.substring(0, 4) + '-' + num.substring(4);
+              if (hiddenInput) hiddenInput.value = `+880${num}`;
+            } else {
+              if (numInput) numInput.value = val;
+              if (hiddenInput) hiddenInput.value = val;
+            }
+          } else if (f.type === 'select' && f.source && sourceData[f.source]) {
+            if (input) {
+              const pkField = AppSchemas[f.source].pk;
+              const displayField = f.sourceDisplay;
+              let matchedVal = rawVal;
+              const matchedRow = sourceData[f.source].find(r => 
+                String(r[pkField]) === String(rawVal) || 
+                String(r[displayField]) === String(rawVal) ||
+                (f.source === 'pay_groups' && (String(r.designation) === String(rawVal) || String(r.pay_group) === String(rawVal) || String(r.designation_short) === String(rawVal))) ||
+                (f.source === 'departments' && (String(r.dep_code) === String(rawVal) || String(r.dep_letter_code) === String(rawVal) || String(r.dep_name) === String(rawVal))) ||
+                (f.source === 'directorates' && (String(r.dir_code) === String(rawVal) || String(r.dir_letter_code) === String(rawVal) || String(r.dir_name) === String(rawVal))) ||
+                (f.source === 'stations' && (String(r.station_code) === String(rawVal) || String(r.station_name) === String(rawVal)))
+              );
+              if (matchedRow) {
+                matchedVal = matchedRow[pkField];
+              }
+              input.value = matchedVal;
+            }
+          } else if (f.type === 'image') {
+            if (input) input.value = rawVal || '';
+          } else {
+            if (input) input.value = rawVal;
           }
         }
       });
 
       // Trigger dependent dropdowns to filter appropriately on edit load
+      const dirInput = form.elements['dir_id'];
+      if (dirInput) Components.handleDependentDropdowns(dirInput);
+      const depInput = form.elements['dep_id'];
+      if (depInput) Components.handleDependentDropdowns(depInput);
       const stationInput = form.elements['station_id'];
       if (stationInput) Components.handleDependentDropdowns(stationInput);
       const secInput = form.elements['sec_id'];
@@ -465,9 +732,16 @@ const Components = {
           app.toast('Data successfully updated', 'success');
           Components.renderGrid(schemaKey, containerId); // Return to grid
         } else {
-          await api.create(schema.table, data, schema.prefix, schema.pk);
-          app.toast('Record saved successfully', 'success');
-          e.target.reset();
+          const bulkToggle = document.getElementById('promotion-bulk-toggle');
+          if (bulkToggle && bulkToggle.checked) {
+            await api.call('api_create_bulk_promotions', data, schema.prefix, schema.pk);
+            app.toast('Bulk promotions saved successfully', 'success');
+            e.target.reset();
+          } else {
+            await api.create(schema.table, data, schema.prefix, schema.pk);
+            app.toast('Record saved successfully', 'success');
+            e.target.reset();
+          }
         }
       } catch (err) {
         app.toast(err.message, 'error');
@@ -490,30 +764,50 @@ const Components = {
     const container = document.getElementById(containerId);
     container.innerHTML = '<div class="p-4 text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto"></div></div>';
 
-    let html = `<div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full animate-fade-in">
-                  <!-- Toolbar -->
-                  <div class="p-2 border-b border-gray-300 bg-gray-100 flex justify-between items-center shrink-0">
-                    <div class="flex space-x-2 items-center">
+    let html = `<div class="data-view-container animate-fade-in">
+                  <!-- Toolbar with Search, Navigation, Fullscreen & Close -->
+                  <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap justify-between items-center gap-2 shrink-0">
+                    <div class="flex items-center space-x-2">
                       <div class="relative">
                         <span class="material-icons absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs">search</span>
-                        <input type="text" id="search-${schemaKey}" placeholder="Search ${schema.title}..." class="pl-6 pr-2 py-0.5 border border-gray-400 text-xs focus:outline-none w-48 bg-white">
+                        <input type="text" id="search-${schemaKey}" placeholder="Search ${schema.title}..." class="pl-6 pr-2 py-0.5 border border-gray-400 text-xs focus:outline-none w-44 sm:w-56 bg-white rounded-sm">
                       </div>
+                      <span class="text-xs font-bold text-gray-600 hidden md:inline uppercase">${schema.title}</span>
                     </div>
-                    <div class="flex space-x-1 items-center">
-                      <select class="border border-gray-400 bg-white text-xs px-1 py-0.5 text-gray-800">
+
+                    <!-- Navigation Controls: Left/Right scroll, Fullscreen, Close -->
+                    <div class="flex items-center space-x-1.5">
+                      <!-- Horizontal Scroll Arrows -->
+                      <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+                        <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Table Left">
+                          <span class="material-icons text-base">chevron_left</span>
+                        </button>
+                        <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Table Right">
+                          <span class="material-icons text-base">chevron_right</span>
+                        </button>
+                      </div>
+
+                      <select class="border border-gray-400 bg-white text-xs px-1 py-0.5 text-gray-800 rounded-sm">
                         <option>20</option><option>50</option><option>100</option><option>All</option>
                       </select>
-                      <button onclick="Components.exportToCSV('${schemaKey}')" class="bg-green-600 text-white border border-green-700 px-2 py-0.5 hover:bg-green-700 flex items-center text-xs font-medium cursor-pointer">
-                        Excel
+                      
+                      <button onclick="Components.exportToCSV('${schemaKey}')" class="bg-green-600 text-white border border-green-700 px-2 py-0.5 hover:bg-green-700 flex items-center text-xs font-medium cursor-pointer rounded-sm" title="Export Excel">
+                        <span class="material-icons text-xs mr-0.5">grid_on</span> Excel
                       </button>
-                      <button onclick="Components.exportToPDF('${schemaKey}')" class="bg-red-600 text-white border border-red-700 px-2 py-0.5 hover:bg-red-700 flex items-center text-xs font-medium cursor-pointer">
-                        PDF
+                      <button onclick="Components.exportToPDF('${schemaKey}')" class="bg-red-600 text-white border border-red-700 px-2 py-0.5 hover:bg-red-700 flex items-center text-xs font-medium cursor-pointer rounded-sm" title="Export PDF">
+                        <span class="material-icons text-xs mr-0.5">picture_as_pdf</span> PDF
+                      </button>
+                      
+                      <!-- Fullscreen Toggle Button -->
+                      <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Mode">
+                        <span class="material-icons text-sm mr-1">fullscreen</span>
+                        <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
                       </button>
                     </div>
                   </div>
                   
-                  <!-- Table Container (Spreadsheet Style) -->
-                  <div class="flex-1 overflow-auto bg-white">
+                  <!-- Table Container (Spreadsheet Style with Dedicated Scroller) -->
+                  <div class="data-table-scroll-wrapper">
                     <table class="w-full border-collapse whitespace-nowrap text-xs font-sans">
                       <thead class="sticky top-0 z-10">
                         <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900">
@@ -536,7 +830,10 @@ const Components = {
     container.innerHTML = html;
 
     try {
-      const data = await api.read(schema.table);
+      const [data, masterData] = await Promise.all([
+        api.read(schema.table),
+        api.getMasterData().catch(() => ({}))
+      ]);
       Components.gridState[schemaKey] = data; // Store state for export
       const tbody = document.getElementById(`grid-tbody-${schemaKey}`);
       tbody.innerHTML = '';
@@ -558,23 +855,50 @@ const Components = {
         
         // Data Columns
         schema.fields.forEach(f => {
-          let val = row[f.name] || '-';
-            if (f.type === 'date_custom' && val !== '-') {
-               const d = new Date(val);
-               if (!isNaN(d.getTime())) {
-                 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                 val = `${String(d.getDate()).padStart(2,'0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
-               }
-            } else if (f.name.includes('contact') && val !== '-') {
-                 let strVal = String(val);
-                 let rawNum = strVal.replace(/[^\+0-9]/g, '');
-                 if (rawNum.startsWith('+') && rawNum.length > 4) {
-                   let cc = rawNum.substring(0, 4);
-                   let rest = rawNum.substring(4);
-                   if (rest.length > 4) val = `${cc} ${rest.substring(0,4)}-${rest.substring(4)}`;
-                   else val = `${cc} ${rest}`;
-                 }
+          let val = row[f.name];
+          if (f.name === 'pg_id' && (val === undefined || val === null || val === '')) {
+            val = row.designation_short || row.designation;
+          }
+          if (val === undefined || val === null || val === '') {
+            val = '-';
+          }
+
+          // If field is select with source, resolve relational ID to display text
+          if (f.type === 'select' && f.source && masterData[f.source] && val !== '-') {
+            const srcTable = masterData[f.source];
+            const pkField = (AppSchemas[f.source] && AppSchemas[f.source].pk) || f.source + '_id';
+            const displayField = f.sourceDisplay;
+            
+            const matched = srcTable.find(item => 
+              String(item[pkField]) === String(val) || 
+              String(item[displayField]) === String(val) ||
+              (f.source === 'pay_groups' && (String(item.designation) === String(val) || String(item.pay_group) === String(val) || String(item.designation_short) === String(val))) ||
+              (f.source === 'departments' && (String(item.dep_code) === String(val) || String(item.dep_letter_code) === String(val) || String(item.dep_name) === String(val))) ||
+              (f.source === 'directorates' && (String(item.dir_code) === String(val) || String(item.dir_letter_code) === String(val) || String(item.dir_name) === String(val))) ||
+              (f.source === 'stations' && (String(item.station_code) === String(val) || String(item.station_name) === String(val)))
+            );
+            if (matched && matched[displayField]) {
+              val = matched[displayField];
             }
+          }
+
+          if (f.type === 'date_custom' && val !== '-') {
+             val = window.formatToDDMmmYYYY(val);
+          } else if (f.name.includes('contact') && val !== '-') {
+            let strVal = String(val).replace(/['"]/g, '').trim();
+            let digits = strVal.replace(/[^\+0-9]/g, '');
+            if (digits.startsWith('+880') && digits.length >= 14) {
+              val = digits.substring(0, 8) + '-' + digits.substring(8);
+            } else if (digits.startsWith('+880') && digits.length > 8) {
+              val = digits.substring(0, 8) + '-' + digits.substring(8);
+            } else if (digits.startsWith('+') && digits.length > 7) {
+              val = digits.substring(0, digits.length - 6) + '-' + digits.substring(digits.length - 6);
+            } else if (digits.length === 11 && digits.startsWith('01')) {
+              val = '+880' + digits.substring(1, 5) + '-' + digits.substring(5);
+            } else {
+              val = strVal;
+            }
+          }
           const td = document.createElement('td');
           td.className = 'border border-gray-300 px-1 py-0 truncate max-w-[200px] text-gray-800';
           td.title = val;

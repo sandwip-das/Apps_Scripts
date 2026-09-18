@@ -3,7 +3,7 @@
  * Enterprise Database Schemas
  * Used for dynamic form generation, data grid rendering, and validation.
  */
-const AppSchemas = {
+var AppSchemas = window.AppSchemas = {
   // ==========================================
   // SYSTEM MODULE
   // ==========================================
@@ -30,7 +30,7 @@ const AppSchemas = {
   departments: {
     title: 'Departments', table: 'departments', pk: 'dep_id', prefix: 'DEP',
     fields: [
-      { name: 'dir_id', label: 'Directorate', type: 'select', source: 'directorates', sourceDisplay: 'dir_code', required: true },
+      { name: 'dir_id', label: 'Directorate', type: 'select', source: 'directorates', sourceDisplay: 'dir_name', required: true },
       { name: 'dep_code', label: 'DEP Code', type: 'text', required: true },
       { name: 'dep_letter_code', label: 'Letter Code', type: 'text', required: true },
       { name: 'dep_name', label: 'Department Name', type: 'text', required: true }
@@ -48,7 +48,7 @@ const AppSchemas = {
   sections: {
     title: 'Sections', table: 'sections', pk: 'sec_id', prefix: 'SEC',
     fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
       { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
       { name: 'sec_code', label: 'SEC Code', type: 'text', required: true },
       { name: 'sec_letter_code', label: 'Letter Code', type: 'text', required: true },
@@ -58,7 +58,7 @@ const AppSchemas = {
   shifts: {
     title: 'Shifts', table: 'shifts', pk: 'shift_id', prefix: 'SHF',
     fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
       { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
       { name: 'shift_code', label: 'Shift Code', type: 'text', required: true },
       { name: 'shift_name', label: 'Shift Name', type: 'text', required: true },
@@ -68,7 +68,7 @@ const AppSchemas = {
   pay_groups: {
     title: 'Pay Groups', table: 'pay_groups', pk: 'pg_id', prefix: 'PG',
     fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
       { name: 'pay_group', label: 'Pay Group', type: 'text', required: true },
       { name: 'rank_level', label: 'Rank Level (Higher = More Senior)', type: 'number', required: true },
       { name: 'designation', label: 'Designation', type: 'text', required: true },
@@ -78,11 +78,21 @@ const AppSchemas = {
   employee_types: {
     title: 'Employee Types', table: 'employee_types', pk: 'emp_type_id', prefix: 'ETY',
     fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
       { name: 'emp_type_code', label: 'Type Code', type: 'text', required: true },
       { name: 'emp_type', label: 'Employee Type', type: 'text', required: true },
       { name: 'description', label: 'Description', type: 'text', required: false }
-      
+    ]
+  },
+  workforce_setup: {
+    title: 'Set Up Form', table: 'workforce_setup', pk: 'setup_id', prefix: 'SET',
+    fields: [
+      { name: 'dir_id', label: 'Directorate Name', type: 'select', source: 'directorates', sourceDisplay: 'dir_name', required: true },
+      { name: 'dep_id', label: 'Department Name', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
+      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
+      { name: 'pay_group_id', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
+      { name: 'designation_id', label: 'Designation', type: 'select', source: 'pay_groups', sourceDisplay: 'designation_short', required: true },
+      { name: 'set_up', label: 'Set Up', type: 'number', required: true }
     ]
   },
 
@@ -95,9 +105,9 @@ const AppSchemas = {
       { name: 'staff_id', label: 'Staff ID', type: 'text', required: true },
       { name: 'emp_name', label: 'Full Name', type: 'text', required: true },
       { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Others'], required: true },
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
       { name: 'emp_type_id', label: 'Emp Type', type: 'select', source: 'employee_types', sourceDisplay: 'emp_type', required: true },
-      { name: 'designation_short', label: 'Short Designation', type: 'select', source: 'pay_groups', sourceDisplay: 'designation_short', saveDisplayValue: true, required: true },
+      { name: 'pg_id', label: 'Short Designation', type: 'select', source: 'pay_groups', sourceDisplay: 'designation_short', required: true },
       { name: 'contact_primary', label: 'Contact 01', type: 'text', required: true },
       { name: 'contact_secondary', label: 'Contact 02', type: 'text', required: false },
       { name: 'contact_family', label: 'Contact (Family)', type: 'text', required: false },
@@ -174,14 +184,7 @@ const AppSchemas = {
       { name: 'remarks', label: 'Remarks', type: 'text', required: false }
     ]
   },
-  setups: {
-    title: 'Setup Matrix', table: 'setups', pk: 'setup_id', prefix: 'SET',
-    fields: [
-      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
-      { name: 'pg_id', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
-      { name: 'authorized_strength', label: 'Authorized Strength', type: 'number', required: true }
-    ]
-  },
+
 
   // ==========================================
   // TQC MODULE
@@ -189,7 +192,7 @@ const AppSchemas = {
   courses: {
     title: 'Courses', table: 'courses', pk: 'course_id', prefix: 'CRS',
     fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_code', required: true },
+      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
       { name: 'course_code', label: 'Course Code', type: 'text', required: true },
       { name: 'course_name', label: 'Course Name', type: 'text', required: true },
       { name: 'course_type', label: 'Course Type', type: 'select', options: ['Mandatory', 'Optional', 'Refresher'], required: true },

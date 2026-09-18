@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ULD Inventory Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+
+  <!-- App Wrapper -->
+  <div id="app-wrapper">
+
+    <!-- TOP NAVBAR -->
+    <header class="navbar">
+      <div class="nav-brand" onclick="navigateToLanding()">
+        <button id="mobile-toggle-btn" class="mobile-toggle" aria-label="Toggle Menu">☰</button>
+        <div class="nav-brand-logo">ULD</div>
+        <span>ULD Management System</span>
+      </div>
+
+      <!-- Guest Login Button (Shown when unauthenticated) -->
+      <button id="nav-login-btn" class="btn btn-primary" onclick="openLoginModal()">
+        🔒 Log In
+      </button>
+
+      <!-- User Profile Menu (Shown when authenticated) -->
+      <div id="user-profile-menu" class="user-profile-menu" style="display: none;">
+        <div id="profile-trigger" class="profile-trigger">
+          <div id="user-avatar" class="avatar">U</div>
+          <div class="user-name-role">
+            <span id="user-display-name" class="name">User Name</span>
+            <span id="user-display-role" class="role">User Role</span>
+          </div>
+          <span style="font-size: 0.75rem; color: #94a3b8;">▼</span>
+        </div>
+
+        <!-- Profile Dropdown Menu -->
+        <div id="dropdown-menu" class="dropdown-menu">
+          <button class="dropdown-item" onclick="navigateTo('my-profile')">
+            👤 My Profile
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item danger" onclick="logout()">
+            🚪 Log Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- LOGIN MODAL DIALOG -->
+    <div id="login-modal" class="modal-overlay">
+      <div class="modal-card">
+        <button type="button" class="modal-close-btn" onclick="closeLoginModal()">✕</button>
+        <div class="login-header">
+          <div class="nav-brand-logo" style="margin: 0 auto 0.75rem auto; width: 44px; height: 44px; font-size: 1.4rem;">ULD</div>
+          <h2>ULD Inventory Login</h2>
+          <p>Sign in with your User ID / Email and Password</p>
+        </div>
+        <form id="login-form">
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="login-email">User ID / Email Address</label>
+            <input type="text" id="login-email" required placeholder="admin@system.local or USR-1234">
+          </div>
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="login-password">Password / OTP</label>
+            <div class="password-wrapper">
+              <input type="password" id="login-password" required placeholder="••••••••">
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('login-password', this)">👁️</button>
+            </div>
+            <div id="login-error-hint" class="form-error-hint">Contact your administrator</div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Log In</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MANDATORY OTP PASSWORD RESET MODAL (3 FIELDS WITH EYE TOGGLES) -->
+    <div id="otp-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="login-header">
+          <h2>Mandatory Password Reset</h2>
+          <p>You are logged in with a One-Time Password (OTP). Please set a new permanent password of your choice.</p>
+        </div>
+        <form id="otp-reset-form">
+          
+          <!-- Field 1: Current OTP Password -->
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="otp-current-pass">Current Password (OTP)</label>
+            <div class="password-wrapper">
+              <input type="password" id="otp-current-pass" required placeholder="Enter current OTP">
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('otp-current-pass', this)">👁️</button>
+            </div>
+          </div>
+
+          <!-- Field 2: New Password -->
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="otp-new-pass">New Password (Min 6 characters)</label>
+            <div class="password-wrapper">
+              <input type="password" id="otp-new-pass" required minlength="6" placeholder="Enter new password">
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('otp-new-pass', this)">👁️</button>
+            </div>
+          </div>
+
+          <!-- Field 3: Confirm New Password -->
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="otp-confirm-pass">Confirm New Password</label>
+            <div class="password-wrapper">
+              <input type="password" id="otp-confirm-pass" required minlength="6" placeholder="Confirm new password">
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('otp-confirm-pass', this)">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success" style="width: 100%;">Update & Save Password</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ADMIN RESET USER OTP MODAL -->
+    <div id="admin-reset-otp-modal" class="modal-overlay">
+      <div class="modal-card">
+        <button type="button" class="modal-close-btn" onclick="closeAdminResetOtpModal()">✕</button>
+        <div class="login-header">
+          <h2>Reset User OTP</h2>
+          <p>Generate a new One-Time Password for User ID: <strong id="admin-target-userid-label"></strong></p>
+        </div>
+        <form id="admin-reset-otp-form">
+          <input type="hidden" id="admin-target-userid-input">
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="admin-new-otp-input">New One-Time Password (OTP)</label>
+            <div class="password-wrapper">
+              <input type="password" id="admin-new-otp-input" required minlength="4" placeholder="e.g. ResetPass123">
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('admin-new-otp-input', this)">👁️</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-warning" style="width: 100%;">Re-issue New OTP Password</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MAIN APPLICATION CONTAINER -->
+    <div class="main-container">
+
+      <!-- LEFT SIDEBAR (250px, Hidden on Landing Page) -->
+      <aside id="sidebar" class="sidebar" style="display: none;">
+        <ul class="sidebar-nav">
+          
+          <li class="nav-item">
+            <a class="nav-link active" data-tab="my-profile" onclick="navigateTo('my-profile')">
+              👤 My Profile
+            </a>
+          </li>
+
+          <div class="nav-section-title">INVENTORY OPERATIONS</div>
+
+          <li class="nav-item">
+            <a class="nav-link" data-tab="inventory" onclick="navigateTo('inventory')">
+              📥/📤 ULD Entry (In / Out)
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" data-tab="stock" onclick="navigateTo('stock')">
+              📊 Stock Overview
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" data-tab="reports" onclick="navigateTo('reports')">
+              📈 Dynamic Reports
+            </a>
+          </li>
+
+          <!-- ADMIN ONLY NAVIGATION SECTION -->
+          <div class="nav-section-title admin-only-nav">ADMIN PANEL</div>
+
+          <li class="nav-item admin-only-nav">
+            <a class="nav-link" data-tab="admin-users" onclick="navigateTo('admin-users')">
+              👥 User Management
+            </a>
+          </li>
+
+          <li class="nav-item admin-only-nav">
+            <a class="nav-link" data-tab="admin-prefixes" onclick="navigateTo('admin-prefixes')">
+              🏷️ ULD Prefix Config
+            </a>
+          </li>
+
+          <li class="nav-item admin-only-nav">
+            <a class="nav-link" data-tab="admin-audit" onclick="navigateTo('admin-audit')">
+              🛡️ Audit Trail
+            </a>
+          </li>
+
+        </ul>
+      </aside>
+
+      <!-- RIGHT MAIN CONTENT WORKSPACE -->
+      <main id="content-area" class="content-area full-width">
+
+        <!-- 0. VISUALLY APPEALING LANDING PAGE (UNAUTHENTICATED) -->
+        <div id="view-landing" class="page-view active">
+          
+          <div class="landing-hero">
+            <div class="landing-hero-content">
+              <span class="landing-badge">✈️ Next-Gen Cargo & Aviation Logistics</span>
+              <h1 class="landing-hero-title">ULD Inventory Management System</h1>
+              <p class="landing-hero-desc">
+                An ultra-fast, lightweight, and secure Google Apps Script application designed to track Unit Load Devices (Containers & Palettes), calculate live stocks, and generate dynamic operational reports in real time.
+              </p>
+              <div class="landing-cta-group">
+                <button class="btn btn-primary" style="padding: 0.85rem 1.75rem; font-size: 1rem;" onclick="openLoginModal()">
+                  🚀 Sign In to Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature Cards Grid -->
+          <div class="landing-features-grid">
+            <div class="feature-card">
+              <div class="feature-icon">📦</div>
+              <h3 class="feature-title">Container & Palette Tracking</h3>
+              <p class="feature-desc">
+                Dynamic prefix selection (AKE, ALF, PAG, PMC) paired with 5-digit ULD numbers for instant transaction logging.
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">📊</div>
+              <h3 class="feature-title">Automated Live Stock</h3>
+              <p class="feature-desc">
+                Real-time automatic calculation of ULD In and ULD Out movements with dedicated inventory balance tables.
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">📈</div>
+              <h3 class="feature-title">Dynamic Reports Engine</h3>
+              <p class="feature-desc">
+                Generate Daily, Weekly, and Monthly summary reports categorized separately by Container and Palette types.
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">🛡️</div>
+              <h3 class="feature-title">Enterprise Audit & Security</h3>
+              <p class="feature-desc">
+                Role-based access control, SHA-256 password hashing, mandatory OTP resets, and admin audit logging.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 1. MY PROFILE VIEW -->
+        <div id="view-my-profile" class="page-view">
+          <div class="page-header">
+            <h1 class="page-title">My Profile</h1>
+            <p class="page-subtitle">Your user profile and account details</p>
+          </div>
+
+          <div class="form-card" style="max-width: 540px;">
+            <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem;">
+              <div class="avatar" style="width: 60px; height: 60px; font-size: 1.75rem;">U</div>
+              <div>
+                <h3 id="profile-card-name" style="font-size: 1.25rem;">-</h3>
+                <span id="profile-card-role" class="badge badge-container" style="margin-top: 0.25rem;">-</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+              <div>
+                <label style="color: var(--text-muted); font-size: 0.75rem;">User ID</label>
+                <div id="profile-card-id" style="font-weight: 600;">-</div>
+              </div>
+              <div>
+                <label style="color: var(--text-muted); font-size: 0.75rem;">Email Address</label>
+                <div id="profile-card-email" style="font-weight: 600;">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. INVENTORY TRANSACTIONS VIEW (ULD IN / OUT) -->
+        <div id="view-inventory" class="page-view">
+          <div class="page-header">
+            <h1 class="page-title">ULD Inventory Entry (In / Out)</h1>
+            <p class="page-subtitle">Record ULD transactions using dynamic prefix dropdown and 5-digit number</p>
+          </div>
+
+          <div class="form-card" style="margin-bottom: 2rem;">
+            <form id="txn-form">
+              <div class="form-grid">
+                
+                <div class="form-group full-width">
+                  <label for="txn-prefix">ULD Registration Number</label>
+                  <div class="uld-input-group">
+                    <select id="txn-prefix" required>
+                      <option value="">Loading Prefixes...</option>
+                    </select>
+                    <input type="text" id="txn-number" maxlength="5" pattern="\d{5}" required placeholder="5-digit number (e.g. 02587)">
+                  </div>
+                  <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">
+                    Select prefix (e.g. AKE, ALF, PAG) from dropdown and type 5 digits adjacent (e.g. AKE02587).
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="txn-type">Transaction Type</label>
+                  <select id="txn-type" required>
+                    <option value="ULD In">ULD In (Inventory Add)</option>
+                    <option value="ULD Out">ULD Out (Dispatch / Exit)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="txn-qty">Quantity</label>
+                  <input type="number" id="txn-qty" min="1" value="1" required>
+                </div>
+
+                <div class="form-group full-width">
+                  <label for="txn-remarks">Remarks (Optional)</label>
+                  <input type="text" id="txn-remarks" placeholder="e.g. Flight BG-084 Cargo Deck">
+                </div>
+
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-top: 1.25rem; width: 100%;">
+                Save Transaction
+              </button>
+            </form>
+          </div>
+
+          <!-- Recent Transaction Table -->
+          <div class="page-header" style="margin-bottom: 0.75rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Recent Inventory Transaction History</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Full ULD Number</th>
+                  <th>Type (Container / Palette)</th>
+                  <th>Transaction Type</th>
+                  <th>Quantity</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="txn-history-tbody">
+                <!-- Dynamic render -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. STOCK OVERVIEW VIEW -->
+        <div id="view-stock" class="page-view">
+          <div class="page-header">
+            <h1 class="page-title">Current Stock Overview</h1>
+            <p class="page-subtitle">Automated stock calculations separated by Containers and Palettes</p>
+          </div>
+
+          <!-- Stats Metrics Cards -->
+          <div class="stats-grid">
+            <div class="card">
+              <div class="stat-card-title">Total Container Stock</div>
+              <div id="metric-container-stock" class="stat-card-value">0</div>
+              <span class="stat-card-badge badge-container">AKE, ALF, etc.</span>
+            </div>
+            <div class="card">
+              <div class="stat-card-title">Total Palette Stock</div>
+              <div id="metric-palette-stock" class="stat-card-value">0</div>
+              <span class="stat-card-badge badge-palette">PAG, PMC, etc.</span>
+            </div>
+            <div class="card">
+              <div class="stat-card-title">Total ULD Stock</div>
+              <div id="metric-total-stock" class="stat-card-value">0</div>
+              <span class="stat-card-badge badge-container">Live Auto Calculated</span>
+            </div>
+          </div>
+
+          <!-- Container Table -->
+          <div class="page-header" style="margin-bottom: 0.75rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">📦 Container Stock Inventory</h3>
+          </div>
+          <div class="table-responsive" style="margin-bottom: 2rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>ULD Reg Number</th>
+                  <th>Prefix</th>
+                  <th>Number</th>
+                  <th>Total In</th>
+                  <th>Total Out</th>
+                  <th>Current Stock</th>
+                </tr>
+              </thead>
+              <tbody id="stock-container-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Palette Table -->
+          <div class="page-header" style="margin-bottom: 0.75rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #d97706;">📐 Palette Stock Inventory</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>ULD Reg Number</th>
+                  <th>Prefix</th>
+                  <th>Number</th>
+                  <th>Total In</th>
+                  <th>Total Out</th>
+                  <th>Current Stock</th>
+                </tr>
+              </thead>
+              <tbody id="stock-palette-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4. DYNAMIC REPORTS VIEW -->
+        <div id="view-reports" class="page-view">
+          <div class="page-header">
+            <h1 class="page-title">Dynamic Reports Section</h1>
+            <p class="page-subtitle">Daily, Weekly, and Monthly ULD In & Out Report Generator</p>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <button class="btn btn-secondary" onclick="fetchReport('DAILY')">📅 Daily Report</button>
+            <button class="btn btn-secondary" onclick="fetchReport('WEEKLY')">📆 Weekly Report</button>
+            <button class="btn btn-secondary" onclick="fetchReport('MONTHLY')">🗓️ Monthly Report</button>
+          </div>
+
+          <!-- Report Summary Cards Grid -->
+          <div class="stats-grid">
+            <div class="card">
+              <div class="stat-card-title">Container Summary</div>
+              <div style="font-size: 0.9rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                <div>Total In: <strong id="report-container-in">0</strong></div>
+                <div>Total Out: <strong id="report-container-out">0</strong></div>
+                <div>Net Change: <strong id="report-container-net">0</strong></div>
+                <div>Unique ULD Count: <strong id="report-container-count">0</strong></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="stat-card-title">Palette Summary</div>
+              <div style="font-size: 0.9rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                <div>Total In: <strong id="report-palette-in">0</strong></div>
+                <div>Total Out: <strong id="report-palette-out">0</strong></div>
+                <div>Net Change: <strong id="report-palette-net">0</strong></div>
+                <div>Unique ULD Count: <strong id="report-palette-count">0</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>ULD Reg Number</th>
+                  <th>Category Type</th>
+                  <th>Transaction Type</th>
+                  <th>Quantity</th>
+                </tr>
+              </thead>
+              <tbody id="report-table-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5. ADMIN USER MANAGEMENT VIEW -->
+        <div id="view-admin-users" class="page-view admin-only-nav">
+          <div class="page-header">
+            <h1 class="page-title">User Management</h1>
+            <p class="page-subtitle">Create new user ID, issue One-Time Passwords (OTP), and manage user accounts</p>
+          </div>
+
+          <div class="form-card" style="margin-bottom: 2rem;">
+            <form id="admin-create-user-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="user-name">Full Name</label>
+                  <input type="text" id="user-name" required placeholder="e.g. John Doe">
+                </div>
+                <div class="form-group">
+                  <label for="user-email">Email Address</label>
+                  <input type="email" id="user-email" required placeholder="user@company.com">
+                </div>
+                <div class="form-group">
+                  <label for="user-role">Role</label>
+                  <select id="user-role" required>
+                    <option value="USER">Standard User (USER)</option>
+                    <option value="ADMIN">System Administrator (ADMIN)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="user-otp">Initial OTP Password</label>
+                  <div class="password-wrapper">
+                    <input type="password" id="user-otp" required placeholder="e.g. TempPass123">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('user-otp', this)">👁️</button>
+                  </div>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-top: 1.25rem;">
+                + Create New User
+              </button>
+            </form>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Created Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6. ADMIN PREFIX CONFIG VIEW -->
+        <div id="view-admin-prefixes" class="page-view admin-only-nav">
+          <div class="page-header">
+            <h1 class="page-title">ULD Prefix Configuration</h1>
+            <p class="page-subtitle">Add new registration prefixes (e.g. AKE, ALF, PAG, PMC)</p>
+          </div>
+
+          <div class="form-card" style="margin-bottom: 2rem;">
+            <form id="admin-add-prefix-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="prefix-code">Prefix Code</label>
+                  <input type="text" id="prefix-code" maxlength="4" required placeholder="e.g. AKE">
+                </div>
+                <div class="form-group">
+                  <label for="prefix-type">Group Type (Container / Palette)</label>
+                  <select id="prefix-type" required>
+                    <option value="Container">Container</option>
+                    <option value="Palette">Palette</option>
+                  </select>
+                </div>
+                <div class="form-group full-width">
+                  <label for="prefix-desc">Description</label>
+                  <input type="text" id="prefix-desc" placeholder="e.g. Main Deck Container">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-top: 1.25rem;">
+                + Add New Prefix
+              </button>
+            </form>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Prefix Code</th>
+                  <th>Group / Type</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody id="prefix-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 7. ADMIN AUDIT TRAIL VIEW -->
+        <div id="view-admin-audit" class="page-view admin-only-nav">
+          <div class="page-header">
+            <h1 class="page-title">Audit Trail & Activity Logs</h1>
+            <p class="page-subtitle">Exclusive System User Activity History (Admin Only)</p>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>User Email</th>
+                  <th>Action</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="audit-logs-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p>ULD Management System © 2026 | Powering Efficient & Secure Cargo Operations</p>
+    </footer>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Loading Spinner Overlay -->
+  <div id="spinner-overlay" class="spinner-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <?!= include('JavaScript'); ?>
+</body>
+</html>

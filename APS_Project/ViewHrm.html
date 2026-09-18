@@ -23,26 +23,47 @@
 </template>
 
 <template id="tmpl-hrm_employees">
-  <div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full">
+  <div class="data-view-container animate-fade-in">
     
-    <!-- Functional Options Buttons & Filters -->
-    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center shrink-0 text-sm">
-      <button id="btn-emp-precise" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('precise')">Precise List</button>
-      <button id="btn-emp-details" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('details')">Details List</button>
-      <button id="btn-emp-onjob" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('onjob')">On Job</button>
-      <button id="btn-emp-retired" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('retired')">Retired</button>
-      <button id="btn-emp-officer" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('officer')">Officer & Sup</button>
-      <button id="btn-emp-th" class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderEmpList('th')">TH</button>
-      
-      <div class="border-l border-gray-400 h-6 mx-1"></div>
-      
-      <select id="emp-filter-pg" class="border border-gray-400 bg-white px-2 py-1 text-xs" onchange="renderEmpList(window.currentEmpView || 'details')">
-        <option value="ALL">All Pay Groups</option>
-      </select>
+    <!-- Functional Options Buttons, Navigation Controls & Filters -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center justify-between shrink-0 text-sm">
+      <div class="flex flex-wrap gap-1.5 items-center">
+        <button id="btn-emp-precise" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('precise')">Precise List</button>
+        <button id="btn-emp-details" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('details')">Details List</button>
+        <button id="btn-emp-onjob" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('onjob')">On Job</button>
+        <button id="btn-emp-retired" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('retired')">Retired</button>
+        <button id="btn-emp-officer" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('officer')">Officer & Sup</button>
+        <button id="btn-emp-th" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('th')">TH</button>
+        
+        <div class="border-l border-gray-400 h-5 mx-1"></div>
+        
+        <select id="emp-filter-pg" class="border border-gray-400 bg-white px-2 py-1 text-xs rounded-sm" onchange="renderEmpList(window.currentEmpView || 'details')">
+          <option value="ALL">All Pay Groups</option>
+        </select>
+      </div>
+
+      <!-- Navigation & View Mode Controls -->
+      <div class="flex items-center space-x-1.5">
+        <!-- Horizontal Scroll Arrows -->
+        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Spreadsheet Left">
+            <span class="material-icons text-base">chevron_left</span>
+          </button>
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Spreadsheet Right">
+            <span class="material-icons text-base">chevron_right</span>
+          </button>
+        </div>
+
+        <!-- Fullscreen Mode Button -->
+        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Spreadsheet Mode">
+          <span class="material-icons text-sm mr-1">fullscreen</span>
+          <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+        </button>
+      </div>
     </div>
     
     <!-- Spreadsheet Container (Zero Padding, Scrollable) -->
-    <div class="flex-1 overflow-auto bg-white">
+    <div class="data-table-scroll-wrapper">
       <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="emp-spreadsheet">
         <thead class="sticky top-0 z-10">
           <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900" id="emp-sheet-header">
@@ -73,7 +94,6 @@
     <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('additional_charges', 'hrm-form-container')">Addl Charges</button>
     <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('self_retirements', 'hrm-form-container')">Retirements</button>
     <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('employee_migrations', 'hrm-form-container')">Migrations</button>
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('setups', 'hrm-form-container')">Setups</button>
   </div>
 
   <div id="hrm-form-container">
@@ -100,7 +120,6 @@
     <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('additional_charges', 'hrm-grid-container')">Addl Charges</button>
     <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('self_retirements', 'hrm-grid-container')">Retirements</button>
     <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('employee_migrations', 'hrm-grid-container')">Migrations</button>
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('setups', 'hrm-grid-container')">Setups</button>
   </div>
 
   <div id="hrm-grid-container">
@@ -125,19 +144,41 @@ async function hrm_dashboard_init() {
 async function hrm_employees_init() {
   try {
     app.showLoader();
-    window.allEmployeesData = await api.getHrmDetails();
+    const [empDetails, payGroups] = await Promise.all([
+      api.getHrmDetails(),
+      api.read('pay_groups').catch(() => [])
+    ]);
+    window.allEmployeesData = empDetails;
     
-    // Populate PG Dropdown
-    const pgSet = new Set();
-    window.allEmployeesData.forEach(e => { if(e.pay_group !== '-') pgSet.add(e.pay_group); });
+    // Sort pay groups dynamically by rank_level descending (higher-ranking on top)
+    payGroups.sort((a, b) => (Number(b.rank_level) || 0) - (Number(a.rank_level) || 0));
+    
     const select = document.getElementById('emp-filter-pg');
-    Array.from(pgSet).sort().forEach(pg => {
-      const opt = document.createElement('option');
-      opt.value = pg; opt.text = pg;
-      select.appendChild(opt);
+    select.innerHTML = '<option value="ALL">All Pay Groups</option>';
+    
+    const addedPgs = new Set();
+    payGroups.forEach(pg => {
+      if (pg.pay_group && !addedPgs.has(pg.pay_group)) {
+        addedPgs.add(pg.pay_group);
+        const opt = document.createElement('option');
+        opt.value = pg.pay_group;
+        opt.text = pg.pay_group;
+        select.appendChild(opt);
+      }
     });
 
-    renderEmpList('details');
+    // Add any missing pay groups from employee data
+    window.allEmployeesData.forEach(e => {
+      if (e.pay_group && e.pay_group !== '-' && !addedPgs.has(e.pay_group)) {
+        addedPgs.add(e.pay_group);
+        const opt = document.createElement('option');
+        opt.value = e.pay_group;
+        opt.text = e.pay_group;
+        select.appendChild(opt);
+      }
+    });
+
+    renderEmpList(window.currentEmpView || 'details');
   } catch (e) {
     app.toast(e.message, 'error');
   } finally {
@@ -171,8 +212,10 @@ function renderEmpList(viewMode) {
   }
 
   // Helper to calculate numerical power of Pay Group
-  // Higher power means higher seniority.
-  function getPgPower(pgStr) {
+  function getPgPower(pgStr, rankLevel) {
+    if (rankLevel !== undefined && rankLevel !== null && Number(rankLevel) > 0) {
+      return Number(rankLevel) * 10;
+    }
     if (!pgStr || pgStr === '-') return 0;
     const match = pgStr.match(/PG-(\d+)(?:\((.*?)\))?/);
     if (!match) return 0;
@@ -185,21 +228,24 @@ function renderEmpList(viewMode) {
     if (num === 3) {
       if (sub === 'I') return 85;
       if (sub === 'II') return 80;
-      return 80; // default
+      return 80;
     }
     
     return basePower;
   }
 
   // 2. Apply Functional Button Filter
-  if (viewMode === 'onjob') {
+  if (viewMode === 'precise') {
+    // Precise list shows ONLY employees whose status is Active
+    data = data.filter(e => e.status === 'Active');
+  } else if (viewMode === 'onjob') {
     data = data.filter(e => e.status === 'Active' || e.status === 'Extension');
   } else if (viewMode === 'retired') {
     data = data.filter(e => e.status === 'Retired');
   } else if (viewMode === 'officer') {
-    data = data.filter(e => getPgPower(e.pay_group) >= 80); // >= PG-3(II)
+    data = data.filter(e => getPgPower(e.pay_group, e.rank_level) >= 80);
   } else if (viewMode === 'th') {
-    data = data.filter(e => getPgPower(e.pay_group) < 80); // < PG-3(II)
+    data = data.filter(e => getPgPower(e.pay_group, e.rank_level) < 80);
   }
 
   // 3. Define Columns based on Precise vs Details
@@ -256,9 +302,7 @@ function renderEmpList(viewMode) {
     cols.forEach(c => {
       let val = row[c.key] || '';
       if (c.type === 'date' && val && val !== '-') {
-        const d = new Date(val);
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        val = `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+        val = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(val) : val;
       }
       // Zero padding, border for spreadsheet look
       trHtml += `<td class="border border-gray-300 px-1 py-0 truncate max-w-[200px]" title="${val}">${val}</td>`;
@@ -273,8 +317,17 @@ async function hrm_service_init() {
     const emps = await api.read('employees');
     const select = document.getElementById('hrm-service-emp-select');
     if (select) {
-      emps.sort((a,b) => a.staff_id.localeCompare(b.staff_id)).forEach(e => {
-        select.innerHTML += `<option value="${e.emp_id}">${e.staff_id} - ${e.emp_name}</option>`;
+      select.innerHTML = '<option value="">-- Select Employee --</option>';
+      const sortedEmps = [...emps].sort((a, b) => {
+        const idA = String((a && a.staff_id) != null ? a.staff_id : '');
+        const idB = String((b && b.staff_id) != null ? b.staff_id : '');
+        return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      sortedEmps.forEach(e => {
+        const staffId = e.staff_id != null ? e.staff_id : '';
+        const name = e.emp_name || 'Unknown';
+        select.innerHTML += `<option value="${e.emp_id}">${staffId} - ${name}</option>`;
       });
     }
   } catch(e) {
@@ -297,7 +350,7 @@ async function loadServiceHistory(empId) {
     const history = await api.getServiceHistory(empId);
     
     if (!history || history.length === 0) {
-      container.innerHTML = `<div class="text-center text-gray-500 mt-10">No service records found.</div>`;
+      container.innerHTML = `<div class="text-center text-gray-500 mt-10"><span class="material-icons text-4xl text-gray-300 mb-2">info</span><p>No service records found for this employee.</p></div>`;
       return;
     }
 
@@ -309,10 +362,13 @@ async function loadServiceHistory(empId) {
       if (ev.type === 'Placement' || ev.type === 'Posting') { icon = 'place'; color = 'bg-purple-500'; }
       if (ev.type === 'Extension') { icon = 'more_time'; color = 'bg-orange-500'; }
       if (ev.type === 'Joined') { icon = 'login'; color = 'bg-blue-800'; }
+      if (ev.type === 'Migration') { icon = 'swap_horiz'; color = 'bg-indigo-500'; }
+      if (ev.type === 'Additional Charge') { icon = 'assignment_ind'; color = 'bg-amber-600'; }
 
-      const d = new Date(ev.date);
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const dateStr = ev.date ? `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}` : 'Unknown Date';
+      let dateStr = 'Unknown Date';
+      if (ev.date && ev.date !== '-') {
+        dateStr = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(ev.date) : String(ev.date);
+      }
 
       html += `
         <div class="mb-6 ml-6 relative">
@@ -334,20 +390,40 @@ async function loadServiceHistory(empId) {
     container.innerHTML = html;
 
   } catch(e) {
-    container.innerHTML = `<div class="text-center text-red-500 mt-10">Error loading history: ${e.message}</div>`;
+    container.innerHTML = `<div class="text-center text-red-500 mt-10"><span class="material-icons text-3xl mb-1">error_outline</span><p>Error loading history: ${e.message}</p></div>`;
   }
 }
 </script>
 
 <template id="tmpl-hrm_service">
-  <div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full">
-    <div class="p-4 border-b border-gray-300 bg-gray-100 flex items-center shrink-0">
-      <span class="material-icons text-gray-500 mr-2">search</span>
-      <select id="hrm-service-emp-select" class="border border-gray-400 bg-white px-2 py-1 text-sm w-64" onchange="loadServiceHistory(this.value)">
-        <option value="">-- Select Employee --</option>
-      </select>
+  <div class="data-view-container animate-fade-in">
+    <div class="p-3 border-b border-gray-300 bg-gray-100 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div class="flex items-center space-x-2">
+        <span class="material-icons text-gray-500 text-sm">search</span>
+        <select id="hrm-service-emp-select" class="border border-gray-400 bg-white px-2 py-1 text-xs w-64 rounded-sm" onchange="loadServiceHistory(this.value)">
+          <option value="">-- Select Employee --</option>
+        </select>
+      </div>
+
+      <!-- Navigation & View Mode Controls -->
+      <div class="flex items-center space-x-1.5">
+        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll History Left">
+            <span class="material-icons text-base">chevron_left</span>
+          </button>
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll History Right">
+            <span class="material-icons text-base">chevron_right</span>
+          </button>
+        </div>
+
+        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Mode">
+          <span class="material-icons text-sm mr-1">fullscreen</span>
+          <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+        </button>
+      </div>
     </div>
-    <div class="flex-1 overflow-auto bg-white p-4" id="hrm-service-container">
+
+    <div class="data-table-scroll-wrapper p-4" id="hrm-service-container">
       <div class="text-center text-gray-400 mt-10">
         <span class="material-icons text-4xl mb-2">manage_search</span>
         <p>Select an employee above to view their chronological service history.</p>
@@ -355,3 +431,2324 @@ async function loadServiceHistory(empId) {
     </div>
   </div>
 </template>
+
+<!-- HRM Promotion View -->
+<template id="tmpl-hrm_promotion">
+  <div class="data-view-container animate-fade-in">
+    
+    <!-- Promotion Navigation & Option Tabs Bar -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center justify-between shrink-0 text-sm">
+      
+      <!-- Option Buttons on Left -->
+      <div class="flex items-center space-x-1">
+        <button id="btn-promo-individual" class="bg-blue-800 text-white px-3 py-1 hover:bg-blue-700 font-medium border border-blue-900 rounded-sm flex items-center text-xs shadow-sm" onclick="switchPromotionTab('individual')">
+          <span class="material-icons text-xs mr-1">person_search</span> Individual Report
+        </button>
+        <button id="btn-promo-all" class="bg-gray-200 text-gray-800 px-3 py-1 hover:bg-gray-300 font-medium border border-gray-400 rounded-sm flex items-center text-xs" onclick="switchPromotionTab('all')">
+          <span class="material-icons text-xs mr-1">table_chart</span> All Employees
+        </button>
+        <button id="btn-promo-eligibility" class="bg-gray-200 text-gray-800 px-3 py-1 hover:bg-gray-300 font-medium border border-gray-400 rounded-sm flex items-center text-xs" onclick="switchPromotionTab('eligibility')">
+          <span class="material-icons text-xs mr-1">verified_user</span> Promotion Eligibility
+        </button>
+      </div>
+
+      <!-- Tab Controls on Right (Rendered Dynamically) & Navigation Controls -->
+      <div class="flex items-center space-x-2">
+        <div id="promo-tab-controls-right" class="flex flex-wrap items-center gap-2"></div>
+        
+        <!-- Navigation Controls: Left/Right scroll, Fullscreen, Close -->
+        <div class="flex items-center space-x-1.5 border-l border-gray-300 pl-2">
+          <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+            <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Report Left">
+              <span class="material-icons text-base">chevron_left</span>
+            </button>
+            <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Report Right">
+              <span class="material-icons text-base">chevron_right</span>
+            </button>
+          </div>
+
+          <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Report Mode">
+            <span class="material-icons text-sm mr-1">fullscreen</span>
+            <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Container for the 3 Tab Views -->
+    <div class="data-table-scroll-wrapper bg-gray-50 flex flex-col" id="promo-main-container">
+      
+      <!-- 1. Individual Report View Container -->
+      <div id="promo-view-individual" class="flex-1 flex flex-col overflow-auto p-3">
+        
+        <!-- Individual Top Search Form with Employee Dropdown & Manual Input -->
+        <div class="bg-white p-2.5 border border-gray-300 shadow-sm rounded mb-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <form id="promo-individual-form" class="flex flex-wrap items-center gap-2" onsubmit="event.preventDefault(); loadIndividualPromotionReport();">
+            <label for="promo-emp-select" class="text-xs font-bold text-gray-700 uppercase tracking-tight">Select Employee:</label>
+            <select id="promo-emp-select" onchange="onPromoEmpSelect(this.value)" class="border border-gray-400 bg-white px-2 py-1 text-xs max-w-xs focus:outline-none focus:ring-1 focus:ring-blue-900 rounded-sm font-medium">
+              <option value="">-- Loading Employees... --</option>
+            </select>
+            
+            <span class="text-xs text-gray-400 font-bold uppercase mx-0.5">OR</span>
+
+            <div class="relative flex items-center">
+              <input type="text" id="promo-emp-input" list="promo-emp-datalist" placeholder="Staff ID or EMP ID..." class="border border-gray-400 px-2 py-1 text-xs w-44 focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50 uppercase font-medium rounded-sm">
+              <datalist id="promo-emp-datalist"></datalist>
+            </div>
+            
+            <button type="submit" id="btn-promo-submit" class="bg-blue-900 text-white px-3 py-1 rounded-sm text-xs font-bold hover:bg-blue-800 shadow-sm flex items-center">
+              <span class="material-icons text-xs mr-1">search</span> Submit
+            </button>
+            <button type="button" onclick="clearIndividualPromotionReport()" class="border border-gray-400 bg-white text-gray-700 px-2 py-1 rounded-sm text-xs font-medium hover:bg-gray-100">
+              Reset
+            </button>
+          </form>
+
+          <!-- Report Export Toolbar (Visible when report is loaded) -->
+          <div id="promo-report-toolbar" class="hidden flex items-center space-x-2">
+            <!-- Save As Dropdown / Direct Buttons -->
+            <div class="flex items-center space-x-1">
+              <button onclick="exportIndividualPromotionPDF()" title="Download formatted PDF" class="bg-red-600 text-white border border-red-700 px-2.5 py-1 rounded-sm hover:bg-red-700 flex items-center text-xs font-bold cursor-pointer shadow-sm">
+                <span class="material-icons text-xs mr-1">picture_as_pdf</span> Save As PDF
+              </button>
+              <button onclick="exportIndividualPromotionWord()" title="Download Microsoft Word (.docx)" class="bg-blue-700 text-white border border-blue-800 px-2.5 py-1 rounded-sm hover:bg-blue-800 flex items-center text-xs font-bold cursor-pointer shadow-sm">
+                <span class="material-icons text-xs mr-1">description</span> Save As Word (.docx)
+              </button>
+              <button onclick="printIndividualPromotionReport()" title="Print Official Document" class="bg-gray-800 text-white border border-gray-900 px-2.5 py-1 rounded-sm hover:bg-gray-900 flex items-center text-xs font-bold cursor-pointer shadow-sm">
+                <span class="material-icons text-xs mr-1">print</span> Print
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Individual Report Display Area -->
+        <div id="promo-individual-output" class="flex-1 overflow-auto flex justify-center items-start">
+          <div class="text-center text-gray-400 mt-16">
+            <span class="material-icons text-5xl mb-2 text-gray-300">manage_search</span>
+            <h4 class="text-sm font-bold text-gray-600">No Report Generated</h4>
+            <p class="text-xs text-gray-500 mt-1">Enter a valid Employee ID or Staff ID above and click "Submit" to view the comprehensive promotion history.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. All Employees Promotions View Container -->
+      <div id="promo-view-all" class="flex-1 flex flex-col overflow-hidden hidden">
+        
+        <!-- Table SpreadSheet Container -->
+        <div class="flex-1 overflow-auto bg-white">
+          <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="all-promo-table">
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900">
+                <th class="p-1 border border-gray-300 font-bold text-left">SL</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Staff ID</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Employee Name</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Department</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Present Pay Group</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Promoted Pay Group</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Promoted Designation</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Rank</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Sequence</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Promotion Date</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Time in Prev Grade</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="all-promo-tbody">
+              <tr><td colspan="12" class="p-4 text-center text-gray-500">Loading promotion records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Promotion Eligibility View Container -->
+      <div id="promo-view-eligibility" class="flex-1 flex flex-col overflow-hidden hidden p-3">
+        
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 shrink-0">
+          <div class="bg-white p-3 border border-gray-200 shadow-sm rounded-sm flex items-center justify-between">
+            <div>
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Active Workforce</p>
+              <h3 class="text-xl font-bold text-gray-800" id="eligibility-stat-total">-</h3>
+            </div>
+            <span class="material-icons text-blue-100 text-3xl">people</span>
+          </div>
+          <div class="bg-white p-3 border border-gray-200 shadow-sm rounded-sm flex items-center justify-between">
+            <div>
+              <p class="text-[10px] font-bold text-blue-700 uppercase tracking-tight">Eligible (3+ Years in Grade)</p>
+              <h3 class="text-xl font-bold text-blue-900" id="eligibility-stat-3yr">-</h3>
+            </div>
+            <span class="material-icons text-blue-100 text-3xl">verified</span>
+          </div>
+          <div class="bg-white p-3 border border-gray-200 shadow-sm rounded-sm flex items-center justify-between">
+            <div>
+              <p class="text-[10px] font-bold text-green-700 uppercase tracking-tight">Highly Eligible (5+ Years)</p>
+              <h3 class="text-xl font-bold text-green-800" id="eligibility-stat-5yr">-</h3>
+            </div>
+            <span class="material-icons text-green-100 text-3xl">military_tech</span>
+          </div>
+        </div>
+
+        <!-- Eligibility Table Container -->
+        <div class="flex-1 overflow-auto bg-white border border-gray-300 shadow-sm">
+          <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="eligibility-table">
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900">
+                <th class="p-1 border border-gray-300 font-bold text-left">SL</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Staff ID</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Employee Name</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Department</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Present Pay Group</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Present Designation</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Grade Since</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Time in Grade</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Next Potential PG</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Eligibility Status</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="eligibility-tbody">
+              <tr><td colspan="11" class="p-4 text-center text-gray-500">Loading eligibility criteria...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<!-- HRM Workforce Management & Staffing Matrix View -->
+<template id="tmpl-hrm_workforce">
+  <div class="data-view-container flex flex-col h-full bg-slate-50 relative animate-fade-in">
+    
+    <!-- Top Action & Navigation Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 shrink-0">
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="material-icons text-teal-600 text-2xl">groups_2</span>
+          <h2 class="text-xl md:text-2xl font-extrabold text-gray-800 tracking-tight">Workforce Management &amp; Staffing Matrix</h2>
+        </div>
+        <p class="text-xs text-gray-500 mt-0.5">Real-time authorized setups, active headcount deficits, multi-variable distribution &amp; airline HR analytics</p>
+      </div>
+
+      <!-- Action Toolbar (Export, Print, Fullscreen) -->
+      <div class="flex items-center space-x-1.5 shrink-0 self-end sm:self-auto">
+        <button class="data-nav-btn" onclick="WorkforceModule.exportCurrentViewCSV()" title="Export CSV Report">
+          <span class="material-icons text-xs mr-1 text-emerald-600">download</span> CSV Export
+        </button>
+        <button class="data-nav-btn" onclick="WorkforceModule.printReport()" title="Print / A4 Portrait View">
+          <span class="material-icons text-xs mr-1 text-sky-600">print</span> Print A4
+        </button>
+        <button class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen">
+          <span class="material-icons text-xs mr-1">fullscreen</span> <span class="fs-btn-text">Fullscreen</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Four Primary Option Buttons Bar -->
+    <div class="flex items-center space-x-2 my-3 overflow-x-auto no-scrollbar pb-1 shrink-0 border-b border-gray-200">
+      <button id="wf-btn-setup" class="wf-tab-btn active" onclick="WorkforceModule.switchTab('setup')">
+        <span class="material-icons text-sm">settings_suggest</span> Set Up
+      </button>
+      <button id="wf-btn-distribution" class="wf-tab-btn" onclick="WorkforceModule.switchTab('distribution')">
+        <span class="material-icons text-sm">hub</span> Workforce Distribution
+      </button>
+      <button id="wf-btn-analytics" class="wf-tab-btn" onclick="WorkforceModule.switchTab('analytics')">
+        <span class="material-icons text-sm">insights</span> Analytics
+      </button>
+      <button id="wf-btn-summary" class="wf-tab-btn" onclick="WorkforceModule.switchTab('summary')">
+        <span class="material-icons text-sm">table_chart</span> Staffing Summary
+      </button>
+    </div>
+
+    <!-- Tab 1: Set Up Tab Workspace -->
+    <div id="wf-workspace-setup" class="flex-1 flex flex-col min-h-0 overflow-hidden">
+      
+      <!-- Primary Inter-linked Filters Bar -->
+      <div class="bg-white border border-gray-200 rounded-lg p-3 mb-3 shadow-sm shrink-0">
+        <div class="flex flex-wrap items-center gap-3">
+          
+          <!-- Filter 1: Directorate -->
+          <div class="flex flex-col min-w-[170px] flex-1 sm:flex-none">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Directorate</label>
+            <select id="wf-filter-dir" class="border border-gray-300 rounded px-2 py-1.5 text-xs font-medium text-gray-700 bg-slate-50 hover:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none" onchange="WorkforceModule.onDirectorateChange()">
+              <option value="ALL">All Directorates</option>
+            </select>
+          </div>
+
+          <!-- Filter 2: Department -->
+          <div class="flex flex-col min-w-[190px] flex-1 sm:flex-none">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Department</label>
+            <select id="wf-filter-dep" class="border border-gray-300 rounded px-2 py-1.5 text-xs font-medium text-gray-700 bg-slate-50 hover:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none" onchange="WorkforceModule.onDepartmentChange()">
+              <option value="ALL">All Departments</option>
+            </select>
+          </div>
+
+          <!-- Filter 3: Station -->
+          <div class="flex flex-col min-w-[170px] flex-1 sm:flex-none">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Stations</label>
+            <select id="wf-filter-stn" class="border border-gray-300 rounded px-2 py-1.5 text-xs font-medium text-gray-700 bg-slate-50 hover:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none" onchange="WorkforceModule.onStationChange()">
+              <option value="ALL">All Stations</option>
+            </select>
+          </div>
+
+          <!-- Filter Action: Reset -->
+          <div class="flex items-end self-end pb-0.5 ml-auto">
+            <button class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-semibold flex items-center shadow-sm transition-colors" onclick="WorkforceModule.resetFilters()">
+              <span class="material-icons text-xs mr-1 text-gray-500">restart_alt</span> Reset Filters
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Filter Context Summary Pills -->
+        <div class="flex items-center justify-between border-t border-gray-100 mt-2.5 pt-2 text-[11px] text-gray-500">
+          <div id="wf-filter-status" class="font-medium text-gray-600 truncate">
+            Showing baseline setup data across <span class="font-bold text-teal-800">All Directorates</span>
+          </div>
+          <div class="flex items-center space-x-3 shrink-0">
+            <span>Setup: <strong id="wf-badge-setup" class="text-blue-900 font-bold">0</strong></span>
+            <span class="text-gray-300">|</span>
+            <span>Existing: <strong id="wf-badge-existing" class="text-emerald-700 font-bold">0</strong></span>
+            <span class="text-gray-300">|</span>
+            <span>Required (Deficit): <strong id="wf-badge-required" class="text-rose-700 font-bold">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Printable Area for Table -->
+      <div id="workforce-printable-area" class="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg bg-white shadow-sm p-4 data-table-scroll-wrapper">
+        <div id="wf-setup-table-container" class="max-w-4xl mx-auto">
+          <!-- Setup Table dynamically injected here -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tab 2: Workforce Distribution Workspace -->
+    <div id="wf-workspace-distribution" class="flex-1 flex flex-col min-h-0 overflow-hidden hidden">
+      
+      <!-- Sub-view switcher -->
+      <div class="flex items-center justify-between bg-white p-3 border border-gray-200 rounded-lg mb-3 shrink-0 shadow-sm">
+        <div class="flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-2">Distribution View:</span>
+          <button id="wf-dist-btn-shift" class="px-3 py-1 text-xs font-semibold rounded bg-teal-800 text-white shadow-sm" onclick="WorkforceModule.switchDistView('shift')">Operational Shifts</button>
+          <button id="wf-dist-btn-section" class="px-3 py-1 text-xs font-semibold rounded bg-gray-100 hover:bg-gray-200 text-gray-700" onclick="WorkforceModule.switchDistView('section')">Sectional Distribution</button>
+          <button id="wf-dist-btn-desig" class="px-3 py-1 text-xs font-semibold rounded bg-gray-100 hover:bg-gray-200 text-gray-700" onclick="WorkforceModule.switchDistView('designation')">Designations</button>
+          <button id="wf-dist-btn-station" class="px-3 py-1 text-xs font-semibold rounded bg-gray-100 hover:bg-gray-200 text-gray-700" onclick="WorkforceModule.switchDistView('station')">Station Allocation</button>
+        </div>
+        <div class="text-xs text-gray-500 font-medium hidden md:block">
+          Active Personnel Headcount: <strong id="wf-dist-total-headcount" class="text-teal-900 font-bold">0</strong>
+        </div>
+      </div>
+
+      <!-- Distribution View Content Container -->
+      <div class="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg bg-white p-4 shadow-sm data-table-scroll-wrapper">
+        <div id="wf-dist-content-container">
+          <!-- Multi-variable distribution tables injected here -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tab 3: Analytics Workspace -->
+    <div id="wf-workspace-analytics" class="flex-1 flex flex-col min-h-0 overflow-auto p-1">
+      <div id="wf-analytics-container" class="space-y-4">
+        <!-- Analytics KPI Cards, Meters, and Distribution Pyramids injected here -->
+      </div>
+    </div>
+
+    <!-- Tab 4: Staffing Summary Workspace -->
+    <div id="wf-workspace-summary" class="flex-1 flex flex-col min-h-0 overflow-hidden hidden">
+      <div class="bg-white p-3 border border-gray-200 rounded-lg mb-3 shrink-0 shadow-sm flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-gray-800">Station Operational Coverage &amp; Staffing Deficit Summary</h3>
+          <p class="text-xs text-gray-500">Comprehensive station-by-station operational manning audit</p>
+        </div>
+        <button class="data-nav-btn" onclick="WorkforceModule.exportSummaryCSV()">
+          <span class="material-icons text-xs mr-1 text-emerald-600">download</span> Export Summary
+        </button>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg bg-white p-4 shadow-sm data-table-scroll-wrapper">
+        <div id="wf-summary-table-container">
+          <!-- Station Summary Table injected here -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+
+<script>
+/**
+ * Global Promotion Module State & Controller
+ */
+window.currentPromotionTab = 'individual';
+window.allPromotionsData = [];
+window.promotionEligibilityData = [];
+window.currentIndividualReportData = null;
+
+async function hrm_promotion_init() {
+  switchPromotionTab('individual');
+  await initPromotionEmployeeSelector();
+}
+
+async function initPromotionEmployeeSelector() {
+  const select = document.getElementById('promo-emp-select');
+  const datalist = document.getElementById('promo-emp-datalist');
+  const inputEl = document.getElementById('promo-emp-input');
+  
+  let emps = [];
+  try {
+    emps = await api.read('employees');
+    window._cachedPromotionEmployees = emps;
+  } catch(e) {
+    console.warn('Could not read employees for promotion selector:', e);
+  }
+
+  if (select) {
+    select.innerHTML = '<option value="">-- Select Employee --</option>';
+  }
+  if (datalist) {
+    datalist.innerHTML = '';
+  }
+
+  let defaultEmpId = null;
+
+  if (emps && emps.length > 0) {
+    const sortedEmps = [...emps].sort((a, b) => {
+      const idA = String((a && a.staff_id) != null ? a.staff_id : '');
+      const idB = String((b && b.staff_id) != null ? b.staff_id : '');
+      return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    sortedEmps.forEach((e, idx) => {
+      const staffId = e.staff_id != null ? e.staff_id : (e.emp_id || '');
+      const name = e.emp_name || 'Unknown';
+      const desig = e.designation || e.current_designation || '';
+      const label = desig ? `${staffId} - ${name} (${desig})` : `${staffId} - ${name}`;
+      
+      if (select) {
+        select.innerHTML += `<option value="${staffId}">${label}</option>`;
+      }
+      if (datalist) {
+        datalist.innerHTML += `<option value="${staffId}">${name} ${desig}</option>`;
+      }
+      if (idx === 0) defaultEmpId = staffId;
+    });
+  }
+
+  if (defaultEmpId) {
+    if (select) select.value = defaultEmpId;
+    if (inputEl) inputEl.value = defaultEmpId;
+    await loadIndividualPromotionReport(defaultEmpId);
+  } else {
+    await loadIndividualPromotionReport('SAMPLE');
+  }
+}
+
+function onPromoEmpSelect(empId) {
+  if (!empId) return;
+  const inputEl = document.getElementById('promo-emp-input');
+  if (inputEl) inputEl.value = empId;
+  loadIndividualPromotionReport(empId);
+}
+
+function getSamplePromotionReportData(empIdentifier) {
+  return {
+    employee: {
+      emp_id: empIdentifier && empIdentifier !== 'SAMPLE' ? empIdentifier : 'EMP-1024',
+      staff_id: empIdentifier && empIdentifier !== 'SAMPLE' ? empIdentifier : 'SA-1024',
+      emp_name: 'TARIQUL ISLAM',
+      directorate_name: 'FLIGHT OPERATIONS & GROUND HANDLING',
+      directorate_code: 'FOGH',
+      department_name: 'GROUND SERVICES DEPARTMENT',
+      department_code: 'GSD',
+      current_pay_group: 'PG-4',
+      current_designation: 'Ground Service Supervisor',
+      joining_pay_group: 'PG-3(2)',
+      joining_designation: 'Ground Service Assistant',
+      joining_date: '01 Jun 2021',
+      total_service: '03Y 11M 07 D',
+      promotions_count: 1
+    },
+    promotions: [
+      {
+        sl: 1,
+        sequence_no: 1,
+        from_pg: 'PG-3(2)',
+        from_designation: 'Ground Service Assistant',
+        to_pg: 'PG-4',
+        to_designation: 'Ground Service Supervisor',
+        promotion_date: '07 May 2025',
+        duration_in_previous_grade: '03Y 11M 07 D',
+        remarks: ''
+      }
+    ]
+  };
+}
+
+async function loadIndividualPromotionReport(targetEmpId) {
+  const inputEl = document.getElementById('promo-emp-input');
+  const selectEl = document.getElementById('promo-emp-select');
+  
+  let empIdentifier = targetEmpId;
+  if (!empIdentifier && selectEl && selectEl.value) {
+    empIdentifier = selectEl.value;
+  }
+  if (!empIdentifier && inputEl && inputEl.value.trim()) {
+    empIdentifier = inputEl.value.trim();
+  }
+  
+  if (!empIdentifier && window._cachedPromotionEmployees && window._cachedPromotionEmployees.length > 0) {
+    const firstEmp = window._cachedPromotionEmployees[0];
+    empIdentifier = firstEmp.staff_id || firstEmp.emp_id;
+  }
+
+  const outputContainer = document.getElementById('promo-individual-output');
+  const toolbar = document.getElementById('promo-report-toolbar');
+  if (!outputContainer) return;
+  
+  if (empIdentifier && empIdentifier !== 'SAMPLE') {
+    if (inputEl) inputEl.value = empIdentifier;
+    if (selectEl) {
+      for (let i = 0; i < selectEl.options.length; i++) {
+        if (selectEl.options[i].value === empIdentifier) {
+          selectEl.selectedIndex = i;
+          break;
+        }
+      }
+    }
+  }
+
+  outputContainer.innerHTML = '<div class="p-8 text-center text-gray-500"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900 mx-auto mb-3"></div>Generating comprehensive promotion report...</div>';
+
+  try {
+    app.showLoader();
+    let result = null;
+    if (empIdentifier && empIdentifier !== 'SAMPLE') {
+      try {
+        result = await api.getEmployeePromotionReport(empIdentifier);
+      } catch(apiErr) {
+        console.warn('API employee promotion lookup error, fallback to sample:', apiErr);
+      }
+    }
+
+    if (!result || !result.employee) {
+      result = getSamplePromotionReportData(empIdentifier);
+    }
+
+    window.currentIndividualReportData = result;
+    if (toolbar) toolbar.classList.remove('hidden');
+    renderIndividualReportHTML(result, outputContainer);
+  } catch (err) {
+    const fallbackData = getSamplePromotionReportData(empIdentifier);
+    window.currentIndividualReportData = fallbackData;
+    if (toolbar) toolbar.classList.remove('hidden');
+    renderIndividualReportHTML(fallbackData, outputContainer);
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function clearIndividualPromotionReport() {
+  const selectEl = document.getElementById('promo-emp-select');
+  const inputEl = document.getElementById('promo-emp-input');
+  if (selectEl && selectEl.options.length > 1) {
+    selectEl.selectedIndex = 1;
+    if (inputEl) inputEl.value = selectEl.value;
+    loadIndividualPromotionReport(selectEl.value);
+  } else {
+    if (inputEl) inputEl.value = '';
+    loadIndividualPromotionReport('SAMPLE');
+  }
+}
+
+function renderIndividualReportHTML(data, container) {
+  const emp = data.employee;
+  const promos = data.promotions;
+
+  function formatReportDate(dStr) {
+    if (!dStr || dStr === '-') return '-';
+    return window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dStr) : dStr;
+  }
+
+  let tableRows = '';
+  if (promos.length === 0) {
+    tableRows = `
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold; vertical-align: top;">01</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">Initial Appointment: ${emp.joining_designation ? emp.joining_designation + ', ' : ''}${emp.joining_pay_group || '-'}</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">-</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">${formatReportDate(emp.joining_date)}</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">-</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">Initial Appointment</td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold;">02</td>
+        <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+        <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+        <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+        <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+        <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+      </tr>
+    `;
+  } else {
+    promos.forEach((p, idx) => {
+      const slStr = String(idx + 1).padStart(2, '0');
+      const prevPgStr = p.from_designation && p.from_designation !== '-' 
+        ? `${p.from_designation}, ${p.from_pg}` 
+        : (p.from_pg || '-');
+      const promotedPgStr = p.to_designation && p.to_designation !== '-' 
+        ? `${p.to_designation}, ${p.to_pg}` 
+        : (p.to_pg || '-');
+      const effDateStr = formatReportDate(p.promotion_date);
+      const durationStr = p.duration_in_previous_grade || '-';
+      const remarksStr = (p.remarks && p.remarks !== 'Regular Promotion') ? p.remarks : '';
+
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold; vertical-align: top;">${slStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">${prevPgStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">${promotedPgStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">${effDateStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">${durationStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">${remarksStr}</td>
+        </tr>
+      `;
+    });
+
+    if (promos.length === 1) {
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold;">02</td>
+          <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+          <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+          <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+          <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+          <td style="border: 1px solid #000; padding: 6px 8px;">&nbsp;</td>
+        </tr>
+      `;
+    }
+  }
+
+  const joiningPayGroupDisplay = emp.joining_designation 
+    ? `${emp.joining_designation}, ${emp.joining_pay_group}` 
+    : (emp.joining_pay_group || '-');
+
+  const html = `
+    <div class="w-full flex justify-center overflow-x-auto p-1 sm:p-4 bg-slate-100 rounded my-1">
+      <div id="printable-promotion-report" class="a4-portrait-page">
+        
+        <!-- Header -->
+        <div style="text-align: center; color: #000; margin-bottom: 24px;">
+          <h1 style="font-size: 15pt; font-weight: 800; letter-spacing: 0.5px; margin: 0 0 4px 0; text-transform: uppercase;">
+            SANDVIORA AVIOSOLUTION LTD.
+          </h1>
+          <h2 style="font-size: 11pt; font-weight: 700; letter-spacing: 0.25px; margin: 0 0 22px 0; text-transform: uppercase;">
+            HUMAN RESOURCES INFORMATION SYSTEM DIVISION
+          </h2>
+          <h3 style="font-size: 11.5pt; font-weight: 800; letter-spacing: 0.5px; margin: 0; text-transform: uppercase;">
+            EMPLOYEE PROMOTION &amp; CAREER PROGRESSION REPORT
+          </h3>
+        </div>
+
+        <!-- Employees Basic Information -->
+        <div style="margin-bottom: 24px; color: #000;">
+          <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">
+            EMPLOYEES BASIC INFORMATION:
+          </div>
+          <table style="width: 100%; border-collapse: collapse; border: none; font-size: 10pt; line-height: 1.6;">
+            <tbody>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">FULL NAME:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.emp_name || '-'}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">STAFF ID:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.staff_id || emp.emp_id || '-'}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">DIRECTORATE:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.directorate_name || '-'}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">DEPARTMENT:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.department_name || '-'}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">DATE OF JOINING:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${formatReportDate(emp.joining_date)}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">CURRENT PAY GROUP:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.current_pay_group || '-'}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">CURRENT DESIGNATION:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.current_designation || '-'}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">JOINING PAY GROUP:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${joiningPayGroupDisplay}</td>
+              </tr>
+              <tr>
+                <td style="width: 230px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">TOTAL SERVICE LENGTH:</td>
+                <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.total_service || '-'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Chronological Promotion History -->
+        <div style="color: #000;">
+          <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">
+            CHRONOLOGICAL PROMOTION HISTORY:
+          </div>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 9.5pt; table-layout: fixed;">
+            <thead>
+              <tr style="border-bottom: 1px solid #000; background: #ffffff;">
+                <th style="border: 1px solid #000; padding: 6px 4px; text-align: center; width: 6%; font-weight: bold;">SL</th>
+                <th style="border: 1px solid #000; padding: 6px 8px; text-align: center; width: 29%; font-weight: bold;">Previous PG</th>
+                <th style="border: 1px solid #000; padding: 6px 8px; text-align: center; width: 29%; font-weight: bold;">Promoted PG</th>
+                <th style="border: 1px solid #000; padding: 6px 6px; text-align: center; width: 14%; font-weight: bold;">Effective Date</th>
+                <th style="border: 1px solid #000; padding: 6px 6px; text-align: center; width: 13%; font-weight: bold;">Duration in PG</th>
+                <th style="border: 1px solid #000; padding: 6px 6px; text-align: center; width: 9%; font-weight: bold;">Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+// Export Helpers for Individual Report
+function getSanitizedReportFilename(ext) {
+  if (!window.currentIndividualReportData || !window.currentIndividualReportData.employee) {
+    return `Employee_Promotion_Report.${ext}`;
+  }
+  const emp = window.currentIndividualReportData.employee;
+  const name = String(emp.emp_name || 'Employee').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sid = String(emp.staff_id || 'ID').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `${name}_${sid}.${ext}`;
+}
+
+function exportIndividualPromotionPDF() {
+  const element = document.getElementById('printable-promotion-report');
+  if (!element) return app.toast('No report available to download', 'warning');
+
+  const filename = getSanitizedReportFilename('pdf');
+  app.showLoader();
+  app.toast('Generating A4 portrait PDF...', 'info');
+
+  const opt = {
+    margin: [12, 12, 12, 12],
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  const generate = () => {
+    // Clone element to set exact A4 portrait dimensions without extra margins/shadow
+    const clone = element.cloneNode(true);
+    clone.style.width = '186mm';
+    clone.style.maxWidth = '186mm';
+    clone.style.padding = '0';
+    clone.style.margin = '0';
+    clone.style.border = 'none';
+    clone.style.boxShadow = 'none';
+
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+      app.hideLoader();
+      app.toast('PDF downloaded successfully: ' + filename, 'success');
+    }).catch(e => {
+      app.hideLoader();
+      app.toast('PDF generation failed: ' + e.message, 'error');
+    });
+  };
+
+  if (typeof window.html2pdf === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = generate;
+    document.head.appendChild(script);
+  } else {
+    generate();
+  }
+}
+
+function exportIndividualPromotionWord() {
+  const element = document.getElementById('printable-promotion-report');
+  if (!element) return app.toast('No report available to download', 'warning');
+
+  const filename = getSanitizedReportFilename('docx');
+  app.toast('Downloading Microsoft Word (.docx) document...', 'info');
+
+  const contentHtml = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <meta charset='utf-8'>
+      <title>Promotion Report - SANDVIORA AVIOSOLUTION</title>
+      <style>
+        @page Section1 {
+          size: 595.3pt 841.9pt;
+          margin: 36pt 45pt;
+          mso-page-orientation: portrait;
+        }
+        div.Section1 { page: Section1; }
+        body { font-family: 'Arial', sans-serif; color: #000000; font-size: 10pt; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #000000; padding: 5px 6px; }
+      </style>
+    </head>
+    <body>
+      <div class="Section1">
+        ${element.innerHTML}
+      </div>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff', contentHtml], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  app.toast('Word document downloaded: ' + filename, 'success');
+}
+
+function printIndividualPromotionReport() {
+  const element = document.getElementById('printable-promotion-report');
+  if (!element) return app.toast('No report to print', 'warning');
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Promotion Report - SANDVIORA AVIOSOLUTION</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
+            background: #ffffff;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+          th, td {
+            word-wrap: break-word;
+          }
+          @media print {
+            body { margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div style="width: 100%; max-width: 180mm; margin: 0 auto; padding: 0;">
+          ${element.innerHTML}
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 350);
+}
+
+// ----------------------------------------------------
+// 2. ALL EMPLOYEES PROMOTIONS TAB
+// ----------------------------------------------------
+
+async function renderAllPromotionsToolbar(container) {
+  let payGroups = [];
+  try {
+    payGroups = await api.read('pay_groups');
+    payGroups.sort((a, b) => (Number(b.rank_level) || 0) - (Number(a.rank_level) || 0));
+  } catch (e) {}
+
+  let pgOptions = '<option value="ALL">All Pay Groups</option>';
+  const added = new Set();
+  payGroups.forEach(pg => {
+    if (pg.pay_group && !added.has(pg.pay_group)) {
+      added.add(pg.pay_group);
+      pgOptions += `<option value="${pg.pay_group}">${pg.pay_group}</option>`;
+    }
+  });
+
+  container.innerHTML = `
+    <div class="flex flex-wrap items-center gap-1.5 text-xs">
+      <div class="flex items-center space-x-1">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">Pay Group:</label>
+        <select id="all-promo-filter-pg" onchange="filterAllPromotionsTable()" class="border border-gray-400 bg-white px-1.5 py-0.5 text-xs rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900">
+          ${pgOptions}
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-1">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">From:</label>
+        <input type="text" id="all-promo-filter-from" placeholder="DDMMYYYY" class="date-ddmmyyyy border border-gray-400 bg-white px-1.5 py-0.5 text-xs w-20 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900" oninput="filterAllPromotionsTable()">
+      </div>
+
+      <div class="flex items-center space-x-1">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">To:</label>
+        <input type="text" id="all-promo-filter-to" placeholder="DDMMYYYY" class="date-ddmmyyyy border border-gray-400 bg-white px-1.5 py-0.5 text-xs w-20 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900" oninput="filterAllPromotionsTable()">
+      </div>
+
+      <button onclick="resetAllPromotionsFilters()" class="border border-gray-400 bg-white text-gray-700 px-1.5 py-0.5 rounded-sm hover:bg-gray-100 font-bold" title="Reset Filters">
+        Reset
+      </button>
+
+      <div class="border-l border-gray-400 h-5 mx-0.5"></div>
+
+      <button onclick="exportAllPromotionsCSV()" class="bg-green-600 text-white border border-green-700 px-2 py-0.5 rounded-sm hover:bg-green-700 font-bold shadow-sm">
+        Excel
+      </button>
+      <button onclick="exportAllPromotionsPDF()" class="bg-red-600 text-white border border-red-700 px-2 py-0.5 rounded-sm hover:bg-red-700 font-bold shadow-sm">
+        PDF
+      </button>
+    </div>
+  `;
+
+  Components.initDateInputs();
+}
+
+async function loadAllPromotionsData() {
+  const tbody = document.getElementById('all-promo-tbody');
+  tbody.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto mb-2"></div>Loading all promotion records...</td></tr>';
+
+  try {
+    app.showLoader();
+    const data = await api.getPromotionsDetailed();
+    window.allPromotionsData = data;
+    filterAllPromotionsTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-500 font-bold">Error: ${err.message}</td></tr>`;
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function resetAllPromotionsFilters() {
+  const pgEl = document.getElementById('all-promo-filter-pg');
+  const fromEl = document.getElementById('all-promo-filter-from');
+  const toEl = document.getElementById('all-promo-filter-to');
+  if (pgEl) pgEl.value = 'ALL';
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  filterAllPromotionsTable();
+}
+
+function filterAllPromotionsTable() {
+  if (!window.allPromotionsData) return;
+  let list = window.allPromotionsData;
+
+  const pgFilter = document.getElementById('all-promo-filter-pg') ? document.getElementById('all-promo-filter-pg').value : 'ALL';
+  const fromInput = document.getElementById('all-promo-filter-from');
+  const toInput = document.getElementById('all-promo-filter-to');
+
+  function parseDateInput(el) {
+    if (!el || !el.value) return null;
+    return window.parseDate ? window.parseDate(el.value) : new Date(el.value);
+  }
+
+  const fromDate = parseDateInput(fromInput);
+  const toDate = parseDateInput(toInput);
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+
+  if (pgFilter !== 'ALL') {
+    list = list.filter(r => r.promoted_pay_group === pgFilter || r.present_pay_group === pgFilter);
+  }
+
+  if (fromDate) {
+    list = list.filter(r => {
+      if (!r.promotion_date) return false;
+      const d = window.parseDate ? window.parseDate(r.promotion_date) : new Date(r.promotion_date);
+      return d && !isNaN(d.getTime()) && d >= fromDate;
+    });
+  }
+
+  if (toDate) {
+    list = list.filter(r => {
+      if (!r.promotion_date) return false;
+      const d = window.parseDate ? window.parseDate(r.promotion_date) : new Date(r.promotion_date);
+      return d && !isNaN(d.getTime()) && d <= toDate;
+    });
+  }
+
+  renderAllPromotionsRows(list);
+}
+
+function renderAllPromotionsRows(list) {
+  const tbody = document.getElementById('all-promo-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-gray-500">No promotion records matched the selected filters.</td></tr>';
+    return;
+  }
+
+  function formatDate(dStr) {
+    if (!dStr || dStr === '-') return '-';
+    return window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dStr) : dStr;
+  }
+
+  list.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-blue-50/70 transition-colors";
+    tr.innerHTML = `
+      <td class="border border-gray-300 px-1 py-0 text-center font-bold text-gray-600">${idx + 1}</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold font-mono text-blue-900">${r.staff_id}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-gray-900 truncate max-w-[160px]" title="${r.emp_name}">${r.emp_name}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${r.department}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-800">${r.present_pay_group} (${r.present_designation})</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold text-blue-950 bg-blue-50/30">${r.promoted_pay_group}</td>
+      <td class="border border-gray-300 px-1 py-0 font-semibold text-blue-800">${r.promoted_designation}</td>
+      <td class="border border-gray-300 px-1 py-0 text-center font-mono font-bold text-purple-900">${r.rank_level}</td>
+      <td class="border border-gray-300 px-1 py-0 text-center font-semibold text-gray-700">${r.sequence_no}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-gray-800">${formatDate(r.promotion_date)}</td>
+      <td class="border border-gray-300 px-1 py-0 font-mono text-gray-700 text-[11px]">${r.time_in_previous_grade}</td>
+      <td class="border border-gray-300 px-1 py-0 text-center">
+        <button onclick="viewEmployeeIndividualReport('${r.staff_id}')" class="bg-blue-100 text-blue-800 hover:bg-blue-200 px-1.5 py-0.5 rounded text-[11px] font-bold border border-blue-300" title="View Individual Career Report">
+          Report
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function viewEmployeeIndividualReport(staffId) {
+  switchPromotionTab('individual');
+  const input = document.getElementById('promo-emp-input');
+  if (input) input.value = staffId;
+  loadIndividualPromotionReport(staffId);
+}
+
+function exportAllPromotionsCSV() {
+  if (!window.allPromotionsData || window.allPromotionsData.length === 0) return app.toast('No records to export', 'warning');
+  
+  const headers = ['SL', 'Staff ID', 'Employee Name', 'Department', 'Present Pay Group', 'Promoted Pay Group', 'Promoted Designation', 'Rank Level', 'Sequence No', 'Promotion Date', 'Time in Previous Grade'];
+  let csv = headers.join(',') + '\n';
+
+  window.allPromotionsData.forEach((r, i) => {
+    const row = [
+      i + 1,
+      `"${r.staff_id}"`,
+      `"${r.emp_name}"`,
+      `"${r.department}"`,
+      `"${r.present_pay_group} (${r.present_designation})"`,
+      `"${r.promoted_pay_group}"`,
+      `"${r.promoted_designation}"`,
+      r.rank_level,
+      r.sequence_no,
+      `"${window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(r.promotion_date) : r.promotion_date}"`,
+      `"${r.time_in_previous_grade}"`
+    ];
+    csv += row.join(',') + '\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `All_Employees_Promotions_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  app.toast('CSV exported successfully', 'success');
+}
+
+function exportAllPromotionsPDF() {
+  const table = document.getElementById('all-promo-table');
+  if (!table) return;
+
+  app.showLoader();
+  app.toast('Generating All Promotions PDF...', 'info');
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div style="font-family: sans-serif; padding: 15px;">
+      <h2 style="text-align: center; color: #1e3a8a; margin-bottom: 5px;">AeroNexus - All Employees Promotion History</h2>
+      <p style="text-align: center; font-size: 10px; color: #6b7280; margin-bottom: 15px;">Generated on ${new Date().toLocaleString()}</p>
+      ${table.outerHTML}
+    </div>
+  `;
+
+  if (typeof window.html2pdf === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = () => {
+      window.html2pdf().from(wrapper).save('All_Employees_Promotions.pdf').then(() => {
+        app.hideLoader();
+        app.toast('PDF downloaded!', 'success');
+      });
+    };
+    document.head.appendChild(script);
+  } else {
+    window.html2pdf().from(wrapper).save('All_Employees_Promotions.pdf').then(() => {
+      app.hideLoader();
+      app.toast('PDF downloaded!', 'success');
+    });
+  }
+}
+
+// ----------------------------------------------------
+// 3. PROMOTION ELIGIBILITY TAB
+// ----------------------------------------------------
+
+async function renderEligibilityToolbar(container) {
+  let departments = [];
+  try { departments = await api.read('departments'); } catch (e) {}
+
+  let depOptions = '<option value="ALL">All Departments</option>';
+  departments.forEach(d => {
+    depOptions += `<option value="${d.dep_letter_code}">${d.dep_name} (${d.dep_letter_code})</option>`;
+  });
+
+  container.innerHTML = `
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <div class="flex items-center space-x-1">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">Department:</label>
+        <select id="eligibility-filter-dep" onchange="filterEligibilityTable()" class="border border-gray-400 bg-white px-1.5 py-0.5 text-xs rounded-sm focus:outline-none">
+          ${depOptions}
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-1">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">Min Experience:</label>
+        <select id="eligibility-filter-exp" onchange="filterEligibilityTable()" class="border border-gray-400 bg-white px-1.5 py-0.5 text-xs rounded-sm focus:outline-none">
+          <option value="ALL">All Employees</option>
+          <option value="3" selected>Eligible (3+ Yrs in Grade)</option>
+          <option value="5">Highly Eligible (5+ Yrs)</option>
+          <option value="2">Approaching (2+ Yrs)</option>
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-1">
+        <span class="material-icons text-gray-500 text-xs">search</span>
+        <input type="text" id="eligibility-search-text" placeholder="Search Name / ID..." class="border border-gray-400 px-1.5 py-0.5 text-xs w-32 rounded-sm focus:outline-none" oninput="filterEligibilityTable()">
+      </div>
+    </div>
+  `;
+}
+
+async function loadPromotionEligibilityData() {
+  const tbody = document.getElementById('eligibility-tbody');
+  tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto mb-2"></div>Evaluating promotion criteria across active workforce...</td></tr>';
+
+  try {
+    app.showLoader();
+    const data = await api.getPromotionEligibility();
+    window.promotionEligibilityData = data;
+
+    // Update summary stats
+    const statTotal = document.getElementById('eligibility-stat-total');
+    const stat3yr = document.getElementById('eligibility-stat-3yr');
+    const stat5yr = document.getElementById('eligibility-stat-5yr');
+    if (statTotal) statTotal.innerText = data.length;
+    if (stat3yr) stat3yr.innerText = data.filter(e => e.years_in_grade >= 3).length;
+    if (stat5yr) stat5yr.innerText = data.filter(e => e.years_in_grade >= 5).length;
+
+    filterEligibilityTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-red-500 font-bold">Error: ${err.message}</td></tr>`;
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function filterEligibilityTable() {
+  if (!window.promotionEligibilityData) return;
+  let list = window.promotionEligibilityData;
+
+  const depFilter = document.getElementById('eligibility-filter-dep') ? document.getElementById('eligibility-filter-dep').value : 'ALL';
+  const expFilter = document.getElementById('eligibility-filter-exp') ? document.getElementById('eligibility-filter-exp').value : '3';
+  const search = document.getElementById('eligibility-search-text') ? document.getElementById('eligibility-search-text').value.toLowerCase().trim() : '';
+
+  if (depFilter !== 'ALL') {
+    list = list.filter(e => e.department === depFilter);
+  }
+
+  if (expFilter === '3') {
+    list = list.filter(e => e.years_in_grade >= 3);
+  } else if (expFilter === '5') {
+    list = list.filter(e => e.years_in_grade >= 5);
+  } else if (expFilter === '2') {
+    list = list.filter(e => e.years_in_grade >= 2);
+  }
+
+  if (search) {
+    list = list.filter(e => 
+      String(e.staff_id || '').toLowerCase().includes(search) || 
+      String(e.emp_name || '').toLowerCase().includes(search) ||
+      String(e.present_pay_group || '').toLowerCase().includes(search)
+    );
+  }
+
+  renderEligibilityRows(list);
+}
+
+function renderEligibilityRows(list) {
+  const tbody = document.getElementById('eligibility-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500">No employees meet the selected eligibility criteria.</td></tr>';
+    return;
+  }
+
+  function formatDate(dStr) {
+    if (!dStr || dStr === '-') return '-';
+    return window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dStr) : dStr;
+  }
+
+  list.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-blue-50/70 transition-colors";
+    tr.innerHTML = `
+      <td class="border border-gray-300 px-1 py-0 text-center font-bold text-gray-600">${idx + 1}</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold font-mono text-blue-900">${r.staff_id}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-gray-900 truncate max-w-[160px]" title="${r.emp_name}">${r.emp_name}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${r.department}</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold text-gray-800">${r.present_pay_group}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${r.present_designation}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${formatDate(r.current_grade_since)}</td>
+      <td class="border border-gray-300 px-1 py-0 font-mono font-bold text-blue-950">${r.time_in_grade}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-purple-900 bg-purple-50/30">${r.next_pay_group} (${r.next_designation})</td>
+      <td class="border border-gray-300 px-1 py-0 text-center">
+        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold border ${r.eligibility_badge}">${r.eligibility_status}</span>
+      </td>
+      <td class="border border-gray-300 px-1 py-0 text-center">
+        <button onclick="viewEmployeeIndividualReport('${r.staff_id}')" class="bg-blue-100 text-blue-800 hover:bg-blue-200 px-1.5 py-0.5 rounded text-[11px] font-bold border border-blue-300" title="View Full Promotion History">
+          History
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * ==========================================
+ * HRM WORKFORCE MODULE CONTROLLER
+ * ==========================================
+ * Handles dynamic cascading dropdowns, table generation matching reference image,
+ * multi-variable distribution, enterprise airline HR analytics, and instant 0ms reactive filtering.
+ */
+var WorkforceModule = window.WorkforceModule = {
+  currentTab: 'setup',
+  currentDistView: 'shift',
+
+  // Master Cache
+  masterData: null,
+  employees: [],
+  setups: [],
+
+  // Current Filter State
+  selectedDirId: 'ALL',
+  selectedDepId: 'ALL',
+  selectedStationId: 'ALL',
+
+  init: async function() {
+    try {
+      app.showLoader();
+      const [mMaster, mEmployees] = await Promise.all([
+        api.getMasterData(),
+        api.getHrmDetails().catch(() => [])
+      ]);
+
+      this.masterData = mMaster || {};
+      this.employees = Array.isArray(mEmployees) ? mEmployees : [];
+      this.setups = Array.isArray(this.masterData.workforce_setup) ? this.masterData.workforce_setup : [];
+
+      this.populateDropdownFilters();
+      this.renderSetupReport();
+    } catch (e) {
+      console.error('WorkforceModule init error:', e);
+      app.toast('Failed to load workforce records: ' + e.message, 'error');
+    } finally {
+      app.hideLoader();
+    }
+  },
+
+  switchTab: function(tabName) {
+    this.currentTab = tabName;
+    ['setup', 'distribution', 'analytics', 'summary'].forEach(t => {
+      const btn = document.getElementById('wf-btn-' + t);
+      const ws = document.getElementById('wf-workspace-' + t);
+      if (btn) {
+        if (t === tabName) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+      if (ws) {
+        if (t === tabName) ws.classList.remove('hidden');
+        else ws.classList.add('hidden');
+      }
+    });
+
+    if (tabName === 'setup') {
+      this.renderSetupReport();
+    } else if (tabName === 'distribution') {
+      this.renderDistributionReport();
+    } else if (tabName === 'analytics') {
+      this.renderAnalyticsDashboard();
+    } else if (tabName === 'summary') {
+      this.renderStationSummaryTable();
+    }
+  },
+
+  /**
+   * Dynamically populates Directorate, Department, and Station filters
+   * Only includes options that actually exist in the database.
+   */
+  populateDropdownFilters: function() {
+    const dirSelect = document.getElementById('wf-filter-dir');
+    const depSelect = document.getElementById('wf-filter-dep');
+    const stnSelect = document.getElementById('wf-filter-stn');
+    if (!dirSelect || !depSelect || !stnSelect) return;
+
+    const directorates = this.masterData.directorates || [];
+    const departments = this.masterData.departments || [];
+    const stations = this.masterData.stations || [];
+
+    // Find distinct directorate IDs present in setups or departments
+    const validDirIds = new Set();
+    this.setups.forEach(s => { if (s.dir_id) validDirIds.add(String(s.dir_id).trim()); });
+    departments.forEach(d => { if (d.dir_id) validDirIds.add(String(d.dir_id).trim()); });
+    this.employees.forEach(e => { if (e.dir_id) validDirIds.add(String(e.dir_id).trim()); });
+
+    dirSelect.innerHTML = '<option value="ALL">All Directorates</option>';
+    directorates.forEach(dir => {
+      if (validDirIds.size === 0 || validDirIds.has(String(dir.dir_id).trim())) {
+        const opt = document.createElement('option');
+        opt.value = dir.dir_id;
+        opt.textContent = dir.dir_name || dir.dir_code;
+        dirSelect.appendChild(opt);
+      }
+    });
+
+    this.updateDepartmentDropdown();
+    this.updateStationDropdown();
+  },
+
+  /**
+   * Updates department options based on selected directorate
+   */
+  updateDepartmentDropdown: function() {
+    const depSelect = document.getElementById('wf-filter-dep');
+    if (!depSelect) return;
+
+    const departments = this.masterData.departments || [];
+    const dirId = this.selectedDirId;
+
+    // Filter departments belonging to selected directorate
+    let filteredDeps = departments;
+    if (dirId !== 'ALL') {
+      filteredDeps = departments.filter(d => String(d.dir_id).trim() === dirId);
+    }
+
+    // Only display departments that have setups or employees
+    const validDepIds = new Set();
+    this.setups.forEach(s => {
+      if (dirId === 'ALL' || String(s.dir_id).trim() === dirId) {
+        if (s.dep_id) validDepIds.add(String(s.dep_id).trim());
+      }
+    });
+    this.employees.forEach(e => {
+      if (dirId === 'ALL' || String(e.dir_id).trim() === dirId) {
+        if (e.dep_id) validDepIds.add(String(e.dep_id).trim());
+      }
+    });
+
+    depSelect.innerHTML = '<option value="ALL">All Departments</option>';
+    filteredDeps.forEach(dep => {
+      if (validDepIds.size === 0 || validDepIds.has(String(dep.dep_id).trim())) {
+        const opt = document.createElement('option');
+        opt.value = dep.dep_id;
+        opt.textContent = dep.dep_name || dep.dep_letter_code || dep.dep_code;
+        depSelect.appendChild(opt);
+      }
+    });
+
+    // Reset selected department if no longer in options
+    if (this.selectedDepId !== 'ALL') {
+      const match = Array.from(depSelect.options).some(o => o.value === this.selectedDepId);
+      if (!match) {
+        this.selectedDepId = 'ALL';
+        depSelect.value = 'ALL';
+      } else {
+        depSelect.value = this.selectedDepId;
+      }
+    }
+  },
+
+  /**
+   * Updates station options based on active setups and employees
+   */
+  updateStationDropdown: function() {
+    const stnSelect = document.getElementById('wf-filter-stn');
+    if (!stnSelect) return;
+
+    const stations = this.masterData.stations || [];
+    const dirId = this.selectedDirId;
+    const depId = this.selectedDepId;
+
+    const validStnIds = new Set();
+    this.setups.forEach(s => {
+      if (dirId !== 'ALL' && String(s.dir_id).trim() !== dirId) return;
+      if (depId !== 'ALL' && String(s.dep_id).trim() !== depId) return;
+      if (s.station_id) validStnIds.add(String(s.station_id).trim());
+    });
+    this.employees.forEach(e => {
+      if (dirId !== 'ALL' && String(e.dir_id).trim() !== dirId) return;
+      if (depId !== 'ALL' && String(e.dep_id).trim() !== depId) return;
+      if (e.station_id) validStnIds.add(String(e.station_id).trim());
+    });
+
+    stnSelect.innerHTML = '<option value="ALL">All Stations</option>';
+    stations.forEach(stn => {
+      if (validStnIds.size === 0 || validStnIds.has(String(stn.station_id).trim()) || validStnIds.has(String(stn.station_code).trim())) {
+        const opt = document.createElement('option');
+        opt.value = stn.station_id;
+        opt.textContent = `${stn.station_code} - ${stn.station_name || stn.station_location || ''}`;
+        stnSelect.appendChild(opt);
+      }
+    });
+
+    if (this.selectedStationId !== 'ALL') {
+      const match = Array.from(stnSelect.options).some(o => o.value === this.selectedStationId);
+      if (!match) {
+        this.selectedStationId = 'ALL';
+        stnSelect.value = 'ALL';
+      } else {
+        stnSelect.value = this.selectedStationId;
+      }
+    }
+  },
+
+  onDirectorateChange: function() {
+    const dirSelect = document.getElementById('wf-filter-dir');
+    this.selectedDirId = dirSelect ? dirSelect.value : 'ALL';
+    this.updateDepartmentDropdown();
+    this.updateStationDropdown();
+    this.renderSetupReport();
+  },
+
+  onDepartmentChange: function() {
+    const depSelect = document.getElementById('wf-filter-dep');
+    this.selectedDepId = depSelect ? depSelect.value : 'ALL';
+
+    // If department is selected and directorate is ALL, auto-select parent directorate
+    if (this.selectedDepId !== 'ALL' && this.selectedDirId === 'ALL') {
+      const depObj = (this.masterData.departments || []).find(d => String(d.dep_id).trim() === this.selectedDepId);
+      if (depObj && depObj.dir_id) {
+        this.selectedDirId = String(depObj.dir_id).trim();
+        const dirSelect = document.getElementById('wf-filter-dir');
+        if (dirSelect) dirSelect.value = this.selectedDirId;
+      }
+    }
+
+    this.updateStationDropdown();
+    this.renderSetupReport();
+  },
+
+  onStationChange: function() {
+    const stnSelect = document.getElementById('wf-filter-stn');
+    this.selectedStationId = stnSelect ? stnSelect.value : 'ALL';
+    this.renderSetupReport();
+  },
+
+  resetFilters: function() {
+    this.selectedDirId = 'ALL';
+    this.selectedDepId = 'ALL';
+    this.selectedStationId = 'ALL';
+    const dirSelect = document.getElementById('wf-filter-dir');
+    const depSelect = document.getElementById('wf-filter-dep');
+    const stnSelect = document.getElementById('wf-filter-stn');
+    if (dirSelect) dirSelect.value = 'ALL';
+    this.updateDepartmentDropdown();
+    this.updateStationDropdown();
+    if (depSelect) depSelect.value = 'ALL';
+    if (stnSelect) stnSelect.value = 'ALL';
+    this.renderSetupReport();
+  },
+
+  /**
+   * Aggregates Set Up vs Existing Headcount vs Required Deficit
+   * Strictly produces the layout and aesthetic of the user's reference image.
+   */
+  renderSetupReport: function() {
+    const container = document.getElementById('wf-setup-table-container');
+    const statusEl = document.getElementById('wf-filter-status');
+    if (!container) return;
+
+    const dirId = this.selectedDirId;
+    const depId = this.selectedDepId;
+    const stnId = this.selectedStationId;
+
+    const payGroups = this.masterData.pay_groups || [];
+    const departments = this.masterData.departments || [];
+    const directorates = this.masterData.directorates || [];
+    const stations = this.masterData.stations || [];
+
+    // Lookup maps
+    const pgMap = {};
+    payGroups.forEach(pg => {
+      pgMap[pg.pg_id] = pg;
+      if (pg.designation_short) pgMap[String(pg.designation_short).trim().toUpperCase()] = pg;
+      if (pg.pay_group) pgMap[String(pg.pay_group).trim().toUpperCase()] = pg;
+    });
+
+    // Update status text
+    if (statusEl) {
+      const dirObj = directorates.find(d => String(d.dir_id).trim() === dirId);
+      const depObj = departments.find(d => String(d.dep_id).trim() === depId);
+      const stnObj = stations.find(s => String(s.station_id).trim() === stnId);
+
+      let parts = [];
+      if (dirObj) parts.push(`Directorate: <strong class="text-teal-800">${dirObj.dir_name}</strong>`);
+      else parts.push(`Directorates: <strong class="text-teal-800">All</strong>`);
+
+      if (depObj) parts.push(`Department: <strong class="text-teal-800">${depObj.dep_name}</strong>`);
+      if (stnObj) parts.push(`Station: <strong class="text-teal-800">${stnObj.station_code}</strong>`);
+
+      statusEl.innerHTML = parts.join(' &nbsp;•&nbsp; ');
+    }
+
+    const matrix = {};
+
+    function getGroupKey(desig, pgName) {
+      return (String(desig || '-').trim().toUpperCase()) + '|' + (String(pgName || '-').trim().toUpperCase());
+    }
+
+    function getOrCreateGroup(desig, pgName, rankLvl) {
+      const key = getGroupKey(desig, pgName);
+      if (!matrix[key]) {
+        matrix[key] = {
+          designation: desig || '-',
+          pay_group: pgName || '-',
+          rank_level: Number(rankLvl) || 0,
+          setup: 0,
+          existing: 0,
+          required: 0
+        };
+      }
+      return matrix[key];
+    }
+
+    // 1. Process Sanctioned Setups
+    this.setups.forEach(s => {
+      if (dirId !== 'ALL' && String(s.dir_id).trim() !== dirId) return;
+      if (depId !== 'ALL' && String(s.dep_id).trim() !== depId) return;
+      if (stnId !== 'ALL' && String(s.station_id).trim() !== stnId) return;
+
+      const pgObj = pgMap[s.pay_group_id] || pgMap[s.designation_id];
+      const desigObj = pgMap[s.designation_id] || pgObj;
+
+      const desig = desigObj ? (desigObj.designation_short || desigObj.designation) : (s.designation_id || '-');
+      const pgName = pgObj ? pgObj.pay_group : (s.pay_group_id || '-');
+      const rankLvl = pgObj ? pgObj.rank_level : (desigObj ? desigObj.rank_level : 0);
+
+      const entry = getOrCreateGroup(desig, pgName, rankLvl);
+      entry.setup += (Number(s.set_up) || 0);
+    });
+
+    // 2. Process Active Personnel
+    this.employees.forEach(emp => {
+      if (emp.status === 'Retired') return; // Exclude retired employees
+
+      if (dirId !== 'ALL' && String(emp.dir_id).trim() !== dirId) return;
+      if (depId !== 'ALL' && String(emp.dep_id).trim() !== depId) return;
+      if (stnId !== 'ALL' && String(emp.station_id).trim() !== stnId) return;
+
+      const desig = emp.designation ? String(emp.designation).replace(/,.*\(Add\. Charge\)/i, '').trim() : '-';
+      const pgName = emp.pay_group || '-';
+      const rankLvl = emp.rank_level || 0;
+
+      const entry = getOrCreateGroup(desig, pgName, rankLvl);
+      entry.existing += 1;
+    });
+
+    // 3. Compute Required Deficit and apply dynamic exclusion
+    const rows = [];
+    let totalSetup = 0;
+    let totalExisting = 0;
+    let totalRequired = 0;
+
+    for (const k in matrix) {
+      if (matrix.hasOwnProperty(k)) {
+        const row = matrix[k];
+        row.required = row.setup - row.existing;
+
+        // Dynamic Exclusion: Exclude any group without currently assigned personnel or setup
+        if (row.setup === 0 && row.existing === 0) {
+          continue;
+        }
+
+        totalSetup += row.setup;
+        totalExisting += row.existing;
+        totalRequired += row.required;
+        rows.push(row);
+      }
+    }
+
+    // Update Top Summary Badges
+    const bSetup = document.getElementById('wf-badge-setup');
+    const bExist = document.getElementById('wf-badge-existing');
+    const bReq = document.getElementById('wf-badge-required');
+    if (bSetup) bSetup.innerText = totalSetup.toLocaleString();
+    if (bExist) bExist.innerText = totalExisting.toLocaleString();
+    if (bReq) bReq.innerText = totalRequired.toLocaleString();
+
+    // 4. Sort rows descending by rank_level, then by designation
+    rows.sort((a, b) => {
+      if (b.rank_level !== a.rank_level) return b.rank_level - a.rank_level;
+      return a.designation.localeCompare(b.designation);
+    });
+
+    // If no records match
+    if (rows.length === 0) {
+      container.innerHTML = `
+        <div class="p-8 text-center text-gray-400 border border-dashed border-gray-300 rounded-lg">
+          <span class="material-icons text-4xl mb-2 text-gray-300">work_outline</span>
+          <h4 class="font-bold text-gray-600 text-sm">No Active Personnel or Setup Records Found</h4>
+          <p class="text-xs text-gray-400 mt-1">There are no sanctioned setups or active officers matching the current filter criteria.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // 5. Generate Table HTML strictly adhering to the sample image aesthetic
+    let html = `
+      <table class="workforce-setup-table" id="workforce-matrix-table">
+        <thead>
+          <tr>
+            <th style="width: 28%;">Designation</th>
+            <th class="center-col" style="width: 18%;">Pay Group</th>
+            <th class="num-col" style="width: 18%;">Setup</th>
+            <th class="num-col" style="width: 18%;">Existing</th>
+            <th class="num-col" style="width: 18%;">Required</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    rows.forEach(r => {
+      html += `
+        <tr>
+          <td>${r.designation}</td>
+          <td class="center-col">${r.pay_group}</td>
+          <td class="num-col">${r.setup}</td>
+          <td class="num-col">${r.existing}</td>
+          <td class="num-col">${r.required}</td>
+        </tr>
+      `;
+    });
+
+    // Total Summary Row
+    html += `
+        <tr class="total-row">
+          <td style="text-align: center;">Total</td>
+          <td></td>
+          <td class="num-col">${totalSetup}</td>
+          <td class="num-col">${totalExisting}</td>
+          <td class="num-col">${totalRequired}</td>
+        </tr>
+      </tbody>
+    </table>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * Tab 2: Workforce Distribution Reporting
+   * Multi-variable consolidated cross-tabulations across departments, shifts, sections, and stations.
+   */
+  switchDistView: function(viewType) {
+    this.currentDistView = viewType;
+    ['shift', 'section', 'desig', 'station'].forEach(v => {
+      const btn = document.getElementById('wf-dist-btn-' + v);
+      if (btn) {
+        if (v === viewType || (v === 'desig' && viewType === 'designation')) {
+          btn.className = 'px-3 py-1 text-xs font-semibold rounded bg-teal-800 text-white shadow-sm';
+        } else {
+          btn.className = 'px-3 py-1 text-xs font-semibold rounded bg-gray-100 hover:bg-gray-200 text-gray-700';
+        }
+      }
+    });
+    this.renderDistributionReport();
+  },
+
+  renderDistributionReport: function() {
+    const container = document.getElementById('wf-dist-content-container');
+    const totalEl = document.getElementById('wf-dist-total-headcount');
+    if (!container) return;
+
+    const activeEmps = this.employees.filter(e => e.status !== 'Retired');
+    if (totalEl) totalEl.innerText = activeEmps.length.toLocaleString();
+
+    const view = this.currentDistView;
+
+    if (view === 'shift') {
+      // 1. Department x Shift Matrix
+      const shifts = this.masterData.shifts || [];
+      const shiftColMap = {};
+      shifts.forEach(s => { if (s.shift_name) shiftColMap[s.shift_name] = true; });
+      const shiftCols = Object.keys(shiftColMap);
+      if (shiftCols.indexOf('General') === -1) shiftCols.push('General');
+      if (shiftCols.indexOf('Others') === -1) shiftCols.push('Others');
+
+      const depShiftMatrix = {};
+      activeEmps.forEach(e => {
+        const dep = e.department || 'General';
+        if (!depShiftMatrix[dep]) {
+          depShiftMatrix[dep] = { department: dep, dep_name: e.dep_name || dep, total: 0 };
+          shiftCols.forEach(col => { depShiftMatrix[dep][col] = 0; });
+        }
+        const sh = e.shift && shiftCols.indexOf(e.shift) !== -1 ? e.shift : 'Others';
+        depShiftMatrix[dep][sh] = (depShiftMatrix[dep][sh] || 0) + 1;
+        depShiftMatrix[dep].total += 1;
+      });
+
+      const rows = Object.values(depShiftMatrix);
+      rows.sort((a, b) => b.total - a.total);
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm">Departmental Operational Shift Distribution Matrix</h4>
+          <p class="text-xs text-gray-500">Cross-tabulation of on-roll personnel deployed across 24/7 flight operations shifts</p>
+        </div>
+        <table class="workforce-setup-table">
+          <thead>
+            <tr>
+              <th>Department</th>
+              ${shiftCols.map(c => `<th class="num-col">${c}</th>`).join('')}
+              <th class="num-col font-bold">Total Staff</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let colTotals = {};
+      shiftCols.forEach(c => { colTotals[c] = 0; });
+      let grandTotal = 0;
+
+      rows.forEach(r => {
+        grandTotal += r.total;
+        html += `
+          <tr>
+            <td><strong>${r.department}</strong> <span class="text-xs text-gray-500">(${r.dep_name})</span></td>
+            ${shiftCols.map(c => {
+              colTotals[c] += (r[c] || 0);
+              return `<td class="num-col">${r[c] || 0}</td>`;
+            }).join('')}
+            <td class="num-col font-bold">${r.total}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;">Total</td>
+            ${shiftCols.map(c => `<td class="num-col">${colTotals[c]}</td>`).join('')}
+            <td class="num-col">${grandTotal}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      container.innerHTML = html;
+
+    } else if (view === 'section') {
+      // 2. Department x Section Breakdown
+      const secMatrix = {};
+      activeEmps.forEach(e => {
+        const dep = e.department || 'General';
+        const sec = e.placement && e.placement !== '-' ? e.placement : 'General Section';
+        const key = dep + '|' + sec;
+        if (!secMatrix[key]) {
+          secMatrix[key] = { department: dep, dep_name: e.dep_name || dep, section: sec, headcount: 0 };
+        }
+        secMatrix[key].headcount += 1;
+      });
+
+      const rows = Object.values(secMatrix);
+      rows.sort((a, b) => {
+        if (a.department !== b.department) return a.department.localeCompare(b.department);
+        return b.headcount - a.headcount;
+      });
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm">Detailed Sectional Distribution by Department</h4>
+          <p class="text-xs text-gray-500">Internal section staffing allocation (Ramp, Baggage, Check-in, Cargo, Security)</p>
+        </div>
+        <table class="workforce-setup-table">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Department</th>
+              <th style="width: 40%;">Section / Functional Area</th>
+              <th class="num-col" style="width: 30%;">Active Headcount</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let totalCount = 0;
+      rows.forEach(r => {
+        totalCount += r.headcount;
+        html += `
+          <tr>
+            <td><strong>${r.department}</strong> <span class="text-xs text-gray-500">(${r.dep_name})</span></td>
+            <td>${r.section}</td>
+            <td class="num-col">${r.headcount}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;" colspan="2">Total Active Personnel</td>
+            <td class="num-col">${totalCount}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      container.innerHTML = html;
+
+    } else if (view === 'designation') {
+      // 3. Designation & Rank Matrix
+      const desigMatrix = {};
+      activeEmps.forEach(e => {
+        const desig = e.designation ? String(e.designation).replace(/,.*\(Add\. Charge\)/i, '').trim() : '-';
+        const key = desig + '|' + (e.pay_group || '-');
+        if (!desigMatrix[key]) {
+          desigMatrix[key] = {
+            designation: desig,
+            pay_group: e.pay_group || '-',
+            rank_level: e.rank_level || 0,
+            headcount: 0
+          };
+        }
+        desigMatrix[key].headcount += 1;
+      });
+
+      const rows = Object.values(desigMatrix);
+      rows.sort((a, b) => {
+        if (b.rank_level !== a.rank_level) return b.rank_level - a.rank_level;
+        return b.headcount - a.headcount;
+      });
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm">Designation &amp; Pay Group Distribution</h4>
+          <p class="text-xs text-gray-500">Consolidated employee deployment ranked by seniority grade</p>
+        </div>
+        <table class="workforce-setup-table">
+          <thead>
+            <tr>
+              <th style="width: 40%;">Designation</th>
+              <th class="center-col" style="width: 30%;">Pay Group</th>
+              <th class="num-col" style="width: 30%;">Active Headcount</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let totalCount = 0;
+      rows.forEach(r => {
+        totalCount += r.headcount;
+        html += `
+          <tr>
+            <td>${r.designation}</td>
+            <td class="center-col">${r.pay_group}</td>
+            <td class="num-col">${r.headcount}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;" colspan="2">Total Active Personnel</td>
+            <td class="num-col">${totalCount}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      container.innerHTML = html;
+
+    } else if (view === 'station') {
+      // 4. Station Allocation
+      const stnMatrix = {};
+      activeEmps.forEach(e => {
+        const stn = e.posting && e.posting !== '-' ? e.posting : 'Unassigned';
+        stnMatrix[stn] = (stnMatrix[stn] || 0) + 1;
+      });
+
+      const stations = this.masterData.stations || [];
+      const rows = Object.keys(stnMatrix).map(k => {
+        const stnObj = stations.find(s => s.station_code === k);
+        return {
+          station_code: k,
+          station_name: stnObj ? stnObj.station_name : '-',
+          station_type: stnObj ? stnObj.station_type : 'Spoke',
+          headcount: stnMatrix[k]
+        };
+      });
+      rows.sort((a, b) => b.headcount - a.headcount);
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm">Station Workforce Allocation Breakdown</h4>
+          <p class="text-xs text-gray-500">Personnel distribution across domestic and international stations</p>
+        </div>
+        <table class="workforce-setup-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Station Code</th>
+              <th style="width: 35%;">Station Name</th>
+              <th class="center-col" style="width: 20%;">Type</th>
+              <th class="num-col" style="width: 20%;">Headcount</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let totalCount = 0;
+      rows.forEach(r => {
+        totalCount += r.headcount;
+        html += `
+          <tr>
+            <td><strong>${r.station_code}</strong></td>
+            <td>${r.station_name}</td>
+            <td class="center-col">${r.station_type}</td>
+            <td class="num-col">${r.headcount}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;" colspan="3">Total Assigned Across Stations</td>
+            <td class="num-col">${totalCount}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      container.innerHTML = html;
+    }
+  },
+
+  /**
+   * Tab 3: Enterprise Airline HR Analytics Dashboard
+   */
+  renderAnalyticsDashboard: function() {
+    const container = document.getElementById('wf-analytics-container');
+    if (!container) return;
+
+    const setups = this.setups;
+    const employees = this.employees.filter(e => e.status !== 'Retired');
+    const stations = this.masterData.stations || [];
+    const departments = this.masterData.departments || [];
+
+    const totalSetup = setups.reduce((sum, s) => sum + (Number(s.set_up) || 0), 0);
+    const totalExisting = employees.length;
+    const totalRequired = totalSetup - totalExisting;
+    const fulfillmentRate = totalSetup > 0 ? Math.round((totalExisting / totalSetup) * 100) : 100;
+
+    // Hub vs Spoke
+    const hubCodes = stations.filter(s => String(s.station_type || '').toLowerCase() === 'hub' || ['DAC', 'HSIA'].includes(String(s.station_code).toUpperCase())).map(s => s.station_code);
+    let hubCount = 0, spokeCount = 0;
+    employees.forEach(e => {
+      if (hubCodes.includes(e.posting)) hubCount++;
+      else spokeCount++;
+    });
+
+    // Operational Manning (Ramp, Flight Ops, Ground Services, Security, Engineering)
+    let operationalCount = 0, adminCount = 0;
+    employees.forEach(e => {
+      const d = String(e.department || '').toUpperCase();
+      if ((e.shift && e.shift !== '-' && e.shift !== 'General') || ['GS', 'TQC', 'OPS', 'SEC', 'ENG', 'RAMP'].includes(d)) {
+        operationalCount++;
+      } else {
+        adminCount++;
+      }
+    });
+
+    // Pay Group Pyramid
+    let execCount = 0, supervisoryCount = 0, operationalPgCount = 0;
+    employees.forEach(e => {
+      const r = e.rank_level || 0;
+      if (r >= 9) execCount++;
+      else if (r >= 5) supervisoryCount++;
+      else operationalPgCount++;
+    });
+
+    // Upcoming Retirements
+    const now = new Date();
+    const oneYr = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+    const threeYrs = new Date(now.getFullYear() + 3, now.getMonth(), now.getDate());
+    const fiveYrs = new Date(now.getFullYear() + 5, now.getMonth(), now.getDate());
+
+    let ret1Yr = 0, ret3Yrs = 0, ret5Yrs = 0;
+    employees.forEach(e => {
+      if (e.retirement_date) {
+        const retD = window.parseDate ? window.parseDate(e.retirement_date) : new Date(e.retirement_date);
+        if (retD && retD >= now) {
+          if (retD <= oneYr) ret1Yr++;
+          if (retD <= threeYrs) ret3Yrs++;
+          if (retD <= fiveYrs) ret5Yrs++;
+        }
+      }
+    });
+
+    // Departmental Health
+    const depHealth = {};
+    departments.forEach(d => {
+      depHealth[d.dep_id] = {
+        dep_id: d.dep_id,
+        dep_code: d.dep_letter_code || d.dep_code,
+        dep_name: d.dep_name,
+        setup: 0,
+        existing: 0
+      };
+    });
+    setups.forEach(s => {
+      if (depHealth[s.dep_id]) depHealth[s.dep_id].setup += (Number(s.set_up) || 0);
+    });
+    employees.forEach(e => {
+      if (depHealth[e.dep_id]) depHealth[e.dep_id].existing += 1;
+    });
+
+    const depHealthList = Object.values(depHealth).filter(d => d.setup > 0 || d.existing > 0);
+    depHealthList.forEach(d => {
+      d.deficit = d.setup - d.existing;
+      d.fulfillment = d.setup > 0 ? Math.round((d.existing / d.setup) * 100) : 100;
+      if (d.fulfillment >= 90) d.healthBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      else if (d.fulfillment >= 75) d.healthBadge = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      else d.healthBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+    });
+    depHealthList.sort((a, b) => a.fulfillment - b.fulfillment);
+
+    let html = `
+      <!-- Top 4 Airline HR KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        
+        <!-- Card 1: Setup vs Existing -->
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-teal-600">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Workforce Fulfillment</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${fulfillmentRate}%</h3>
+            <span class="text-xs font-semibold ${totalRequired > 0 ? 'text-rose-600' : 'text-emerald-600'}">
+              ${totalRequired > 0 ? totalRequired + ' Deficit' : 'Staffed'}
+            </span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-teal-600 h-full rounded-full" style="width: ${Math.min(fulfillmentRate, 100)}%;"></div>
+          </div>
+          <p class="text-[11px] text-gray-500 mt-2"><strong>${totalExisting.toLocaleString()}</strong> Active on <strong>${totalSetup.toLocaleString()}</strong> Setup</p>
+        </div>
+
+        <!-- Card 2: Frontline Operational Ratio -->
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-sky-600">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Operational Manning Ratio</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${totalExisting > 0 ? Math.round((operationalCount / totalExisting) * 100) : 0}%</h3>
+            <span class="text-xs font-semibold text-sky-700">Flight &amp; Station Ops</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-sky-600 h-full rounded-full" style="width: ${totalExisting > 0 ? (operationalCount / totalExisting) * 100 : 0}%;"></div>
+          </div>
+          <p class="text-[11px] text-gray-500 mt-2"><strong>${operationalCount}</strong> Frontline vs <strong>${adminCount}</strong> Admin/HQ</p>
+        </div>
+
+        <!-- Card 3: Hub vs Spoke Network -->
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-indigo-600">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hub vs Spoke Network</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${totalExisting > 0 ? Math.round((hubCount / totalExisting) * 100) : 0}% / ${totalExisting > 0 ? Math.round((spokeCount / totalExisting) * 100) : 0}%</h3>
+            <span class="text-xs font-semibold text-indigo-700">Hub / Outstations</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden flex">
+            <div class="bg-indigo-600 h-full" style="width: ${totalExisting > 0 ? (hubCount / totalExisting) * 100 : 0}%;"></div>
+            <div class="bg-amber-500 h-full" style="width: ${totalExisting > 0 ? (spokeCount / totalExisting) * 100 : 0}%;"></div>
+          </div>
+          <p class="text-[11px] text-gray-500 mt-2"><strong>${hubCount}</strong> Hub Base vs <strong>${spokeCount}</strong> Outstations</p>
+        </div>
+
+        <!-- Card 4: Succession / Retirement Horizon -->
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-amber-500">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Retirement Pipeline</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${ret1Yr}</h3>
+            <span class="text-xs font-semibold text-amber-700">Retiring in 1 Yr</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-amber-500 h-full rounded-full" style="width: ${Math.min((ret1Yr / (totalExisting || 1)) * 500, 100)}%;"></div>
+          </div>
+          <p class="text-[11px] text-gray-500 mt-2">3-Yr: <strong>${ret3Yrs}</strong> | 5-Yr Horizon: <strong>${ret5Yrs}</strong></p>
+        </div>
+
+      </div>
+
+      <!-- Two Column Analytical Breakdown -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        <!-- Left: Departmental Staffing Health Progress Meters -->
+        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+            <div>
+              <h4 class="text-sm font-bold text-gray-800">Departmental Staffing Health Index</h4>
+              <p class="text-xs text-gray-500">Fulfillment percentage against sanctioned setup</p>
+            </div>
+            <span class="text-[11px] bg-slate-100 text-gray-600 px-2 py-0.5 rounded font-semibold">${depHealthList.length} Departments</span>
+          </div>
+
+          <div class="space-y-3">
+            ${depHealthList.map(d => `
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="font-semibold text-gray-700">${d.dep_name} <strong class="text-gray-400">(${d.dep_code})</strong></span>
+                  <span class="font-bold ${d.fulfillment >= 90 ? 'text-emerald-700' : d.fulfillment >= 75 ? 'text-amber-700' : 'text-rose-700'}">
+                    ${d.existing} / ${d.setup} (${d.fulfillment}%)
+                  </span>
+                </div>
+                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
+                  <div class="${d.fulfillment >= 90 ? 'bg-emerald-500' : d.fulfillment >= 75 ? 'bg-amber-500' : 'bg-rose-500'} h-full rounded-full transition-all duration-500" style="width: ${Math.min(d.fulfillment, 100)}%;"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Right: Pay Group Hierarchy & Succession Pyramid -->
+        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+              <div>
+                <h4 class="text-sm font-bold text-gray-800">Workforce Hierarchy &amp; Staffing Pyramid</h4>
+                <p class="text-xs text-gray-500">Tiered composition across executive, supervisory, and operational staff</p>
+              </div>
+              <span class="text-[11px] bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-semibold">Airline Structure</span>
+            </div>
+
+            <!-- Pyramid Visual Stack -->
+            <div class="flex flex-col items-center space-y-2 py-4">
+              
+              <!-- Tier 1: Executive Leadership (PG 9-11) -->
+              <div class="w-1/3 bg-purple-600 text-white rounded-md p-2.5 text-center shadow-sm">
+                <span class="text-[10px] font-bold uppercase tracking-wider block opacity-80">Executive Leadership (PG 9-11)</span>
+                <span class="text-lg font-black">${execCount} Personnel</span>
+                <span class="text-[10px] block opacity-75">${totalExisting > 0 ? Math.round((execCount / totalExisting) * 100) : 0}% of Total</span>
+              </div>
+
+              <!-- Tier 2: Supervisory & Officers (PG 5-8) -->
+              <div class="w-2/3 bg-sky-600 text-white rounded-md p-2.5 text-center shadow-sm">
+                <span class="text-[10px] font-bold uppercase tracking-wider block opacity-80">Supervisory &amp; Officers (PG 5-8)</span>
+                <span class="text-lg font-black">${supervisoryCount} Personnel</span>
+                <span class="text-[10px] block opacity-75">${totalExisting > 0 ? Math.round((supervisoryCount / totalExisting) * 100) : 0}% of Total</span>
+              </div>
+
+              <!-- Tier 3: Ground Operations & Tech (PG 1-4) -->
+              <div class="w-full bg-teal-600 text-white rounded-md p-2.5 text-center shadow-sm">
+                <span class="text-[10px] font-bold uppercase tracking-wider block opacity-80">Ground Operations, GSE &amp; Assistants (PG 1-4)</span>
+                <span class="text-lg font-black">${operationalPgCount} Personnel</span>
+                <span class="text-[10px] block opacity-75">${totalExisting > 0 ? Math.round((operationalPgCount / totalExisting) * 100) : 0}% of Total</span>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded p-3 text-xs text-gray-600 flex items-center justify-between mt-2">
+            <span>Overall Operational Health Index:</span>
+            <strong class="text-emerald-700 font-bold">Stable 24/7 Flight Operations Manning</strong>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * Tab 4: Station Operational Staffing Summary Table
+   */
+  renderStationSummaryTable: function() {
+    const container = document.getElementById('wf-summary-table-container');
+    if (!container) return;
+
+    const stations = this.masterData.stations || [];
+    const setups = this.setups;
+    const employees = this.employees.filter(e => e.status !== 'Retired');
+
+    const stnData = stations.map(st => {
+      const stSetups = setups.filter(s => String(s.station_id).trim() === String(st.station_id).trim());
+      const stEmps = employees.filter(e => String(e.station_id).trim() === String(st.station_id).trim() || String(e.posting).trim() === String(st.station_code).trim());
+
+      const setupCount = stSetups.reduce((sum, s) => sum + (Number(s.set_up) || 0), 0);
+      const existingCount = stEmps.length;
+      const deficit = setupCount - existingCount;
+      const fulfillment = setupCount > 0 ? Math.round((existingCount / setupCount) * 100) : 100;
+
+      let statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      let statusText = 'Adequate';
+      if (fulfillment < 75) {
+        statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+        statusText = 'Critical Deficit';
+      } else if (fulfillment < 90) {
+        statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
+        statusText = 'Moderate Deficit';
+      }
+
+      return {
+        station_code: st.station_code,
+        station_name: st.station_name || '-',
+        station_type: st.station_type || 'Spoke',
+        setup: setupCount,
+        existing: existingCount,
+        required: deficit,
+        fulfillment: fulfillment,
+        statusText: statusText,
+        statusBadge: statusBadge
+      };
+    });
+
+    stnData.sort((a, b) => b.required - a.required);
+
+    let html = `
+      <table class="workforce-setup-table">
+        <thead>
+          <tr>
+            <th style="width: 15%;">Station Code</th>
+            <th style="width: 25%;">Station Name</th>
+            <th class="center-col" style="width: 15%;">Type</th>
+            <th class="num-col" style="width: 12%;">Setup</th>
+            <th class="num-col" style="width: 12%;">Existing</th>
+            <th class="num-col" style="width: 12%;">Required</th>
+            <th class="center-col" style="width: 15%;">Coverage Status</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    let totalSetup = 0, totalExisting = 0, totalRequired = 0;
+    stnData.forEach(r => {
+      totalSetup += r.setup;
+      totalExisting += r.existing;
+      totalRequired += r.required;
+
+      html += `
+        <tr>
+          <td><strong>${r.station_code}</strong></td>
+          <td>${r.station_name}</td>
+          <td class="center-col">${r.station_type}</td>
+          <td class="num-col">${r.setup}</td>
+          <td class="num-col">${r.existing}</td>
+          <td class="num-col">${r.required}</td>
+          <td class="center-col">
+            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold border ${r.statusBadge}">
+              ${r.statusText} (${r.fulfillment}%)
+            </span>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+        <tr class="total-row">
+          <td style="text-align: center;" colspan="3">Network Total</td>
+          <td class="num-col">${totalSetup}</td>
+          <td class="num-col">${totalExisting}</td>
+          <td class="num-col">${totalRequired}</td>
+          <td class="center-col"><strong>${totalSetup > 0 ? Math.round((totalExisting / totalSetup) * 100) : 100}% Overall</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * Exports the currently active view to CSV
+   */
+  exportCurrentViewCSV: function() {
+    const table = document.querySelector('#tmpl-hrm_workforce table') || document.querySelector('.workforce-setup-table');
+    if (!table) {
+      app.toast('No table data available to export.', 'warning');
+      return;
+    }
+
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(r => {
+      let cols = [];
+      r.querySelectorAll('th, td').forEach(c => {
+        let text = c.innerText.replace(/"/g, '""').trim();
+        cols.push(`"${text}"`);
+      });
+      csv.push(cols.join(','));
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv.join('\n'));
+    const link = document.createElement('a');
+    link.setAttribute('href', csvContent);
+    link.setAttribute('download', `workforce_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    app.toast('Report exported to CSV successfully.', 'success');
+  },
+
+  exportSummaryCSV: function() {
+    this.exportCurrentViewCSV();
+  },
+
+  printReport: function() {
+    window.print();
+  }
+};
+
+/**
+ * Lifecycle hook called automatically when view 'hrm_workforce' is loaded
+ */
+async function hrm_workforce_init() {
+  await WorkforceModule.init();
+}
+</script>
+

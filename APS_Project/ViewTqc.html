@@ -65,23 +65,42 @@
 
 <!-- TQC Training Record -->
 <template id="tmpl-tqc_record">
-  <div class="bg-white border border-gray-300 shadow-sm flex flex-col h-[calc(100vh-140px)] w-full">
+  <div class="data-view-container animate-fade-in">
     
-    <!-- Functional Options Buttons & Filters -->
-    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center shrink-0 text-sm">
-      <button class="bg-blue-800 text-white px-2 py-1 hover:bg-blue-700 font-medium border border-blue-900" onclick="renderTqcRecord('course_wise')">Course Wise</button>
-      <button class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderTqcRecord('all_courses')">All Courses</button>
-      <button class="bg-gray-200 text-gray-800 px-2 py-1 hover:bg-gray-300 font-medium border border-gray-400" onclick="renderTqcRecord('individual')">Individual Training History</button>
-      
-      <div class="border-l border-gray-400 h-6 mx-1" id="tqc-filter-divider"></div>
-      
-      <select id="tqc-filter-course" class="border border-gray-400 bg-white px-2 py-1 text-xs hidden" onchange="renderTqcRecord('course_wise')">
-        <option value="ALL">All Courses</option>
-      </select>
+    <!-- Functional Options Buttons, Navigation Controls & Filters -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center justify-between shrink-0 text-sm">
+      <div class="flex flex-wrap gap-1.5 items-center">
+        <button class="bg-blue-800 text-white px-2.5 py-1 hover:bg-blue-700 font-medium border border-blue-900 text-xs rounded-sm" onclick="renderTqcRecord('course_wise')">Course Wise</button>
+        <button class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderTqcRecord('all_courses')">All Courses</button>
+        <button class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderTqcRecord('individual')">Individual Training History</button>
+        
+        <div class="border-l border-gray-400 h-5 mx-1" id="tqc-filter-divider"></div>
+        
+        <select id="tqc-filter-course" class="border border-gray-400 bg-white px-2 py-1 text-xs rounded-sm hidden" onchange="renderTqcRecord('course_wise')">
+          <option value="ALL">All Courses</option>
+        </select>
+      </div>
+
+      <!-- Navigation Controls: Left/Right scroll, Fullscreen, Close -->
+      <div class="flex items-center space-x-1.5">
+        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Training Record Left">
+            <span class="material-icons text-base">chevron_left</span>
+          </button>
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Training Record Right">
+            <span class="material-icons text-base">chevron_right</span>
+          </button>
+        </div>
+
+        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Mode">
+          <span class="material-icons text-sm mr-1">fullscreen</span>
+          <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+        </button>
+      </div>
     </div>
     
     <!-- Spreadsheet Container -->
-    <div class="flex-1 overflow-auto bg-white" id="tqc-record-container">
+    <div class="data-table-scroll-wrapper" id="tqc-record-container">
       <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="tqc-spreadsheet">
         <thead class="sticky top-0 z-10">
           <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900" id="tqc-sheet-header">
@@ -168,9 +187,7 @@ function renderTqcRecord(viewMode) {
       cols.forEach(c => {
         let val = row[c.key] || '-';
         if (c.type === 'date' && val !== '-') {
-          const d = new Date(val);
-          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          val = `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+          val = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(val) : val;
         }
         trHtml += `<td class="border border-gray-300 px-1 py-0 truncate max-w-[200px]">${val}</td>`;
       });

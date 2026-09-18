@@ -503,6 +503,131 @@
             transform: translateX(2px);
         }
         
+        /* Profile Tabs & Layout */
+        .profile-tabs-container {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 25px;
+            gap: 10px;
+        }
+        .profile-tab-btn {
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            background: none;
+            border-bottom: 3px solid transparent;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .profile-tab-btn.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .profile-summary-header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding: 20px;
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+        .profile-picture-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e2e8f0;
+            flex-shrink: 0;
+        }
+        .profile-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .profile-info-item {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #ffffff;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .profile-info-item label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .profile-info-item span {
+            font-size: 15px;
+            font-weight: 600;
+            color: black !important;
+            word-break: break-word;
+        }
+
+        /* Result History List Styles */
+        .results-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .result-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+        }
+        .result-list-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+
+        .profile-info-vertical-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 25px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .profile-info-vertical-list li {
+            font-size: 15px;
+            color: black !important;
+            line-height: 1.5;
+        }
+        .profile-info-vertical-list li.reg-id-item {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1e293b !important;
+            margin-bottom: 5px;
+        }
+        .profile-info-vertical-list li strong {
+            color: #475569;
+            margin-right: 6px;
+        }
+        .profile-info-vertical-list li span {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
         /* Mobile Responsiveness Media Queries */
         @media (max-width: 768px) {
             .navbar {
@@ -585,6 +710,21 @@
             .card {
                 padding: 15px;
             }
+
+            /* Profile & Result List Mobile Overrides */
+            .profile-summary-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .result-list-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 15px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -643,14 +783,14 @@
                 <div class="card card-center">
                     <h2 class="text-center">Login</h2>
                     <p class="text-center">Sign in to your account</p>
-                    <form id="login-form" onsubmit="app.handleLogin(event)">
+                    <form id="login-form" onsubmit="app.handleLogin(event)" autocomplete="off">
                         <div class="form-group">
                             <label>User ID</label>
-                            <input type="text" id="login-userid" class="form-control" required placeholder="Enter User ID (e.g. 01700000000)">
+                            <input type="text" name="username" id="login-userid" autocomplete="off" class="form-control" required placeholder="Enter User ID (e.g. 01700000000)">
                         </div>
                         <div class="form-group" style="position: relative;">
                             <label>Password</label>
-                            <input type="password" id="login-password" class="form-control" required placeholder="Enter Password">
+                            <input type="password" name="password" id="login-password" autocomplete="new-password" class="form-control" required placeholder="Enter Password">
                             <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('login-password', this)"></i>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Sign In</button>
@@ -740,12 +880,12 @@
                             <input type="hidden" id="recovery-reset-userId">
                             <div class="form-group" style="position: relative;">
                                 <label>New Password</label>
-                                <input type="password" id="recovery-new-password" class="form-control" required placeholder="New Password" minlength="6" style="color: #000000;">
+                                <input type="password" name="new-password" id="recovery-new-password" autocomplete="new-password" class="form-control" required placeholder="New Password" minlength="6" style="color: #000000;">
                                 <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('recovery-new-password', this)"></i>
                             </div>
                             <div class="form-group" style="position: relative;">
                                 <label>Confirm New Password</label>
-                                <input type="password" id="recovery-confirm-password" class="form-control" required placeholder="Confirm New Password" minlength="6" style="color: #000000;">
+                                <input type="password" name="confirm-password" id="recovery-confirm-password" autocomplete="new-password" class="form-control" required placeholder="Confirm New Password" minlength="6" style="color: #000000;">
                                 <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('recovery-confirm-password', this)"></i>
                             </div>
                             <button type="submit" class="btn btn-primary btn-block">Reset Password</button>
@@ -774,7 +914,7 @@
                     <form id="register-form" onsubmit="app.handleRegister(event)">
                         <div class="form-group">
                             <label>Full Name</label>
-                            <input type="text" id="reg-name" class="form-control" required placeholder="e.g. John Doe">
+                            <input type="text" name="name" id="reg-name" autocomplete="name" class="form-control" required placeholder="e.g. John Doe">
                         </div>
                         <div class="form-group">
                             <label>Register With</label>
@@ -782,17 +922,17 @@
                                 <label><input type="radio" name="reg-type" value="mobile" checked onchange="app.toggleRegType()"> Mobile Number</label>
                                 <label><input type="radio" name="reg-type" value="email" onchange="app.toggleRegType()"> Email</label>
                             </div>
-                            <input type="tel" id="reg-mobile" class="form-control" required placeholder="e.g. 01700000000">
-                            <input type="email" id="reg-email" class="form-control hidden" placeholder="e.g. john@example.com">
+                            <input type="tel" name="username" id="reg-mobile" autocomplete="username" class="form-control" required placeholder="e.g. 01700000000">
+                            <input type="email" name="username" id="reg-email" autocomplete="username" class="form-control hidden" placeholder="e.g. john@example.com">
                         </div>
                         <div class="form-group" style="position: relative;">
                             <label>Password</label>
-                            <input type="password" id="reg-password" class="form-control" required placeholder="Enter Password">
+                            <input type="password" name="password" id="reg-password" autocomplete="new-password" class="form-control" required placeholder="Enter Password">
                             <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('reg-password', this)"></i>
                         </div>
                         <div class="form-group" style="position: relative;">
                             <label>Confirm Password</label>
-                            <input type="password" id="reg-confirm" class="form-control" required placeholder="Confirm Password">
+                            <input type="password" name="confirm-password" id="reg-confirm" autocomplete="new-password" class="form-control" required placeholder="Confirm Password">
                             <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('reg-confirm', this)"></i>
                             <small id="reg-pass-error" style="color: black !important;" class="hidden">Passwords do not match.</small>
                         </div>
@@ -812,17 +952,17 @@
                     <form id="change-pass-form" onsubmit="app.handleChangePassword(event)">
                         <div class="form-group" style="position: relative;">
                             <label>Current Password</label>
-                            <input type="password" id="cp-current" class="form-control" required placeholder="Current Password">
+                            <input type="password" name="current-password" id="cp-current" autocomplete="current-password" class="form-control" required placeholder="Current Password">
                             <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('cp-current', this)"></i>
                         </div>
                         <div class="form-group" style="position: relative;">
                             <label>New Password</label>
-                            <input type="password" id="cp-new" class="form-control" required placeholder="New Password">
+                            <input type="password" name="new-password" id="cp-new" autocomplete="new-password" class="form-control" required placeholder="New Password">
                             <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('cp-new', this)"></i>
                         </div>
                         <div class="form-group" style="position: relative;">
                             <label>Confirm New Password</label>
-                            <input type="password" id="cp-confirm" class="form-control" required placeholder="Confirm New Password">
+                            <input type="password" name="confirm-password" id="cp-confirm" autocomplete="new-password" class="form-control" required placeholder="Confirm New Password">
                             <i class="fa-solid fa-eye" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: black !important;" onclick="app.togglePasswordVisibility('cp-confirm', this)"></i>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Update Password</button>
@@ -937,47 +1077,112 @@
 
             <!-- Profile View -->
             <div id="profile-view" class="view-section hidden">
-                <div class="card">
-                    <h2>My Profile</h2>
-                    <h3 id="profile-display-name"></h3>
-                    <p id="profile-display-id" style="color: black !important;"></p>
-                    <hr style="border:0; border-top:1px solid #ddd; margin: 15px 0;">
+                <div class="card" style="padding: 25px;">
+                    <h2 style="margin-bottom: 20px; font-weight: bold; color: black !important;">My Profile</h2>
                     
-                    <form id="profile-form" onsubmit="app.updateProfile(event)">
-                        <div class="grid-3" style="margin-bottom: 0;">
-                            <div class="form-group">
-                                <label>Full Name</label>
-                                <input type="text" id="prof-name" class="form-control" required placeholder="e.g. John Doe">
+                    <!-- Profile Tabs -->
+                    <div class="profile-tabs-container">
+                        <button class="profile-tab-btn active" id="tab-view-profile-btn" onclick="app.switchProfileTab('view')">View Profile</button>
+                        <button class="profile-tab-btn" id="tab-edit-profile-btn" onclick="app.switchProfileTab('edit')">Edit Profile</button>
+                    </div>
+
+                    <!-- Profile Tab: View Profile -->
+                    <div id="profile-view-tab" class="profile-tab-content">
+                        <!-- Profile Image and Name Inline -->
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary-color); display: flex; align-items: center; justify-content: center; background-color: #e2e8f0; flex-shrink: 0;">
+                                <img id="profile-pic-display" src="" alt="Profile Picture" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                <i id="profile-pic-placeholder" class="fa-solid fa-user" style="font-size: 28px; color: #94a3b8;"></i>
                             </div>
-                            <div class="form-group">
-                                <label>Date of Birth</label>
-                                <input type="date" id="prof-dob" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label>Phone Number</label>
-                                <input type="tel" id="prof-phone" class="form-control" placeholder="e.g. 01700000000">
-                            </div>
-                            <div class="form-group">
-                                <label>Email Address</label>
-                                <input type="email" id="prof-email" class="form-control" placeholder="e.g. john@example.com">
-                            </div>
-                            <div class="form-group">
-                                <label>Occupation</label>
-                                <input type="text" id="prof-occ" class="form-control" placeholder="e.g. Teacher">
-                            </div>
-                            <div class="form-group">
-                                <label>Address</label>
-                                <input type="text" id="prof-address" class="form-control" placeholder="e.g. 123 Main St, Dhaka">
+                            <div style="flex-grow: 1;">
+                                <h3 id="profile-summary-name" style="margin: 0 0 5px 0; font-size: 20px; font-weight: 700; color: black !important;"></h3>
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <span style="font-size: 13px; font-weight: 600; color: #475569;">Profile Completion: <span id="profile-completion-pct" style="font-weight: 700; color: var(--primary-color);">0%</span></span>
+                                    <div style="width: 120px; height: 6px; background-color: #e2e8f0; border-radius: 3px; overflow: hidden; display: flex; align-items: center;">
+                                        <div id="profile-completion-bar" style="width: 0%; height: 100%; background-color: var(--primary-color); transition: width 0.4s ease-on-out;"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary mt-3">Save Profile</button>
-                    </form>
-                </div>
-                
-                <div class="card" style=";">
-                    <h3 style="color: black !important;">Danger Zone</h3>
-                    <p>Permanently delete your account and all associated bond data.</p>
-                    <button class="btn btn-danger" onclick="app.initiateAccountDeletion()">Delete My Account</button>
+
+                        <!-- Profile Info Details (List layout, stacked vertically, no cards or extra divs) -->
+                        <ul class="profile-info-vertical-list">
+                            <li class="reg-id-item" id="info-reg-id" style="font-weight: 700; font-size: 16px; color: black !important;"></li>
+                            <li>
+                                <strong>Date of Birth:</strong> <span id="info-dob"></span>
+                            </li>
+                            <li>
+                                <strong>My Age:</strong> <span id="info-age"></span>
+                            </li>
+                            <li>
+                                <strong>Home District:</strong> <span id="info-district"></span>
+                            </li>
+                            <li>
+                                <strong>Registration Date:</strong> <span id="info-reg-date"></span>
+                            </li>
+                            <li>
+                                <strong>My Prize Bond Count:</strong> <span id="info-bond-count">0</span>
+                            </li>
+                            <li>
+                                <strong>Winning Prize Bond Count:</strong> <span id="info-win-count">0</span>
+                            </li>
+                        </ul>
+
+                        <!-- Delete Button (Only available here, no card) -->
+                        <button class="btn btn-danger" onclick="app.initiateAccountDeletion()" style="padding: 8px 16px; font-size: 13px; font-weight: 600; margin-top: 15px;"><i class="fa-solid fa-trash-can"></i> Delete My Account</button>
+                    </div>
+
+                    <!-- Profile Tab: Edit Profile -->
+                    <div id="profile-edit-tab" class="profile-tab-content hidden">
+                        <form id="profile-form" onsubmit="app.updateProfile(event)">
+                            <div style="display: flex; flex-direction: column; gap: 20px; background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                                <h3 style="margin: 0; font-size: 16px; font-weight: bold; color: black !important;">Profile Image</h3>
+                                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
+                                    <div style="position: relative; width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary-color); display: flex; align-items: center; justify-content: center; background-color: #e2e8f0; flex-shrink: 0;">
+                                        <img id="profile-pic-edit-preview" src="" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                        <i id="profile-pic-edit-placeholder" class="fa-solid fa-user" style="font-size: 36px; color: #94a3b8;"></i>
+                                    </div>
+                                    <div style="flex-grow: 1; min-width: 150px;">
+                                        <label style="display: block; font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 5px;">Upload Profile Photo (Auto-compressed)</label>
+                                        <input type="file" id="prof-photo-file" accept="image/*" class="form-control" style="padding: 6px 12px;" onchange="app.handleProfilePhotoUpload(event)">
+                                        <input type="hidden" id="prof-photo-base64">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid-3" style="margin-bottom: 0;">
+                                <div class="form-group">
+                                    <label>Full Name</label>
+                                    <input type="text" id="prof-name" class="form-control" required placeholder="e.g. John Doe">
+                                </div>
+                                <div class="form-group">
+                                    <label>Date of Birth</label>
+                                    <input type="date" id="prof-dob" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Home District</label>
+                                    <input type="text" id="prof-district" class="form-control" placeholder="e.g. Dhaka">
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone Number</label>
+                                    <input type="tel" id="prof-phone" class="form-control" placeholder="e.g. 01700000000">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email Address</label>
+                                    <input type="email" id="prof-email" class="form-control" placeholder="e.g. john@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Occupation</label>
+                                    <input type="text" id="prof-occ" class="form-control" placeholder="e.g. Teacher">
+                                </div>
+                                <div class="form-group" style="grid-column: span 3;">
+                                    <label>Address</label>
+                                    <input type="text" id="prof-address" class="form-control" placeholder="e.g. 123 Main St, Dhaka">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-3"><i class="fa-solid fa-save"></i> Save Profile</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -1114,6 +1319,7 @@
                                 <th>User ID</th>
                                 <th>Name</th>
                                 <th>Email/Phone</th>
+                                <th>Total Bonds</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -1269,71 +1475,22 @@
             <!-- Results View -->
             <div id="results-view" class="view-section hidden">
                 <div class="card">
-                    <h2>Draw Results History</h2>
-                    <p>Select a draw number to view the official results and check for winning matches.</p>
+                    <h2>Result History</h2>
+                    <p style="color: black !important; margin-bottom: 20px;">All prize-winning Prize Bonds found by matching your saved Prize Bond numbers with the results of the last 8 draws conducted over the previous two years.</p>
                     
-                    <div class="grid-3" style="grid-template-columns: 2fr 1fr; gap: 15px; align-items: end; margin-bottom: 20px;">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Select Draw</label>
-                            <select id="results-draw-select" class="form-control" onchange="app.loadDrawResultsView(this.value)">
-                                <option value="">-- Loading Draws --</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-secondary" onclick="app.refreshDrawResults()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+                    <!-- Winning Summary Section -->
+                    <div id="results-winning-summary" class="card" style="border-left: 4px solid var(--success-color); background-color: rgba(46, 213, 115, 0.05); margin-bottom: 25px; padding: 20px; display: none;">
+                        <h3 style="color: var(--success-color); font-weight: bold; margin-bottom: 8px;"><i class="fa-solid fa-trophy"></i> Congratulations!!!</h3>
+                        <p id="results-summary-text" style="color: black !important; font-size: 15px; font-weight: 500; margin: 0;"></p>
                     </div>
 
-                    <div id="draw-details-container" class="hidden">
-                        <div style="background-color: #f8f9fa; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-                            <h3 id="draw-title-display" style="margin-bottom: 5px;">Draw #--</h3>
-                            <p id="draw-date-display" style="margin-bottom: 0; color: black !important; font-size: 14px;">Date: --/--/----</p>
-                        </div>
-
-                        <!-- Wins for current user in this draw -->
-                        <div id="draw-user-wins" class="card hidden" style="border-left: 4px solid var(--success-color); background-color: rgba(46, 213, 115, 0.05);">
-                            <h3 style="color: var(--success-color);"><i class="fa-solid fa-trophy"></i> Congratulations! You Won!</h3>
-                            <table class="table" style="margin-bottom: 0;">
-                                <thead>
-                                    <tr>
-                                        <th>Bond Number</th>
-                                        <th>Prize Level</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="draw-user-wins-tbody">
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Full Results Grid -->
-                        <div>
-                            <h3>Draw Winning Numbers</h3>
-                            
-                            <table class="table">
-                                <tr>
-                                    <th style="width: 150px;">1st Prize</th>
-                                    <td id="res-1st" class="font-mono font-bold text-black" style="font-size: 16px;">-</td>
-                                </tr>
-                                <tr>
-                                    <th>2nd Prize</th>
-                                    <td id="res-2nd" class="font-mono font-bold text-black" style="font-size: 16px;">-</td>
-                                </tr>
-                                <tr>
-                                    <th>3rd Prize</th>
-                                    <td id="res-3rd" class="font-mono text-black">-</td>
-                                </tr>
-                                <tr>
-                                    <th>4th Prize</th>
-                                    <td id="res-4th" class="font-mono text-black">-</td>
-                                </tr>
-                            </table>
-
-                            <h4 style="margin-top: 20px; margin-bottom: 10px;">5th Prize Numbers</h4>
-                            <div id="res-5th-container" style="overflow-x: auto; margin-top: 10px;">
-                                <!-- 5th prize numbers table dynamically generated here -->
-                            </div>
+                    <!-- Result Details Section -->
+                    <div id="results-details-section">
+                        <h3 style="margin-bottom: 15px; font-weight: bold; color: black !important; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Result Details</h3>
+                        <div id="results-list-container" class="results-list-container">
+                            <!-- JS Populated chronological List View -->
                         </div>
                     </div>
-                    
-                    <p id="no-draws-loaded-msg" class="text-center" style="padding: 40px; color: black !important;">No draw results uploaded yet.</p>
                 </div>
             </div>
             
@@ -1721,6 +1878,12 @@ const app = {
         const userid = document.getElementById('login-userid').value;
         const pass = document.getElementById('login-password').value;
 
+        // Clear input values in DOM immediately to prevent browser caching/form state restoration
+        const userEl = document.getElementById('login-userid');
+        const passEl = document.getElementById('login-password');
+        if (userEl) userEl.value = '';
+        if (passEl) passEl.value = '';
+
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
@@ -1732,7 +1895,7 @@ const app = {
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                     if (res.success) {
-                        app.login(res.user, pass);
+                        app.login(res.user);
                     } else {
                         app.showPopup('Login Failed', res.message, 'error');
                     }
@@ -1752,7 +1915,7 @@ const app = {
                 const users = app.db.getUsers();
                 const user = users.find(u => (u.id === userid || u.emailOrMobile === userid || u.email === userid || u.phone === userid) && u.password === pass);
                 if(user) {
-                    app.login(user, pass);
+                    app.login(user);
                 } else {
                     app.showPopup('Login Failed', 'Invalid User ID or Password', 'error');
                 }
@@ -1764,23 +1927,26 @@ const app = {
         const tbody = document.getElementById('admin-users-table');
         
         if (typeof google !== 'undefined' && google.script && google.script.run) {
-            tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black"><i class="fa-solid fa-spinner fa-spin"></i> Loading users from sheets...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-black"><i class="fa-solid fa-spinner fa-spin"></i> Loading users from sheets...</td></tr>`;
             google.script.run
                 .withSuccessHandler((res) => {
                     if (res.success) {
                         app.usersListCache = res.users;
                         app.displayUsersList(res.users);
                     } else {
-                        tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black">Error: ${res.message}</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-black">Error: ${res.message}</td></tr>`;
                     }
                 })
                 .withFailureHandler((err) => {
-                    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black">Failed to retrieve users.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-black">Failed to retrieve users.</td></tr>`;
                 })
                 .adminGetUsers();
         } else {
             // Local fallback
             const users = this.db.getUsers().filter(u => u.role === 'user');
+            users.forEach(u => {
+                u.totalBonds = this.db.getBonds(u.id).length;
+            });
             this.usersListCache = users;
             this.displayUsersList(users);
         }
@@ -1789,7 +1955,7 @@ const app = {
     displayUsersList: function(users) {
         const tbody = document.getElementById('admin-users-table');
         if(users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-black">No users found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-black">No users found.</td></tr>`;
             return;
         }
 
@@ -1798,6 +1964,7 @@ const app = {
                 <td class="px-4 py-3 font-mono text-indigo-600">${u.id}</td>
                 <td class="px-4 py-3 text-black">${u.name}</td>
                 <td class="px-4 py-3 text-black">${u.email || u.phone || 'N/A'}</td>
+                <td class="px-4 py-3 text-black text-center" style="font-weight: 600;">${u.totalBonds || 0}</td>
                 <td class="px-4 py-3">
                     ${u.status === 'active' ? '<span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Active</span>' : '<span style="background-color: rgba(255, 77, 77, 0.15); color: #ff4d4d; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">Disabled</span>'}
                 </td>
@@ -1834,9 +2001,9 @@ const app = {
 
         if(this.currentUser && this.currentUser.role === 'admin') {
             document.getElementById('aeuv-audit-info').style.display = 'block';
-            document.getElementById('aeuv-created-at').textContent = user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A';
+            document.getElementById('aeuv-created-at').textContent = user.createdAt ? this.formatDateTime(user.createdAt) : 'N/A';
             document.getElementById('aeuv-created-by').textContent = user.createdBy || 'N/A';
-            document.getElementById('aeuv-updated-at').textContent = user.updatedAt ? new Date(user.updatedAt).toLocaleString() : 'N/A';
+            document.getElementById('aeuv-updated-at').textContent = user.updatedAt ? this.formatDateTime(user.updatedAt) : 'N/A';
             document.getElementById('aeuv-updated-by').textContent = user.updatedBy || 'N/A';
         } else {
             document.getElementById('aeuv-audit-info').style.display = 'none';
@@ -1952,65 +2119,12 @@ const app = {
         });
     },
 
-    login: function(user, enteredPassword) {
+    login: function(user) {
         this.currentUser = user;
         localStorage.setItem('pb_session', JSON.stringify(user));
         this.updateNavState();
         this.navigateDashboard();
         this.showToast('Logged in successfully', 'success');
-
-        // Check if credentials are already saved
-        const saved = localStorage.getItem('pb_saved_credentials');
-        let alreadySaved = false;
-        if (saved) {
-            try {
-                const creds = JSON.parse(saved);
-                if (creds.userid === user.id && creds.password === enteredPassword) {
-                    alreadySaved = true;
-                }
-            } catch(e) {}
-        }
-
-        if (!alreadySaved && enteredPassword) {
-            // Wait 1 second before prompting to let dashboard load smoothly
-            setTimeout(() => {
-                this.showPopup('Save Password?', 'Would you like to save this User ID and Password in the browser for future logins?', 'confirm', () => {
-                    localStorage.setItem('pb_saved_credentials', JSON.stringify({
-                        userid: user.id || user.emailOrMobile || document.getElementById('login-userid').value,
-                        password: enteredPassword
-                    }));
-                    this.showToast('Credentials saved successfully in the browser!', 'success');
-                    
-                    // Try to save using native Credential Management API (if supported)
-                    if (window.PasswordCredential && navigator.credentials && navigator.credentials.store) {
-                        try {
-                            const cred = new PasswordCredential({
-                                id: user.id || user.emailOrMobile || document.getElementById('login-userid').value,
-                                password: enteredPassword
-                            });
-                            navigator.credentials.store(cred);
-                        } catch(err) {
-                            console.warn("Credential Management API not supported in this frame:", err);
-                        }
-                    }
-                });
-            }, 1000);
-        }
-    },
-
-    autofillSavedCredentials: function() {
-        const saved = localStorage.getItem('pb_saved_credentials');
-        if (saved) {
-            try {
-                const creds = JSON.parse(saved);
-                const userEl = document.getElementById('login-userid');
-                const passEl = document.getElementById('login-password');
-                if (userEl && passEl) {
-                    userEl.value = creds.userid || '';
-                    passEl.value = creds.password || '';
-                }
-            } catch(e) {}
-        }
     },
 
     addFileBonds: function(e) {
@@ -2312,6 +2426,13 @@ const app = {
         this.currentUser = null;
         localStorage.removeItem('pb_session');
         this.updateNavState();
+
+        // Clear login input fields to prevent form state restoration
+        const userEl = document.getElementById('login-userid');
+        const passEl = document.getElementById('login-password');
+        if (userEl) userEl.value = '';
+        if (passEl) passEl.value = '';
+
         this.navigate('landing-view');
         this.showToast('Logged out successfully', 'info');
     },
@@ -2694,7 +2815,7 @@ const app = {
                 <tr class="hover:bg-slate-100">
                     <td class="px-6 py-3 text-center" style="width: 60px;">${idx + 1}</td>
                     <td class="px-6 py-3 font-mono font-bold tracking-wider text-black text-center" style="font-size: 14px;">${paddedNum}</td>
-                    <td class="px-6 py-3 text-black text-center">${b.dateAdded || ''}</td>
+                    <td class="px-6 py-3 text-black text-center">${app.formatDate(b.dateAdded)}</td>
                     <td class="px-6 py-3 text-center" style="width: 120px;">
                         <div class="dropdown-menu-container">
                             <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 12px;" onclick="app.toggleDropdown(this, event)"><i class="fa-solid fa-ellipsis-vertical"></i> Actions</button>
@@ -3374,7 +3495,7 @@ const app = {
                 <td class="px-4 py-3 font-mono text-indigo-600">${log.UserId || log.userId || '-'}</td>
                 <td class="px-4 py-3 text-black"><span style="background-color: rgba(34, 166, 179, 0.15); color: #22a6b3; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${log.Action || log.action || '-'}</span></td>
                 <td class="px-4 py-3 text-black" style="max-width: 300px; word-break: break-all;">${log.Details || log.details || '-'}</td>
-                <td class="px-4 py-3 text-black" style="font-size: 12px;">${log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</td>
+                <td class="px-4 py-3 text-black" style="font-size: 12px;">${log.created_at ? app.formatDateTime(log.created_at) : '-'}</td>
             </tr>
         `).join('');
     },
@@ -3476,7 +3597,11 @@ const app = {
         if (!isoString) return '';
         try {
             const d = new Date(isoString);
-            return d.toLocaleString();
+            if (isNaN(d.getTime())) return isoString;
+            const datePart = this.formatDate(isoString);
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${datePart} ${hours}:${minutes}`;
         } catch(e) {
             return isoString;
         }
@@ -3567,17 +3692,211 @@ const app = {
     },
 
     // Profile Functions
+    switchProfileTab: function(tab) {
+        const viewTab = document.getElementById('profile-view-tab');
+        const editTab = document.getElementById('profile-edit-tab');
+        const viewBtn = document.getElementById('tab-view-profile-btn');
+        const editBtn = document.getElementById('tab-edit-profile-btn');
+        
+        if (tab === 'view') {
+            viewTab.classList.remove('hidden');
+            editTab.classList.add('hidden');
+            viewBtn.classList.add('active');
+            editBtn.classList.remove('active');
+            this.renderProfile();
+        } else {
+            viewTab.classList.add('hidden');
+            editTab.classList.remove('hidden');
+            editBtn.classList.add('active');
+            viewBtn.classList.remove('active');
+        }
+    },
+
+    formatDate: function(dateStr) {
+        if(!dateStr) return 'N/A';
+        
+        let d = new Date(dateStr);
+        if(isNaN(d.getTime()) && typeof dateStr === 'string') {
+            // Try parsing DD/MM/YYYY format or YYYY-MM-DD
+            const parts = dateStr.split(/[\/\-]/);
+            if(parts.length === 3) {
+                if(parts[0].length === 4) {
+                    d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                } else {
+                    d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+                }
+            }
+        }
+        
+        if(isNaN(d.getTime())) return dateStr;
+        
+        const day = String(d.getDate()).padStart(2, '0');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        return `${day} ${month} ${year}`;
+    },
+
+    calculateAge: function(dobString) {
+        if(!dobString) return 'N/A';
+        const parts = dobString.split('-');
+        let dob;
+        if(parts.length === 3) {
+            dob = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        } else {
+            dob = new Date(dobString);
+        }
+        
+        const today = new Date();
+        if(isNaN(dob.getTime())) return 'N/A';
+        
+        let years = today.getFullYear() - dob.getFullYear();
+        let months = today.getMonth() - dob.getMonth();
+        let days = today.getDate() - dob.getDate();
+        
+        if (days < 0) {
+            months--;
+            const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+            days += prevMonth.getDate();
+        }
+        
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+        
+        return `${years} Years, ${months} Months, ${days} Days`;
+    },
+
+    calculateProfileStats: function() {
+        if (!this.currentUser) return;
+        
+        // My Prize Bond Count
+        const bonds = this.db.getBonds(this.currentUser.id);
+        const bondCount = bonds.length;
+        document.getElementById('info-bond-count').textContent = bondCount;
+        
+        // Entry Balance (e.g. 5 - bondCount)
+        const balance = Math.max(0, 5 - bondCount);
+        const balanceEl = document.getElementById('info-balance');
+        if (balanceEl) balanceEl.textContent = balance;
+        
+        // Calculate wins from last 8 draws
+        let draws = this.drawsCache || [];
+        if (draws.length === 0) {
+            draws = this.db.getDraws();
+        }
+        
+        const sortedDraws = [...draws].sort((a, b) => b.number - a.number);
+        const last8Draws = sortedDraws.slice(0, 8);
+        const userBondsList = bonds.map(b => this.padBondNumber(b.number));
+        
+        const matchedBonds = new Set();
+        
+        last8Draws.forEach(draw => {
+            if (draw.results) {
+                draw.results.forEach(res => {
+                    const winningNum = this.padBondNumber(res.num);
+                    if (userBondsList.includes(winningNum)) {
+                        matchedBonds.add(winningNum);
+                    }
+                });
+            }
+        });
+        
+        document.getElementById('info-win-count').textContent = matchedBonds.size;
+    },
+
+    handleProfilePhotoUpload: function(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 128, 128);
+                
+                const base64 = canvas.toDataURL('image/jpeg', 0.7);
+                document.getElementById('prof-photo-base64').value = base64;
+                
+                const previewImg = document.getElementById('profile-pic-edit-preview');
+                const placeholder = document.getElementById('profile-pic-edit-placeholder');
+                previewImg.src = base64;
+                previewImg.style.display = 'block';
+                placeholder.style.display = 'none';
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    },
+
     renderProfile: function() {
         if(!this.currentUser) return;
-        document.getElementById('profile-display-name').textContent = this.currentUser.name;
-        document.getElementById('profile-display-id').textContent = `ID: ${this.currentUser.id}`;
+        
+        const nameVal = this.currentUser.name || 'N/A';
+        const dobVal = this.currentUser.dob || '';
+        const districtVal = this.currentUser.homeDistrict || 'N/A';
+        const regIdVal = this.currentUser.emailOrMobile || this.currentUser.id;
+        const regDateVal = this.formatDate(this.currentUser.createdAt);
+        const ageVal = dobVal ? this.calculateAge(dobVal) : 'N/A';
+        
+        document.getElementById('profile-summary-name').textContent = nameVal;
+        document.getElementById('info-reg-id').textContent = regIdVal;
+        document.getElementById('info-dob').textContent = dobVal ? this.formatDate(dobVal) : 'N/A';
+        document.getElementById('info-age').textContent = ageVal;
+        document.getElementById('info-district').textContent = districtVal;
+        document.getElementById('info-reg-date').textContent = regDateVal;
+        
+        const photoVal = this.currentUser.profilePhoto || '';
+        const picDisplay = document.getElementById('profile-pic-display');
+        const picPlaceholder = document.getElementById('profile-pic-placeholder');
+        const editPicPreview = document.getElementById('profile-pic-edit-preview');
+        const editPicPlaceholder = document.getElementById('profile-pic-edit-placeholder');
+        
+        if (photoVal) {
+            picDisplay.src = photoVal;
+            picDisplay.style.display = 'block';
+            picPlaceholder.style.display = 'none';
+            editPicPreview.src = photoVal;
+            editPicPreview.style.display = 'block';
+            editPicPlaceholder.style.display = 'none';
+            document.getElementById('prof-photo-base64').value = photoVal;
+        } else {
+            picDisplay.style.display = 'none';
+            picPlaceholder.style.display = 'block';
+            editPicPreview.style.display = 'none';
+            editPicPlaceholder.style.display = 'block';
+            document.getElementById('prof-photo-base64').value = '';
+        }
+        
+        let completed = 0;
+        if(this.currentUser.name && this.currentUser.name.trim() !== '') completed++;
+        if(this.currentUser.dob && this.currentUser.dob.trim() !== '') completed++;
+        if(this.currentUser.homeDistrict && this.currentUser.homeDistrict.trim() !== '') completed++;
+        if(this.currentUser.phone && this.currentUser.phone.trim() !== '') completed++;
+        if(this.currentUser.email && this.currentUser.email.trim() !== '') completed++;
+        if(this.currentUser.profession && this.currentUser.profession.trim() !== '') completed++;
+        if(this.currentUser.address && this.currentUser.address.trim() !== '') completed++;
+        if(this.currentUser.profilePhoto && this.currentUser.profilePhoto.trim() !== '') completed++;
+        
+        const pct = Math.round((completed / 8) * 100);
+        document.getElementById('profile-completion-pct').textContent = `${pct}%`;
+        document.getElementById('profile-completion-bar').style.width = `${pct}%`;
         
         document.getElementById('prof-name').value = this.currentUser.name || '';
-        document.getElementById('prof-dob').value = this.currentUser.dob || '';
+        document.getElementById('prof-dob').value = dobVal;
+        document.getElementById('prof-district').value = this.currentUser.homeDistrict || '';
         document.getElementById('prof-phone').value = this.currentUser.phone || '';
         document.getElementById('prof-email').value = this.currentUser.email || '';
-        document.getElementById('prof-occ').value = this.currentUser.occupation || '';
+        document.getElementById('prof-occ').value = this.currentUser.profession || this.currentUser.occupation || '';
         document.getElementById('prof-address').value = this.currentUser.address || '';
+        
+        this.calculateProfileStats();
     },
 
     updateProfile: function(e) {
@@ -3590,31 +3909,33 @@ const app = {
             phone: document.getElementById('prof-phone').value,
             email: document.getElementById('prof-email').value,
             profession: document.getElementById('prof-occ').value,
-            address: document.getElementById('prof-address').value
+            address: document.getElementById('prof-address').value,
+            homeDistrict: document.getElementById('prof-district').value,
+            profilePhoto: document.getElementById('prof-photo-base64').value
         };
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
-        const origText = submitBtn.textContent;
+        const origText = submitBtn.innerHTML;
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
         submitBtn.disabled = true;
 
         if (typeof google !== 'undefined' && google.script && google.script.run) {
             google.script.run
                 .withSuccessHandler((res) => {
-                    submitBtn.textContent = origText;
+                    submitBtn.innerHTML = origText;
                     submitBtn.disabled = false;
                     if (res.success) {
                         app.currentUser = { ...app.currentUser, ...data, occupation: data.profession };
                         localStorage.setItem('pb_session', JSON.stringify(app.currentUser));
-                        app.renderProfile();
-                        app.updateNavState();
-                        app.showPopup('Profile Updated', 'Your profile details have been saved successfully.', 'success');
+                        app.showPopup('Profile Updated', 'Your profile details have been saved successfully.', 'success', () => {
+                            app.switchProfileTab('view');
+                        });
                     } else {
                         app.showPopup('Error', res.message, 'error');
                     }
                 })
                 .withFailureHandler((err) => {
-                    submitBtn.textContent = origText;
+                    submitBtn.innerHTML = origText;
                     submitBtn.disabled = false;
                     app.showPopup('Error', 'Failed to save profile to sheet.', 'error');
                 })
@@ -3622,12 +3943,12 @@ const app = {
         } else {
             // Local fallback
             setTimeout(() => {
-                submitBtn.textContent = origText;
+                submitBtn.innerHTML = origText;
                 submitBtn.disabled = false;
                 const users = app.db.getUsers();
                 const index = users.findIndex(u => u.id === app.currentUser.id);
                 if(index > -1) {
-                    users[index] = { ...users[index], ...data, occupation: data.profession };
+                    users[index] = { ...users[index], ...data, occupation: data.profession, homeDistrict: data.homeDistrict, profilePhoto: data.profilePhoto };
                     const timestamp = new Date().toISOString();
                     users[index].updatedAt = timestamp;
                     users[index].updatedBy = app.currentUser.id;
@@ -3636,9 +3957,9 @@ const app = {
                 app.db.logAuditEvent(app.currentUser.id, 'UPDATE_PROFILE', 'Updated profile details');
                 app.currentUser = { ...app.currentUser, ...data, occupation: data.profession };
                 localStorage.setItem('pb_session', JSON.stringify(app.currentUser));
-                app.renderProfile();
-                app.updateNavState();
-                app.showPopup('Profile Updated', 'Your profile details have been saved successfully.', 'success');
+                app.showPopup('Profile Updated', 'Your profile details have been saved successfully.', 'success', () => {
+                    app.switchProfileTab('view');
+                });
             }, 500);
         }
     },
@@ -3911,134 +4232,114 @@ const app = {
 
     // Results History View Functions
     refreshDrawResults: function() {
-        const select = document.getElementById('results-draw-select');
-        const noDrawsMsg = document.getElementById('no-draws-loaded-msg');
-        const detailsContainer = document.getElementById('draw-details-container');
-        
-        select.innerHTML = '<option value="">-- Loading Draws --</option>';
-        detailsContainer.classList.add('hidden');
-        noDrawsMsg.classList.add('hidden');
+        const container = document.getElementById('results-list-container');
+        container.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Checking winning matches...</div>';
+        document.getElementById('results-winning-summary').style.display = 'none';
 
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run
-                .withSuccessHandler((res) => {
-                    if (res.success) {
-                        app.drawsCache = res.draws;
-                        app.populateDrawsSelect(res.draws);
-                    } else {
-                        select.innerHTML = '<option value="">Error loading draws</option>';
-                    }
-                })
-                .withFailureHandler((err) => {
-                    select.innerHTML = '<option value="">Failed to connect</option>';
-                })
-                .getDraws();
-        } else {
-            // Local fallback
-            const draws = this.db.getDraws();
-            this.drawsCache = draws;
-            this.populateDrawsSelect(draws);
-        }
-    },
+        const onDrawsLoaded = () => {
+            const sortedDraws = [...app.drawsCache].sort((a, b) => b.number - a.number);
+            const last8Draws = sortedDraws.slice(0, 8);
 
-    populateDrawsSelect: function(draws) {
-        const select = document.getElementById('results-draw-select');
-        const noDrawsMsg = document.getElementById('no-draws-loaded-msg');
-        
-        if (draws.length === 0) {
-            select.innerHTML = '<option value="">No draws available</option>';
-            noDrawsMsg.classList.remove('hidden');
-            return;
-        }
-
-        select.innerHTML = '<option value="">-- Select Draw --</option>' + draws.map(d => `
-            <option value="${d.number}">${d.number}th Draw (${d.date})</option>
-        `).join('');
-
-        noDrawsMsg.classList.add('hidden');
-    },
-
-    loadDrawResultsView: function(drawNum) {
-        const detailsContainer = document.getElementById('draw-details-container');
-        if (!drawNum || !this.drawsCache) {
-            detailsContainer.classList.add('hidden');
-            return;
-        }
-
-        const draw = this.drawsCache.find(d => d.number.toString() === drawNum.toString());
-        if (!draw) return;
-
-        // Populate details
-        document.getElementById('draw-title-display').textContent = `${draw.number}th Draw Results`;
-        document.getElementById('draw-date-display').textContent = `Draw Date: ${draw.date}`;
-
-        const first = draw.results.filter(r => r.prize === '1st Prize').map(r => app.padBondNumber(r.num)).join(', ');
-        const second = draw.results.filter(r => r.prize === '2nd Prize').map(r => app.padBondNumber(r.num)).join(', ');
-        const third = draw.results.filter(r => r.prize === '3rd Prize').map(r => app.padBondNumber(r.num)).join(', ');
-        const fourth = draw.results.filter(r => r.prize === '4th Prize').map(r => app.padBondNumber(r.num)).join(', ');
-        const fifth = draw.results.filter(r => r.prize === '5th Prize').map(r => app.padBondNumber(r.num));
-
-        document.getElementById('res-1st').textContent = first || '-';
-        document.getElementById('res-2nd').textContent = second || '-';
-        document.getElementById('res-3rd').textContent = third || '-';
-        document.getElementById('res-4th').textContent = fourth || '-';
-
-        const fifthContainer = document.getElementById('res-5th-container');
-        let fifthTableHtml = '<table class="table" style="text-align: center; font-family: monospace; font-size: 13px; width: 100%;"><tbody>';
-        for (let row = 0; row < 5; row++) {
-            fifthTableHtml += '<tr>';
-            for (let col = 0; col < 8; col++) {
-                const idx = row * 8 + col;
-                const num = fifth[idx] ? app.padBondNumber(fifth[idx]) : '';
-                fifthTableHtml += `<td style="text-align: center; font-weight: bold; color: black !important; padding: 8px; border: 1px solid #cbd5e1; background: #ffffff;">${num}</td>`;
-            }
-            fifthTableHtml += '</tr>';
-        }
-        fifthTableHtml += '</tbody></table>';
-        fifthContainer.innerHTML = fifthTableHtml;
-
-        const winsDiv = document.getElementById('draw-user-wins');
-        const winsTbody = document.getElementById('draw-user-wins-tbody');
-        
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            winsDiv.classList.add('hidden');
-            google.script.run
-                .withSuccessHandler((resBonds) => {
-                    if (resBonds.success) {
-                        const userBonds = resBonds.bonds.map(b => b.number);
-                        const userWins = draw.results.filter(res => userBonds.includes(res.num));
-                        
-                        if (userWins.length > 0) {
-                            winsTbody.innerHTML = userWins.map(w => `
-                                <tr>
-                                    <td class="font-mono font-bold text-emerald-600">${app.padBondNumber(w.num)}</td>
-                                    <td><span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
-                                </tr>
-                            `).join('');
-                            winsDiv.classList.remove('hidden');
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler((resBonds) => {
+                        if (resBonds.success) {
+                            const userBonds = resBonds.bonds.map(b => app.padBondNumber(b.number || b.Number));
+                            app.matchAndDisplayResults(last8Draws, userBonds);
+                        } else {
+                            container.innerHTML = '<div style="text-align: center; padding: 40px; color: red;">Failed to load saved bonds.</div>';
                         }
-                    }
-                })
-                .getBonds(app.currentUser.id);
-        } else {
-            // Local fallback
-            const userBonds = this.db.getBonds(this.currentUser.id).map(b => b.number);
-            const userWins = draw.results.filter(res => userBonds.includes(res.num));
-            
-            if (userWins.length > 0) {
-                winsTbody.innerHTML = userWins.map(w => `
-                    <tr>
-                        <td class="font-mono font-bold text-emerald-600">${app.padBondNumber(w.num)}</td>
-                        <td><span style="background-color: rgba(46, 213, 115, 0.15); color: #2ed573; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px;">${w.prize}</span></td>
-                    </tr>
-                `).join('');
-                winsDiv.classList.remove('hidden');
+                    })
+                    .withFailureHandler(() => {
+                        container.innerHTML = '<div style="text-align: center; padding: 40px; color: red;">Connection error.</div>';
+                    })
+                    .getBonds(app.currentUser.id);
             } else {
-                winsDiv.classList.add('hidden');
+                const userBonds = this.db.getBonds(this.currentUser.id).map(b => app.padBondNumber(b.number));
+                app.matchAndDisplayResults(last8Draws, userBonds);
+            }
+        };
+
+        if (this.drawsCache && this.drawsCache.length > 0) {
+            onDrawsLoaded();
+        } else {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (res.success) {
+                            app.drawsCache = res.draws;
+                            onDrawsLoaded();
+                        } else {
+                            container.innerHTML = '<div style="text-align: center; padding: 40px;">No draw results available.</div>';
+                        }
+                    })
+                    .withFailureHandler(() => {
+                        container.innerHTML = '<div style="text-align: center; padding: 40px; color: red;">Failed to retrieve draws.</div>';
+                    })
+                    .getDraws();
+            } else {
+                const draws = this.db.getDraws();
+                this.drawsCache = draws;
+                onDrawsLoaded();
             }
         }
+    },
 
-        detailsContainer.classList.remove('hidden');
+    matchAndDisplayResults: function(last8Draws, userBonds) {
+        const container = document.getElementById('results-list-container');
+        const matches = [];
+
+        last8Draws.forEach(draw => {
+            if (draw.results) {
+                draw.results.forEach(res => {
+                    const winningNum = app.padBondNumber(res.num);
+                    if (userBonds.includes(winningNum)) {
+                        matches.push({
+                            drawNumber: draw.number,
+                            drawDate: app.formatDate(draw.date),
+                            prize: res.prize,
+                            bondNumber: winningNum
+                        });
+                    }
+                });
+            }
+        });
+
+        if (matches.length === 0) {
+            document.getElementById('results-winning-summary').style.display = 'none';
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #94a3b8; margin-bottom: 12px;"></i>
+                    <p style="margin: 0; color: #475569; font-weight: 500;">No matching winning records found for your saved Prize Bonds in the last 8 draws.</p>
+                </div>`;
+            return;
+        }
+
+        const winningCount = matches.length;
+        const card = document.getElementById('results-winning-summary');
+        card.style.display = 'block';
+        
+        const bondText = winningCount === 1 ? 'Prize Bond has' : 'Prize Bonds have';
+        const prizeText = winningCount === 1 ? 'a prize' : 'prizes';
+        document.getElementById('results-summary-text').innerHTML = `Your <strong>${winningCount} ${bondText}</strong> won ${prizeText}.`;
+
+        container.innerHTML = matches.map(m => `
+            <div class="result-list-item">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="background-color: rgba(46, 213, 115, 0.1); color: var(--success-color); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <div>
+                        <p style="margin: 0; font-size: 15px; font-weight: 600; color: black !important;">
+                            You won the <span style="color: var(--success-color);">${m.prize}</span> in the <strong>${m.drawNumber}th Draw</strong>.
+                        </p>
+                        <p style="margin: 3px 0 0 0; font-size: 13px; color: #475569;">
+                            Winning Bond: <span class="font-mono" style="font-weight: 700; color: #4f46e5; letter-spacing: 1px;">${m.bondNumber}</span> | Date: ${m.drawDate}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
     },
 
     // UI Helpers
@@ -4140,6 +4441,25 @@ const app = {
     init: function() {
         this.db.init();
 
+        // Pre-cache draws list on startup
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        app.drawsCache = res.draws;
+                    }
+                })
+                .getDraws();
+        } else {
+            app.drawsCache = this.db.getDraws();
+        }
+
+        // Clear login input fields on initialization to prevent form state restoration
+        const userEl = document.getElementById('login-userid');
+        const passEl = document.getElementById('login-password');
+        if (userEl) userEl.value = '';
+        if (passEl) passEl.value = '';
+
         // Generate 5th prize fields
         const fifthContainer = document.getElementById('fifth-prize-container');
         if(fifthContainer) {
@@ -4154,7 +4474,13 @@ const app = {
         const originalNavigate = this.navigate.bind(this);
         this.navigate = (viewId, isPopState = false) => {
             originalNavigate(viewId, isPopState);
-            if(viewId === 'login-view') this.autofillSavedCredentials();
+
+            // Clear login input fields on every navigation
+            const userEl = document.getElementById('login-userid');
+            const passEl = document.getElementById('login-password');
+            if (userEl) userEl.value = '';
+            if (passEl) passEl.value = '';
+
             if(viewId === 'my-bonds-view') this.renderMyBonds();
             if(viewId === 'admin-users-view') this.renderAdminUsers();
             if(viewId === 'profile-view') this.renderProfile();
@@ -4254,7 +4580,7 @@ const app = {
         });
 
         this.renderSupportSettings();
-        this.autofillSavedCredentials();
+        localStorage.removeItem('pb_saved_credentials');
         const session = localStorage.getItem('pb_session');
         if(session) {
             this.currentUser = JSON.parse(session);

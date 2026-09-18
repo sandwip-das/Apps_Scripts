@@ -1,11 +1,60 @@
 <script>
 /**
- * API Wrapper
+ * Ultra-Fast High-Speed API Wrapper
+ * Features:
+ * 1. Multi-tier caching: In-Memory RAM + Browser SessionStorage (with 30-min TTL)
+ * 2. In-Flight Request De-duplication (merges concurrent identical requests)
+ * 3. Zero-delay local resolution for master reference data & employee datasets
+ * 4. Automatic cache invalidation on mutations (Create, Update, Delete)
  */
-const api = {
+var api = window.api = {
+  _memCache: {},
+  _inflight: {},
+  _STORAGE_PREFIX: 'sandviora_cache_',
+  _CACHE_TTL_MS: 30 * 60 * 1000, // 30 minutes TTL
+
+  // SessionStorage Helper with TTL Validation
+  _getFromStorage: function(key) {
+    try {
+      var raw = sessionStorage.getItem(this._STORAGE_PREFIX + key);
+      if (!raw) return null;
+      var item = JSON.parse(raw);
+      if (item && item.expiry && item.expiry > Date.now()) {
+        return item.data;
+      }
+      sessionStorage.removeItem(this._STORAGE_PREFIX + key);
+    } catch (e) {}
+    return null;
+  },
+
+  _setToStorage: function(key, data, ttlMs) {
+    try {
+      var ttl = ttlMs || this._CACHE_TTL_MS;
+      var item = { data: data, expiry: Date.now() + ttl };
+      sessionStorage.setItem(this._STORAGE_PREFIX + key, JSON.stringify(item));
+    } catch (e) {
+      // Storage quota exceeded or private mode: silent fallback to memory cache
+    }
+  },
+
+  _removeFromStorage: function(key) {
+    try {
+      sessionStorage.removeItem(this._STORAGE_PREFIX + key);
+    } catch (e) {}
+  },
+
+  // Base RPC call with in-flight Promise de-duplication
   call: function(serverFunction, ...args) {
-    return new Promise((resolve, reject) => {
-      if (typeof google === 'undefined' || !google.script) {
+    var callKey = serverFunction + (args.length ? '_' + JSON.stringify(args) : '');
+    
+    // If identical request is already pending, share the same promise
+    if (this._inflight[callKey]) {
+      return this._inflight[callKey];
+    }
+
+    var self = this;
+    var promise = new Promise((resolve, reject) => {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
         console.error('Google Script context not found.');
         reject(new Error('Not running in Google Apps Script environment.'));
         return;
@@ -13,26 +62,161 @@ const api = {
       
       google.script.run
         .withSuccessHandler(response => {
+          delete self._inflight[callKey];
           if (response && response.status === 'success') {
             resolve(response.data);
           } else {
             reject(new Error((response && response.message) || 'Unknown server error'));
           }
         })
-        .withFailureHandler(error => reject(error))
+        .withFailureHandler(error => {
+          delete self._inflight[callKey];
+          reject(error);
+        })
         [serverFunction](...args);
     });
+
+    this._inflight[callKey] = promise;
+    return promise;
   },
 
-  // Generic CRUD
-  read: (table) => api.call('api_read', table),
-  create: (table, data, pkPrefix, pkColName) => api.call('api_create', table, data, pkPrefix, pkColName),
-  update: (table, pkCol, id, data) => api.call('api_update', table, pkCol, id, data),
-  delete: (table, pkCol, id) => api.call('api_delete', table, pkCol, id),
+  // Cached Master Reference Data (Directorates, Departments, Stations, Pay Groups, Shifts, Sections, Workforce Setup)
+  getMasterData: async function(forceRefresh = false) {
+    var cacheKey = 'master_data';
+    if (!forceRefresh) {
+      if (this._memCache[cacheKey]) return this._memCache[cacheKey];
+      var stored = this._getFromStorage(cacheKey);
+      if (stored) {
+        this._memCache[cacheKey] = stored;
+        for (var tbl in stored) {
+          this._memCache['tbl_' + tbl] = stored[tbl];
+        }
+        return stored;
+      }
+    }
 
-  // Complex Operations
-  getHrmDetails: () => api.call('api_get_hrm_details'),
-  getServiceHistory: (empId) => api.call('api_get_service_history', empId),
-  getTqcRecords: () => api.call('api_get_tqc_records')
+    var data = await this.call('api_get_master_data', forceRefresh);
+    this._memCache[cacheKey] = data;
+    this._setToStorage(cacheKey, data);
+    for (var tbl in data) {
+      this._memCache['tbl_' + tbl] = data[tbl];
+    }
+    return data;
+  },
+
+  // Cached Enriched Employee Details List (with ranks, postings, shifts, status, retirement dates)
+  getHrmDetails: async function(forceRefresh = false) {
+    var cacheKey = 'hrm_details';
+    if (!forceRefresh) {
+      if (this._memCache[cacheKey]) return this._memCache[cacheKey];
+      var stored = this._getFromStorage(cacheKey);
+      if (stored && Array.isArray(stored) && stored.length > 0) {
+        this._memCache[cacheKey] = stored;
+        return stored;
+      }
+    }
+
+    var data = await this.call('api_get_hrm_details', forceRefresh);
+    this._memCache[cacheKey] = data;
+    this._setToStorage(cacheKey, data);
+    return data;
+  },
+
+  // Generic Table Read with Cache
+  read: async function(table, forceRefresh = false) {
+    var cacheKey = 'tbl_' + table;
+    if (!forceRefresh) {
+      if (this._memCache[cacheKey]) return this._memCache[cacheKey];
+      var stored = this._getFromStorage(cacheKey);
+      if (stored) {
+        this._memCache[cacheKey] = stored;
+        return stored;
+      }
+    }
+
+    const data = await this.call('api_read', table);
+    this._memCache[cacheKey] = data;
+    this._setToStorage(cacheKey, data);
+    return data;
+  },
+
+  // Invalidate Cache for Specific Table and Derived Datasets
+  invalidateCache: function(table) {
+    if (table) {
+      delete this._memCache['tbl_' + table];
+      this._removeFromStorage('tbl_' + table);
+    }
+    // Purge derived datasets that depend on organizational and employee tables
+    delete this._memCache['master_data'];
+    delete this._memCache['hrm_details'];
+    delete this._memCache['promotions_detailed'];
+    delete this._memCache['promotion_eligibility'];
+    delete this._memCache['tqc_records'];
+    this._removeFromStorage('master_data');
+    this._removeFromStorage('hrm_details');
+    this._removeFromStorage('promotions_detailed');
+    this._removeFromStorage('promotion_eligibility');
+    this._removeFromStorage('tqc_records');
+  },
+
+  // Full manual cache purge across memory and sessionStorage
+  clearAllCaches: function() {
+    this._memCache = {};
+    this._inflight = {};
+    try {
+      var keysToRemove = [];
+      for (var i = 0; i < sessionStorage.length; i++) {
+        var k = sessionStorage.key(i);
+        if (k && k.startsWith(this._STORAGE_PREFIX)) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => sessionStorage.removeItem(k));
+    } catch (e) {}
+  },
+
+  // Force Full System Sync (Server CacheService Purge + Client Purge + Fresh Fetch)
+  syncAllData: async function() {
+    this.clearAllCaches();
+    await this.call('api_clear_all_caches').catch(() => {});
+    return Promise.all([
+      this.getMasterData(true),
+      this.getHrmDetails(true)
+    ]);
+  },
+
+  // Mutation Operations with Instant Auto-Invalidation
+  create: async function(table, data, pkPrefix, pkColName) {
+    const res = await this.call('api_create', table, data, pkPrefix, pkColName);
+    this.invalidateCache(table);
+    return res;
+  },
+
+  update: async function(table, pkCol, id, data) {
+    const res = await this.call('api_update', table, pkCol, id, data);
+    this.invalidateCache(table);
+    return res;
+  },
+
+  delete: async function(table, pkCol, id) {
+    const res = await this.call('api_delete', table, pkCol, id);
+    this.invalidateCache(table);
+    return res;
+  },
+
+  // Specialized Queries
+  getServiceHistory: function(empId) { return this.call('api_get_service_history', empId); },
+  getTqcRecords: function(forceRefresh = false) {
+    return this.call('api_get_tqc_records');
+  },
+  getPromotionsDetailed: function(forceRefresh = false) {
+    return this.call('api_get_promotions_detailed');
+  },
+  getEmployeePromotionReport: function(empId) {
+    return this.call('api_get_employee_promotion_report', empId);
+  },
+  getPromotionEligibility: function(forceRefresh = false) {
+    return this.call('api_get_promotion_eligibility');
+  }
 };
 </script>

@@ -7,6 +7,9 @@ var TqcService = (function() {
 
   function parseDate(d) {
     if (!d) return null;
+    if (typeof Utils !== 'undefined' && Utils.parseDate) {
+      return Utils.parseDate(d);
+    }
     var dt = new Date(d);
     return isNaN(dt.getTime()) ? null : dt;
   }
@@ -54,7 +57,7 @@ var TqcService = (function() {
         course_name: course ? course.course_name : t.course_code,
         start_date: t.start_date,
         end_date: t.end_date,
-        expire_date: expireDate ? expireDate.toISOString() : '-',
+        expire_date: expireDate ? (typeof Utils !== 'undefined' ? Utils.formatDateToDDMmmYYYY(expireDate) : expireDate.toISOString()) : '-',
         status: emp.status // Needed to filter out "Retired"
       });
     });

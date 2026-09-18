@@ -85,6 +85,83 @@ function api_create(tableName, data, pkPrefix, pkColName) {
   }
 }
 
+function api_create_bulk_promotions(data, pkPrefix, pkColName) {
+  try {
+    AuthService.enforcePermission('Create');
+    processUploads(data);
+    
+    var bulkData = data.bulk_staff_data;
+    if (!bulkData || typeof bulkData !== 'string') {
+      throw new Error("Bulk staff data is required and must be text.");
+    }
+    
+    var tokens = bulkData.trim().split(/\s+/);
+    if (tokens.length === 0 || (tokens.length === 1 && tokens[0] === '')) {
+      throw new Error("No Staff ID and Sequence Number entries found.");
+    }
+    
+    if (tokens.length % 2 !== 0) {
+      throw new Error("Invalid bulk data format. Each Staff ID must have a corresponding Sequence Number. (Total values: " + tokens.length + ")");
+    }
+    
+    // Create map of existing employees by staff_id for O(1) checks
+    var employees = Database.getAll('employees');
+    var empStaffIdMap = {};
+    employees.forEach(function(emp) {
+      if (emp.staff_id) {
+        empStaffIdMap[String(emp.staff_id).trim().toUpperCase()] = true;
+      }
+    });
+    
+    var batchKeys = {};
+    var promotionsToInsert = [];
+    
+    // First pass: validation
+    for (var i = 0; i < tokens.length; i += 2) {
+      var staffId = tokens[i].trim();
+      var seqNoStr = tokens[i+1].trim();
+      
+      // Check if employee exists
+      if (!empStaffIdMap[staffId.toUpperCase()]) {
+        throw new Error("Validation Error: Employee with Staff ID '" + staffId + "' does not exist.");
+      }
+      
+      // Check sequence number is a valid positive integer
+      var seqNo = parseInt(seqNoStr, 10);
+      if (isNaN(seqNo) || seqNo <= 0 || String(seqNo) !== seqNoStr) {
+        throw new Error("Validation Error: Sequence number for Staff ID '" + staffId + "' must be a valid positive integer. Got: '" + seqNoStr + "'");
+      }
+      
+      // Check for duplicate entry in this batch
+      var batchKey = staffId.toUpperCase() + '_' + seqNo;
+      if (batchKeys[batchKey]) {
+        throw new Error("Validation Error: Duplicate entry in batch for Staff ID '" + tokens[i] + "' and Sequence Number '" + seqNoStr + "'.");
+      }
+      batchKeys[batchKey] = true;
+      
+      var promoRecord = {
+        emp_id: staffId, // promotions.emp_id stores the staff_id
+        sequence_no: seqNo,
+        present_pg_id: data.present_pg_id,
+        promoted_pg_id: data.promoted_pg_id,
+        promotion_date: data.promotion_date
+      };
+      
+      // Check database uniqueness
+      validateUniqueness('promotions', promoRecord, null, null);
+      
+      promotionsToInsert.push(promoRecord);
+    }
+    
+    // Second pass: batch insert
+    var insertedRecords = Database.insertBatch('promotions', promotionsToInsert, pkPrefix, pkColName);
+    
+    return JSON.parse(JSON.stringify({ status: 'success', data: insertedRecords }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
 function api_update(tableName, pkColumn, id, data) {
   try {
     AuthService.enforcePermission('Edit');
@@ -110,10 +187,10 @@ function api_delete(tableName, pkColumn, id) {
 /** 
  * Complex Business Logic APIs 
  */
-function api_get_hrm_details() {
+function api_get_hrm_details(forceRefresh) {
   try {
     AuthService.enforcePermission('View');
-    var records = HrmService.getEmployeesDetailsList();
+    var records = HrmService.getEmployeesDetailsList(forceRefresh);
     return JSON.parse(JSON.stringify({ status: 'success', data: records }));
   } catch (e) {
     return { status: 'error', message: e.message };
@@ -135,6 +212,113 @@ function api_get_tqc_records() {
     AuthService.enforcePermission('View');
     var records = TqcService.getTrainingRecords();
     return JSON.parse(JSON.stringify({ status: 'success', data: records }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function api_get_promotions_detailed() {
+  try {
+    AuthService.enforcePermission('View');
+    var records = HrmService.getAllPromotionsDetailed();
+    return JSON.parse(JSON.stringify({ status: 'success', data: records }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function api_get_employee_promotion_report(empIdentifier) {
+  try {
+    AuthService.enforcePermission('View');
+    var report = HrmService.getEmployeePromotionReport(empIdentifier);
+    return JSON.parse(JSON.stringify({ status: 'success', data: report }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function api_get_promotion_eligibility() {
+  try {
+    AuthService.enforcePermission('View');
+    var records = HrmService.getPromotionEligibilityList();
+    return JSON.parse(JSON.stringify({ status: 'success', data: records }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+/**
+ * Enterprise Workforce APIs
+ */
+function api_get_workforce_setup_report(filters) {
+  try {
+    AuthService.enforcePermission('View');
+    var report = HrmService.getWorkforceSetupReport(filters);
+    return JSON.parse(JSON.stringify({ status: 'success', data: report }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function api_get_workforce_distribution(filters) {
+  try {
+    AuthService.enforcePermission('View');
+    var report = HrmService.getWorkforceDistribution(filters);
+    return JSON.parse(JSON.stringify({ status: 'success', data: report }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function api_get_workforce_analytics() {
+  try {
+    AuthService.enforcePermission('View');
+    var analytics = HrmService.getAirlineHRAnalytics();
+    return JSON.parse(JSON.stringify({ status: 'success', data: analytics }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+
+/**
+ * Consolidated Master Reference Data Fetcher
+ * Loads all static reference tables in a single spreadsheet read pass for fast client caching.
+ */
+function api_get_master_data(forceRefresh) {
+  try {
+    AuthService.enforcePermission('View');
+    if (!forceRefresh && Database.ServerCache) {
+      var cached = Database.ServerCache.get('cache_master_data');
+      if (cached) {
+        return JSON.parse(JSON.stringify({ status: 'success', data: cached }));
+      }
+    }
+    var masterData = {
+      directorates: Database.getAll('directorates', forceRefresh),
+      departments: Database.getAll('departments', forceRefresh),
+      stations: Database.getAll('stations', forceRefresh),
+      sections: Database.getAll('sections', forceRefresh),
+      shifts: Database.getAll('shifts', forceRefresh),
+      pay_groups: Database.getAll('pay_groups', forceRefresh),
+      employee_types: Database.getAll('employee_types', forceRefresh),
+      courses: Database.getAll('courses', forceRefresh),
+      workforce_setup: Database.getAll('workforce_setup', forceRefresh)
+    };
+    if (Database.ServerCache) {
+      Database.ServerCache.put('cache_master_data', masterData, 21600);
+    }
+    return JSON.parse(JSON.stringify({ status: 'success', data: masterData }));
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function api_clear_all_caches() {
+  try {
+    AuthService.enforcePermission('View');
+    Database.invalidateCache();
+    return { status: 'success', message: 'All server caches cleared.' };
   } catch (e) {
     return { status: 'error', message: e.message };
   }
