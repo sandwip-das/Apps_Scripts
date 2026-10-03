@@ -1,234 +1,957 @@
-<!-- ORG Module Views -->
-
-<template id="tmpl-org_dashboard">
-  <div class="mb-6 flex justify-between items-end border-b border-gray-200 pb-4">
-    <div>
-      <h2 class="text-2xl font-bold text-blue-900 tracking-tight">Organization Overview</h2>
-      <p class="text-sm text-gray-500 mt-1">Real-time metrics of corporate structure &amp; workforce setups</p>
-    </div>
-    <button class="bg-blue-900 text-white px-4 py-1.5 rounded-sm hover:bg-blue-800 text-sm font-medium flex items-center shadow-sm" onclick="app.loadView('org_input')">
-      <span class="material-icons text-sm mr-2">add</span> Quick Add
-    </button>
-  </div>
-
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-fade-in">
-    <!-- Stat Card 1: Directorates -->
-    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-blue-700 hover:shadow-md transition-shadow group cursor-default">
-      <div class="flex justify-between items-center">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Directorates</p>
-          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-blue-700 transition-colors" id="stat-dir">-</h3>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-          <span class="material-icons text-xl">account_balance</span>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Stat Card 2: Departments -->
-    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-sky-500 hover:shadow-md transition-shadow group cursor-default">
-      <div class="flex justify-between items-center">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Departments</p>
-          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-sky-500 transition-colors" id="stat-dep">-</h3>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 group-hover:scale-110 transition-transform">
-          <span class="material-icons text-xl">domain</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stat Card 3: Sections -->
-    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-teal-500 hover:shadow-md transition-shadow group cursor-default">
-      <div class="flex justify-between items-center">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Sections</p>
-          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-teal-500 transition-colors" id="stat-sec">-</h3>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-500 group-hover:scale-110 transition-transform">
-          <span class="material-icons text-xl">lan</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stat Card 4: Shifts -->
-    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-rose-500 hover:shadow-md transition-shadow group cursor-default">
-      <div class="flex justify-between items-center">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Shifts</p>
-          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-rose-500 transition-colors" id="stat-sh">-</h3>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-          <span class="material-icons text-xl">schedule</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stat Card 5: Pay Groups -->
-    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow group cursor-default">
-      <div class="flex justify-between items-center">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Pay Groups</p>
-          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-indigo-500 transition-colors" id="stat-pg">-</h3>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
-          <span class="material-icons text-xl">payments</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stat Card 6: Stations -->
-    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow group cursor-default">
-      <div class="flex justify-between items-center">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Stations</p>
-          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-amber-500 transition-colors" id="stat-st">-</h3>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
-          <span class="material-icons text-xl">place</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stat Card 7: Set Up Matrix -->
-    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-purple-600 hover:shadow-md transition-shadow group cursor-default">
-      <div class="flex justify-between items-center">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Workforce Setups</p>
-          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors" id="stat-setup">-</h3>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-          <span class="material-icons text-xl">settings_suggest</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bg-blue-50 border border-blue-100 rounded p-6 flex items-start">
-    <span class="material-icons text-blue-600 mr-3">info</span>
-    <div>
-      <h4 class="font-bold text-blue-900 text-sm mb-1">Master Data &amp; Workforce Setup Management</h4>
-      <p class="text-xs text-blue-800">The Organization module is the structural backbone of the Sandviora Aviation Platform. Create and manage Directorates, Departments, Sections, Shifts, Pay Groups, Stations, and authorized Workforce Setups here. Modules across HRM and TQC rely strictly on these master records to ensure operational integrity.</p>
-    </div>
-  </div>
-</template>
-
-<!-- ORG Input Records -->
-<template id="tmpl-org_input">
-  <div class="mb-4">
-    <h2 class="text-2xl font-bold text-gray-800">ORG Input Records</h2>
-    <p class="text-sm text-gray-500">Create new organization structure &amp; workforce setup records</p>
-  </div>
-  
-  <!-- Form Tabs in Ordered Sequence -->
-  <div id="org-input-buttons" class="flex space-x-2 mb-4 overflow-x-auto pb-2">
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'directorates')">Directorates Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'departments')">Departments Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'sections')">Sections Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'shifts')">Shifts Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'pay_groups')">Pay Group Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'stations')">Stations Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'workforce_setup')">Set Up Form</button>
-  </div>
-
-  <div id="org-form-container">
-    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-      <span class="material-icons text-4xl mb-2">touch_app</span>
-      <p>Select a form above to create a record.</p>
-    </div>
-  </div>
-</template>
-
-<!-- ORG View Forms -->
-<template id="tmpl-org_view">
-  <div class="mb-4">
-    <h2 class="text-2xl font-bold text-gray-800">ORG View Forms</h2>
-    <p class="text-sm text-gray-500">View, search, edit, and export organization structure &amp; workforce setups</p>
-  </div>
-
-  <!-- Table View Tabs in Ordered Sequence -->
-  <div id="org-view-buttons" class="flex space-x-2 mb-4 overflow-x-auto pb-2">
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'directorates')">Directorates Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'departments')">Departments Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'sections')">Sections Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'shifts')">Shifts Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'pay_groups')">Pay Group Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'stations')">Stations Form</button>
-    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'workforce_setup')">Set Up Form</button>
-  </div>
-
-  <div id="org-grid-container">
-    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-      <span class="material-icons text-4xl mb-2">touch_app</span>
-      <p>Select a table above to view data.</p>
-    </div>
-  </div>
-</template>
+<!-- Master ORG Module Views & Controller -->
+<div id="org-module-root" style="width: 100%; height: 100%; display: none; flex-direction: column;">
+  <div id="org-content-mount" class="app-content-stage"></div>
+</div>
 
 <script>
-function switchOrgInputForm(btn, schemaKey) {
-  const container = document.getElementById('org-input-buttons');
-  if (container) {
-    container.querySelectorAll('button').forEach(b => {
-      b.classList.remove('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
-      b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+/**
+ * ============================================================================
+ * SANDVIORA AVIOSOLUTION - Organizational Structure (ORG) Module Controller
+ * ============================================================================
+ * File: ViewOrg.html
+ * Architectural Role: Client-Side View Controller for Organizational Hierarchy
+ * 
+ * Description:
+ * Manages the corporate administrative hierarchy adhering to strict Third Normal
+ * Form (3NF) relational standards. Centralizes the management of organizational
+ * entities (Directorates, Departments, Sections, Stations, Work Locations, Shifts,
+ * Pay Groups, Employee Types, and Workforce Sanctions) into a unified structure.
+ * 
+ * Submenus & Modes:
+ * 1. Dashboard (`renderDashboard`):
+ *    Displays high-level KPI count cards across all administrative tiers.
+ * 2. Input Records (`renderInputRecords`, `openInputForm`, `submitDynamicForm`):
+ *    Presents a selectable list of ORG modules to open dynamic data entry forms.
+ * 3. View Forms (`renderViewForms`, `openViewGrid`, `deleteRecord`):
+ *    Presents structured data tables with search, sorting, pagination, and deletion.
+ * ============================================================================
+ */
+var orgViews = window.orgViews = {
+  activeView: 'dashboard',
+  currentGridData: [],
+  currentGridPage: 1,
+  currentGridPageSize: 20,
+
+  renderDashboard: function() {
+    this.activeView = 'dashboard';
+    var mount = document.getElementById('org-content-mount');
+    if (!mount) return;
+
+    mount.innerHTML = `
+      <div class="dashboard-shell animate-fade-in">
+        <div class="dashboard-header-row">
+          <div>
+            <h1 class="dashboard-title">Organization Overview</h1>
+            <p class="dashboard-subtitle">Corporate Hierarchy & Master Configuration</p>
+          </div>
+          <button type="button" class="btn-cancel" onclick="orgViews.renderDashboard()" style="font-weight: 700;">
+            <span class="material-icons" style="font-size: 16px; color: var(--brand-teal);">sync</span>
+            <span>Refresh Counts</span>
+          </button>
+        </div>
+
+        <div class="kpi-cards-grid">
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Directorates</p>
+              <h3 class="kpi-value" id="org-stat-dir">-</h3>
+              <span class="kpi-subtext" style="color: var(--brand-teal);">Executive Units</span>
+            </div>
+            <div class="kpi-icon-box teal">
+              <span class="material-icons">account_balance</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Departments</p>
+              <h3 class="kpi-value" id="org-stat-dep">-</h3>
+              <span class="kpi-subtext" style="color: var(--status-success);">Operating Depts</span>
+            </div>
+            <div class="kpi-icon-box green">
+              <span class="material-icons">domain</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Stations</p>
+              <h3 class="kpi-value" id="org-stat-st">-</h3>
+              <span class="kpi-subtext" style="color: var(--status-warning);">Aviation Hubs</span>
+            </div>
+            <div class="kpi-icon-box amber">
+              <span class="material-icons">place</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Workforce Setups</p>
+              <h3 class="kpi-value" id="org-stat-setup">-</h3>
+              <span class="kpi-subtext" style="color: var(--status-purple);">Sanctioned Posts</span>
+            </div>
+            <div class="kpi-icon-box purple">
+              <span class="material-icons">settings_suggest</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-card" style="margin-top: 1rem;">
+          <div class="card-header-bar">
+            <h3 class="card-header-title">Master Data & Corporate Structure</h3>
+          </div>
+          <p style="font-size: 0.925rem; color: var(--text-secondary); line-height: 1.6;">
+            The Organization module serves as the foundational structural backbone of SANDVIORA AVIOSOLUTION. 
+            All Directorates, Departments, Sections, Shifts, Pay Groups, and Station master entries defined here provide 
+            the normalized relational lookups and constraints for the HRM personnel and TQC training operations.
+          </p>
+        </div>
+      </div>
+    `;
+
+    api.getMasterData().then(function(m) {
+      var setVal = function(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.innerText = val;
+      };
+      var orgUnits = m.organization_units || [];
+      var dirCount = orgUnits.filter(function(u){
+        var t = String(u.unit_type || '').toUpperCase();
+        return t === 'DIRECTORATE' || t === 'HEADQUARTER';
+      }).length || (m.directorates || []).length;
+
+      var depCount = orgUnits.filter(function(u){
+        var t = String(u.unit_type || '').toUpperCase();
+        return t === 'DEPARTMENT' || t === 'DIVISION';
+      }).length || (m.departments || []).length;
+
+      setVal('org-stat-dir', dirCount);
+      setVal('org-stat-dep', depCount);
+      setVal('org-stat-st', (m.stations || []).length);
+      setVal('org-stat-setup', (m.workforce_setup || []).length);
+    }).catch(function() {});
+  },
+
+  currentInputFormKey: 'organization_units',
+  currentViewFormKey: 'organization_units',
+
+  renderInputRecords: function(formKey) {
+    this.activeView = 'input';
+    var mount = document.getElementById('org-content-mount');
+    if (!mount) return;
+
+    var selectedKey = formKey || this.currentInputFormKey || 'organization_units';
+    if (selectedKey === 'directorates' || selectedKey === 'departments' || selectedKey === 'sections') {
+      selectedKey = 'organization_units';
+    }
+    this.currentInputFormKey = selectedKey;
+
+    var html = `
+      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+        <div class="form-tabs-bar" id="org-input-tabs-bar">
+    `;
+
+    ORG_FORM_SEQUENCE.forEach(function(item) {
+      var isActive = item.key === selectedKey ? 'active' : '';
+      html += `
+        <button type="button" class="form-tab-btn ${isActive}" data-form="${item.key}" onclick="orgViews.switchInputForm('${item.key}')">
+          <span class="material-icons">${item.icon || 'edit_document'}</span>
+          <span>${item.name}</span>
+        </button>
+      `;
+    });
+
+    html += `
+        </div>
+        <div id="org-input-mount" style="flex: 1;"></div>
+      </div>
+    `;
+
+    mount.innerHTML = html;
+    this.openInputForm(selectedKey);
+  },
+
+  switchInputForm: function(formKey) {
+    this.currentInputFormKey = formKey;
+    document.querySelectorAll('#org-input-tabs-bar .form-tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.form === formKey);
+    });
+    this.openInputForm(formKey);
+  },
+
+  renderViewForms: function(formKey) {
+    this.activeView = 'view';
+    var mount = document.getElementById('org-content-mount');
+    if (!mount) return;
+
+    var selectedKey = formKey || this.currentViewFormKey || 'organization_units';
+    if (selectedKey === 'directorates' || selectedKey === 'departments' || selectedKey === 'sections') {
+      selectedKey = 'organization_units';
+    }
+    this.currentViewFormKey = selectedKey;
+
+    var html = `
+      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+        <div class="form-tabs-bar" id="org-view-tabs-bar">
+    `;
+
+    ORG_FORM_SEQUENCE.forEach(function(item) {
+      var isActive = item.key === selectedKey ? 'active' : '';
+      html += `
+        <button type="button" class="form-tab-btn ${isActive}" data-form="${item.key}" onclick="orgViews.switchViewGrid('${item.key}')">
+          <span class="material-icons">${item.icon || 'table_view'}</span>
+          <span>${item.name}</span>
+        </button>
+      `;
+    });
+
+    html += `
+        </div>
+        <div id="org-view-mount" style="flex: 1; min-height: 0; display: flex; flex-direction: column;"></div>
+      </div>
+    `;
+
+    mount.innerHTML = html;
+    this.openViewGrid(selectedKey);
+  },
+
+  switchViewGrid: function(formKey) {
+    this.currentViewFormKey = formKey;
+    document.querySelectorAll('#org-view-tabs-bar .form-tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.form === formKey);
+    });
+    this.openViewGrid(formKey);
+  },
+
+  openInputForm: function(formKey) {
+    var schema = AppSchemas[formKey];
+    if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
+
+    var mount = document.getElementById('org-input-mount');
+    if (!mount) return;
+
+    var html = `
+      <div class="form-shell-container animate-scale-up">
+        <div class="form-shell-header">
+          <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
+            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: rgba(45, 212, 191, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span class="material-icons" style="color: var(--brand-teal-light); font-size: 1.2rem;">edit_note</span>
+            </div>
+            <div style="min-width: 0;">
+              <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">${schema.title}</h3>
+              ${schema.subtitle ? `<p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">${schema.subtitle}</p>` : ''}
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
+            <span style="background: rgba(45, 212, 191, 0.12); color: var(--brand-teal-light); border: 1px solid rgba(45, 212, 191, 0.3); font-size: 0.65rem; font-weight: 800; padding: 0.18rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--brand-teal-light); display: inline-block;"></span> DATA INPUT FORM
+            </span>
+          </div>
+        </div>
+
+        <form id="org-dynamic-form" style="padding: 0.75rem; display: flex; flex-direction: column; gap: 0.65rem;" onsubmit="orgViews.handleFormSubmit(event, '${formKey}')">
+          <div class="form-two-column-grid">
+    `;
+
+    schema.fields.forEach(function(field) {
+      var req = field.required ? '<span style="color: var(--status-danger);">*</span>' : '';
+      html += `
+        <div class="form-group ${field.type === 'textarea' ? 'full-width' : ''}" id="form-group-${field.name}">
+          <label>${field.label} ${req}</label>
+      `;
+
+      if (field.type === 'select' || field.type === 'dependable_select') {
+        html += `<select name="${field.name}" id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}>`;
+        html += `<option value="">-- ${field.placeholder || 'Select ' + field.label} --</option>`;
+        if (field.options) {
+          field.options.forEach(function(opt) {
+            html += `<option value="${opt}">${opt}</option>`;
+          });
+        }
+        html += `</select>`;
+      } else {
+        html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} />`;
+      }
+
+      html += `</div>`;
+
+      if (field.name === 'parent_unit_id') {
+        html += `
+          <div id="org-hierarchy-preview-box" class="full-width" style="grid-column: 1 / -1; background: rgba(13, 148, 136, 0.08); border: 1.5px dashed var(--brand-teal); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; font-size: 0.78rem; color: var(--text-primary); margin-top: -0.25rem;">
+            <div style="font-weight: 800; font-size: 0.75rem; color: var(--brand-teal-light); text-transform: uppercase; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span class="material-icons" style="font-size: 15px;">account_tree</span>
+              <span>Parent-Child Hierarchy Tree Preview</span>
+            </div>
+            <div id="org-hierarchy-preview-text" style="color: var(--text-secondary); line-height: 1.5;">
+              <em>No parent selected. This unit will be created at the Top-Level (Root Directorate).</em>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    html += `
+          </div>
+
+          <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+            <button type="button" class="btn-cancel" onclick="document.getElementById('org-dynamic-form').reset()">Reset</button>
+            <button type="submit" class="btn-primary-action" id="btn-org-save">
+              <span class="material-icons" style="font-size: 16px;">save</span>
+              <span>Save Record</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    mount.innerHTML = html;
+    this.populateFormSelects(schema);
+  },
+
+  populateFormSelects: async function(schema) {
+    var self = this;
+    for (var i = 0; i < schema.fields.length; i++) {
+      var f = schema.fields[i];
+      if ((f.type === 'select' || f.type === 'dependable_select') && f.source) {
+        var sel = document.getElementById('field-' + f.name);
+        if (!sel) continue;
+        try {
+          var list = await api.read(f.source);
+          if (list && list.length > 0) {
+            sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
+            var seen = {};
+            list.forEach(function(item) {
+              var val = item[f.sourceKey] || item.id || item.code || item[Object.keys(item)[0]];
+              var disp = item[f.sourceDisplay] || item.name || val;
+              if (f.source === 'stations') {
+                disp = (item.station_code ? '[' + item.station_code + '] ' : '') + (item.station_name || val);
+              } else if (f.source === 'work_locations') {
+                var stnTag = (item.station_id || item.station_code) ? '[' + (item.station_id || item.station_code) + '] ' : '';
+                disp = stnTag + (item.location_name || item.location_code || val);
+              }
+              if (val && !seen[val]) {
+                seen[val] = true;
+                var opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = disp || val;
+                sel.appendChild(opt);
+              }
+            });
+          }
+        } catch(err) {
+          console.warn('Error populating select for ' + f.source, err);
+        }
+      }
+    }
+
+    // Work Location to Station Dependency
+    var locSel = document.getElementById('field-location_id');
+    var stnSel = document.getElementById('field-station_id') || document.getElementById('field-station_code');
+    if (locSel && stnSel) {
+      locSel.addEventListener('change', function() {
+        self.updateLocationStationDependency(document.getElementById('org-dynamic-form'), this.value);
+      });
+      // Initialize dependent station state
+      self.updateLocationStationDependency(document.getElementById('org-dynamic-form'), locSel.value);
+    }
+
+    if (schema.table === 'organization_units') {
+      var pSel = document.getElementById('field-parent_unit_id');
+      if (pSel) {
+        pSel.addEventListener('change', function() {
+          var val = this.value;
+          var previewText = document.getElementById('org-hierarchy-preview-text');
+          if (!previewText) return;
+          if (!val) {
+            previewText.innerHTML = '<em>No parent selected. This unit will be created at the Top-Level (Root Directorate).</em>';
+          } else {
+            api.read('organization_units').then(function(units) {
+              var map = {};
+              (units || []).forEach(function(u) { map[u.unit_id] = u; });
+              var chain = [];
+              var curr = map[val];
+              while (curr) {
+                chain.unshift((curr.unit_name || curr.unit_code) + ' [' + (curr.unit_type || 'UNIT') + ']');
+                curr = curr.parent_unit_id ? map[curr.parent_unit_id] : null;
+              }
+              chain.push('<strong style="color: var(--brand-teal-light);">➔ [New Unit]</strong>');
+              previewText.innerHTML = '<span style="color: var(--brand-teal-light); font-weight: 800;">Ancestry Path:</span> ' + chain.join(' ➔ ');
+            });
+          }
+        });
+      }
+    }
+  },
+
+  updateLocationStationDependency: async function(container, selectedLocId, selectedStationId) {
+    if (!container) return;
+    var stnSelect = container.querySelector('[name="station_id"]') || container.querySelector('[name="station_code"]');
+    if (!stnSelect) return;
+    var stnGroup = stnSelect.closest('.form-group');
+
+    if (!selectedLocId) {
+      if (stnGroup) stnGroup.style.display = 'none';
+      stnSelect.innerHTML = '<option value="">-- No Airport Station Associated --</option>';
+      stnSelect.value = '';
+      return;
+    }
+
+    try {
+      var locations = await api.read('work_locations');
+      var loc = (locations || []).find(function(l) {
+        return String(l.location_id || l.location_code || '').trim().toLowerCase() === String(selectedLocId).trim().toLowerCase();
+      });
+
+      var stations = await api.read('stations');
+      var matchedStn = null;
+
+      if (loc) {
+        var associatedStnId = loc.station_id || loc.station_code || '';
+        if (associatedStnId) {
+          matchedStn = (stations || []).find(function(s) {
+            return String(s.station_id || s.station_code || '').trim().toLowerCase() === String(associatedStnId).trim().toLowerCase();
+          });
+        }
+        if (!matchedStn && loc.location_city) {
+          matchedStn = (stations || []).find(function(s) {
+            return String(s.station_location || '').trim().toLowerCase() === String(loc.location_city || '').trim().toLowerCase();
+          });
+        }
+      }
+
+      if (matchedStn) {
+        var stnVal = matchedStn.station_id || matchedStn.station_code;
+        var stnDisp = matchedStn.station_name || matchedStn.station_code;
+
+        stnSelect.innerHTML = `
+          <option value="">-- Select Station --</option>
+          <option value="${stnVal}">${stnDisp}</option>
+        `;
+        stnSelect.value = selectedStationId || stnVal;
+        if (stnGroup) {
+          stnGroup.style.display = 'block';
+        }
+      } else {
+        // Non-airport entity (e.g. Head Office, Motijheel Sales Office, Admin Building)
+        stnSelect.innerHTML = '<option value="">-- No Airport Station Associated --</option>';
+        stnSelect.value = '';
+        if (stnGroup) {
+          stnGroup.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      console.warn('Error updating location-station dependency:', e);
+    }
+  },
+
+  handleFormSubmit: function(e, formKey) {
+    e.preventDefault();
+    var schema = AppSchemas[formKey];
+    if (!schema) return;
+
+    var form = document.getElementById('org-dynamic-form');
+    if (!form) return;
+
+    var saveBtn = document.getElementById('btn-org-save');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="material-icons animate-spin" style="font-size: 16px;">sync</span> Saving...';
+    }
+
+    var formData = new FormData(form);
+    var payload = {};
+    formData.forEach(function(val, key) {
+      payload[key] = val;
+    });
+
+    if (formKey === 'workforce_setup') {
+      if (payload.staff_number !== undefined && payload.set_up === undefined) {
+        payload.set_up = payload.staff_number;
+      }
+    }
+
+    api.create(schema.table, payload, schema.prefix, schema.pk)
+      .then(function() {
+        app.toast('Record successfully saved in ' + schema.title, 'success');
+        form.reset();
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
+        }
+        if (typeof orgViews.loadGridData === 'function') {
+          orgViews.loadGridData(formKey, true);
+        }
+      })
+      .catch(function(err) {
+        if (err.isDuplicate || (err.message && (err.message.indexOf('already exists') !== -1 || err.message.indexOf('Duplicate') !== -1))) {
+          Components.showDuplicateModal(err.message, 'Form: ' + schema.title);
+        } else {
+          app.toast('Save failed: ' + err.message, 'error');
+        }
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
+        }
+      });
+  },
+
+  openViewGrid: function(formKey) {
+    if (formKey === 'directorates' || formKey === 'departments' || formKey === 'sections') {
+      formKey = 'organization_units';
+    }
+    var schema = AppSchemas[formKey];
+    if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
+
+    var mount = document.getElementById('org-view-mount');
+    if (!mount) return;
+
+    var tierFilterHtml = '';
+    if (formKey === 'organization_units') {
+      tierFilterHtml = `
+        <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-left: auto;">
+          <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 0.25rem;">Tier:</span>
+          <button type="button" class="tier-filter-pill active" data-tier="ALL" onclick="orgViews.filterTier('ALL')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--brand-teal); background: var(--brand-teal); color: #fff; cursor: pointer;">All Units</button>
+          <button type="button" class="tier-filter-pill" data-tier="DIRECTORATE" onclick="orgViews.filterTier('DIRECTORATE')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Directorates</button>
+          <button type="button" class="tier-filter-pill" data-tier="DIVISION" onclick="orgViews.filterTier('DIVISION')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Divisions</button>
+          <button type="button" class="tier-filter-pill" data-tier="DEPARTMENT" onclick="orgViews.filterTier('DEPARTMENT')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Departments</button>
+          <button type="button" class="tier-filter-pill" data-tier="SECTION" onclick="orgViews.filterTier('SECTION')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Sections / Wings</button>
+          <button type="button" class="tier-filter-pill" data-tier="UNIT" onclick="orgViews.filterTier('UNIT')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Units / Teams</button>
+        </div>
+      `;
+    }
+
+    var html = `
+      <div class="data-grid-shell animate-fade-in" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <div class="grid-header-toolbar" style="flex-wrap: wrap; gap: 0.65rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="material-icons" style="color: var(--brand-teal-light); font-size: 18px;">${schema.table === 'organization_units' ? 'account_tree' : 'table_chart'}</span>
+            <h3 style="font-size: 0.8125rem; font-weight: 800; text-transform: uppercase;">${(schema.title || '').replace(/ Form$/i, '')} - Records View</h3>
+          </div>
+          ${tierFilterHtml}
+          <button type="button" class="btn-cancel" style="padding: 0.35rem 0.65rem; color: var(--text-white); background: var(--surface-dark-elevated); border-color: var(--border-dark); margin-left: ${formKey === 'organization_units' ? '0' : 'auto'};" onclick="orgViews.loadGridData('${formKey}', true)">
+            <span class="material-icons" style="font-size: 14px;">sync</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="table-container" style="flex: 1; overflow: auto; min-height: 280px; max-height: calc(100vh - 220px);">
+          <table class="standard-data-table" id="org-data-table" style="min-width: 100%; border-collapse: separate; border-spacing: 0;">
+            <thead>
+              <tr id="org-grid-header"></tr>
+            </thead>
+            <tbody id="org-grid-body">
+              <tr><td colspan="${schema.fields.length + 3}" style="text-align: center; padding: 2rem; color: var(--text-muted);"><span class="material-icons animate-spin" style="font-size: 18px; vertical-align: middle; margin-right: 0.4rem;">sync</span>Loading records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    mount.innerHTML = html;
+    this.selectedTier = 'ALL';
+    this.loadGridData(formKey);
+  },
+
+  filterTier: function(tier) {
+    this.selectedTier = tier;
+    document.querySelectorAll('.tier-filter-pill').forEach(function(pill) {
+      var isMatch = pill.dataset.tier === tier;
+      pill.classList.toggle('active', isMatch);
+      pill.style.background = isMatch ? 'var(--brand-teal)' : 'var(--surface-card)';
+      pill.style.color = isMatch ? '#fff' : 'var(--text-secondary)';
+      pill.style.borderColor = isMatch ? 'var(--brand-teal)' : 'var(--border-light)';
+    });
+    if (this.gridContext && this.gridContext.records) {
+      this.renderTableRows(this.gridContext);
+    }
+  },
+
+  renderTableRows: function(ctx) {
+    var tbody = document.getElementById('org-grid-body');
+    if (!tbody || !ctx) return;
+
+    var records = ctx.records || [];
+    var schema = ctx.schema;
+    var formKey = ctx.formKey;
+    var unitMap = ctx.unitMap || {};
+    var childMap = ctx.childMap || {};
+    var locMap = ctx.locMap || {};
+    var stnMap = ctx.stnMap || {};
+    var tier = this.selectedTier || 'ALL';
+
+    var filtered = records;
+    if (formKey === 'organization_units' && tier !== 'ALL') {
+      filtered = records.filter(function(r) {
+        var t = String(r.unit_type || '').toUpperCase();
+        if (tier === 'DIRECTORATE') return t === 'DIRECTORATE' || t === 'HEADQUARTER';
+        if (tier === 'DIVISION') return t === 'DIVISION';
+        if (tier === 'DEPARTMENT') return t === 'DEPARTMENT';
+        if (tier === 'SECTION') return t === 'SECTION' || t === 'WING';
+        if (tier === 'UNIT') return t === 'UNIT' || t === 'TEAM';
+        return true;
+      });
+    }
+
+    if (filtered.length === 0) {
+      var colSpan = schema.fields.length + (formKey === 'organization_units' ? 4 : 3);
+      tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No records found matching ${tier !== 'ALL' ? tier : 'criteria'}.</td></tr>`;
+      return;
+    }
+
+    var bHtml = '';
+    filtered.forEach(function(r, idx) {
+      var pkVal = r[schema.pk] || r.id || ('#' + (idx + 1));
+      bHtml += `<tr>`;
+      bHtml += `<td style="text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>`;
+      bHtml += `<td style="font-weight: 700; color: var(--brand-teal); font-family: monospace;">${pkVal}</td>`;
+      schema.fields.forEach(function(f) {
+        var val = r[f.name];
+        if (formKey === 'organization_units' && f.name === 'parent_unit_id') {
+          if (val && unitMap[val]) {
+            var parentU = unitMap[val];
+            bHtml += `<td style="white-space: nowrap;"><strong>${parentU.unit_name || parentU.unit_code}</strong> <span style="font-size: 0.7rem; color: var(--text-muted);">[${parentU.unit_type || 'UNIT'}]</span></td>`;
+          } else {
+            bHtml += `<td style="white-space: nowrap;"><span style="color: var(--brand-teal-light); font-weight: 700; font-size: 0.75rem;">Top-Level (Root)</span></td>`;
+          }
+        } else if (f.name === 'location_id') {
+          var locDisp = (val && locMap[val]) ? locMap[val] : (val || '-');
+          bHtml += `<td style="white-space: nowrap;">${locDisp}</td>`;
+        } else if (f.name === 'station_id' || f.name === 'station_code') {
+          var stnDisp = (val && stnMap[val]) ? stnMap[val] : (val || '-');
+          bHtml += `<td style="white-space: nowrap;">${stnDisp}</td>`;
+        } else if (formKey === 'organization_units' && f.name === 'unit_type') {
+          var badgeColor = 'rgba(13,148,136,0.15)';
+          var txtColor = 'var(--brand-teal-light)';
+          if (val === 'HEADQUARTER' || val === 'DIRECTORATE') {
+            badgeColor = 'rgba(234, 88, 12, 0.15)';
+            txtColor = '#ea580c';
+          } else if (val === 'DEPARTMENT') {
+            badgeColor = 'rgba(22, 163, 74, 0.15)';
+            txtColor = '#16a34a';
+          } else if (val === 'SECTION') {
+            badgeColor = 'rgba(99, 102, 241, 0.15)';
+            txtColor = '#6366f1';
+          }
+          bHtml += `<td style="white-space: nowrap;"><span style="background: ${badgeColor}; color: ${txtColor}; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">${val || '-'}</span></td>`;
+        } else {
+          bHtml += `<td style="white-space: nowrap;">${val !== undefined && val !== null && val !== '' ? val : '-'}</td>`;
+        }
+      });
+      if (formKey === 'organization_units') {
+        var children = childMap[pkVal] || [];
+        if (children.length > 0) {
+          bHtml += `<td style="white-space: nowrap;"><span style="background: rgba(13,148,136,0.15); color: var(--brand-teal-light); padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;" title="${children.join(', ')}">${children.length} Sub-unit(s)</span></td>`;
+        } else {
+          bHtml += `<td style="white-space: nowrap; color: var(--text-muted); font-size: 0.75rem;">None</td>`;
+        }
+      }
+      bHtml += `
+        <td style="text-align: right; padding-right: 1.25rem; white-space: nowrap; position: sticky; right: 0; background-color: var(--surface-card); box-shadow: -2px 0 4px rgba(0,0,0,0.05);">
+          <button type="button" class="btn-table-edit" onclick="orgViews.openRecordEditView('${formKey}', '${pkVal}')" title="Edit this record">
+            <span class="material-icons" style="font-size: 13px;">edit</span>
+            <span>Edit</span>
+          </button>
+          <button type="button" class="btn-table-delete" style="margin-left: 0.3rem;" onclick="orgViews.deleteRecord('${formKey}', '${pkVal}')" title="Delete this record">
+            <span class="material-icons" style="font-size: 13px;">delete</span>
+            <span>Delete</span>
+          </button>
+        </td>
+      `;
+      bHtml += `</tr>`;
+    });
+    tbody.innerHTML = bHtml;
+  },
+
+  loadGridData: function(formKey, forceRefresh) {
+    if (formKey === 'directorates' || formKey === 'departments' || formKey === 'sections') {
+      formKey = 'organization_units';
+    }
+    var schema = AppSchemas[formKey];
+    if (!schema) return;
+
+    var headerRow = document.getElementById('org-grid-header');
+    var tbody = document.getElementById('org-grid-body');
+    if (!headerRow || !tbody) return;
+
+    var thHtml = `<th style="width: 50px; text-align: center; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">SL</th>`;
+    thHtml += `<th style="width: 110px; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">Record ID</th>`;
+    schema.fields.forEach(function(f) {
+      thHtml += `<th style="position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light); white-space: nowrap;">${f.label}</th>`;
+    });
+    if (formKey === 'organization_units') {
+      thHtml += `<th style="position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light); white-space: nowrap;">Subordinate Units</th>`;
+    }
+    thHtml += `<th style="width: 150px; text-align: right; padding-right: 1.25rem; position: sticky; top: 0; right: 0; background-color: var(--surface-alt); z-index: 15; border-bottom: 2px solid var(--border-light); box-shadow: -2px 0 4px rgba(0,0,0,0.05);">Action</th>`;
+    headerRow.innerHTML = thHtml;
+
+    var self = this;
+    Promise.all([
+      api.read(schema.table, !!forceRefresh),
+      api.read('work_locations').catch(function(){ return []; }),
+      api.read('stations').catch(function(){ return []; })
+    ]).then(function(results) {
+      var records = results[0];
+      var workLocations = results[1] || [];
+      var stations = results[2] || [];
+
+      var locMap = {};
+      workLocations.forEach(function(l) {
+        var stnTag = (l.station_id || l.station_code) ? '[' + (l.station_id || l.station_code) + '] ' : '';
+        locMap[l.location_id] = stnTag + (l.location_name || l.location_code || l.location_id);
+        if (l.location_code) locMap[l.location_code] = stnTag + (l.location_name || l.location_code);
+      });
+
+      var stnMap = {};
+      stations.forEach(function(s) {
+        var sDisp = (s.station_code ? '[' + s.station_code + '] ' : '') + (s.station_name || s.station_code || s.station_id);
+        stnMap[s.station_id] = sDisp;
+        if (s.station_code) stnMap[s.station_code] = sDisp;
+      });
+
+      var unitMap = {};
+      var childMap = {};
+      if (formKey === 'organization_units') {
+        (records || []).forEach(function(u) {
+          unitMap[u.unit_id] = u;
+          if (u.parent_unit_id) {
+            if (!childMap[u.parent_unit_id]) childMap[u.parent_unit_id] = [];
+            childMap[u.parent_unit_id].push(u.unit_name || u.unit_code);
+          }
+        });
+      }
+
+      self.gridContext = {
+        records: records,
+        schema: schema,
+        formKey: formKey,
+        unitMap: unitMap,
+        childMap: childMap,
+        locMap: locMap,
+        stnMap: stnMap
+      };
+
+      self.renderTableRows(self.gridContext);
+    }).catch(function(err) {
+      tbody.innerHTML = `<tr><td colspan="${schema.fields.length + 4}" style="text-align: center; padding: 2rem; color: var(--status-danger);">Failed to load: ${err.message}</td></tr>`;
+    });
+  },
+
+  openRecordEditView: function(formKey, pkVal) {
+    var schema = AppSchemas[formKey];
+    var self = this;
+    api.read(schema.table).then(function(records) {
+      var row = (records || []).find(function(r) { return (r[schema.pk] || r.id) === pkVal; });
+      if (!row) return app.toast('Record not found', 'error');
+
+      var mount = document.getElementById('org-view-mount');
+      if (!mount) return;
+
+      var hierarchyHeaderHtml = '';
+      if (formKey === 'organization_units') {
+        hierarchyHeaderHtml = `
+          <div style="background: rgba(13, 148, 136, 0.08); border: 1.5px solid var(--brand-teal); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem;">
+            <div style="font-weight: 800; font-size: 0.78rem; color: var(--brand-teal-light); text-transform: uppercase; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span class="material-icons" style="font-size: 16px;">account_tree</span>
+              <span>Parent-Child Hierarchy Relationships</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem; line-height: 1.5;">
+              <div><strong>Current Unit:</strong> ${row.unit_name || row.unit_code} [${row.unit_type || 'UNIT'}] (${pkVal})</div>
+              <div id="org-edit-ancestry-path"><strong>Hierarchy Path:</strong> Loading ancestry...</div>
+              <div id="org-edit-subordinates-box"><strong>Direct Subordinate Units (Children):</strong> Loading children...</div>
+            </div>
+          </div>
+        `;
+      }
+
+      var html = `
+        <div class="form-shell-container animate-scale-up">
+          <div class="form-shell-header">
+            <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: rgba(45, 212, 191, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-icons" style="color: var(--brand-teal-light); font-size: 1.15rem;">edit</span>
+              </div>
+              <div style="min-width: 0;">
+                <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">Edit ${(schema.title || '').replace(/ Form$/i, '')}</h3>
+                <p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">Modifying Active Record ID: <span style="color: var(--brand-teal-light); font-weight: 700;">${pkVal}</span></p>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+              <span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.65rem; font-weight: 800; padding: 0.18rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #fbbf24; display: inline-block;"></span> EDIT RECORD
+              </span>
+              <button type="button" onclick="orgViews.openViewGrid('${formKey}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center;">
+                <span class="material-icons" style="font-size: 1.25rem;">close</span>
+              </button>
+            </div>
+          </div>
+
+          <form id="org-edit-form" style="padding: 0.75rem; display: flex; flex-direction: column; gap: 0.65rem;" onsubmit="orgViews.handleEditSubmit(event, '${formKey}', '${pkVal}')">
+            ${hierarchyHeaderHtml}
+            <div class="form-two-column-grid">
+      `;
+
+      schema.fields.forEach(function(field) {
+        var val = row[field.name] !== undefined ? row[field.name] : '';
+        html += `
+          <div class="form-group ${field.type === 'textarea' ? 'full-width' : ''}" id="edit-form-group-${field.name}">
+            <label>${field.label}</label>
+        `;
+        if (field.type === 'select' || field.type === 'dependable_select') {
+          html += `<select name="${field.name}" id="edit-field-${field.name}" class="form-input" data-selected-val="${val}">`;
+          html += `<option value="">-- ${field.placeholder || 'Select Option'} --</option>`;
+          if (field.options) {
+            var matched = false;
+            field.options.forEach(function(opt) {
+              var isSel = (String(opt).trim().toLowerCase() === String(val).trim().toLowerCase()) ? 'selected' : '';
+              if (isSel) matched = true;
+              html += `<option value="${opt}" ${isSel}>${opt}</option>`;
+            });
+            if (val && !matched) {
+              html += `<option value="${val}" selected>${val}</option>`;
+            }
+          }
+          html += `</select>`;
+        } else {
+          html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" value="${val}" class="form-input" />`;
+        }
+        html += `</div>`;
+      });
+
+      html += `
+            </div>
+            <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+              <button type="button" class="btn-cancel" onclick="orgViews.openViewGrid('${formKey}')">Cancel</button>
+              <button type="submit" class="btn-primary-action">
+                <span class="material-icons" style="font-size: 16px;">save</span>
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+
+      mount.innerHTML = html;
+      orgViews.populateEditSelects(schema, row);
+
+      if (formKey === 'organization_units') {
+        api.read('organization_units').then(function(units) {
+          var uMap = {};
+          (units || []).forEach(function(u) { uMap[u.unit_id] = u; });
+
+          // Ancestry
+          var chain = [];
+          var pId = row.parent_unit_id;
+          while (pId && uMap[pId]) {
+            chain.unshift(uMap[pId].unit_name + ' [' + (uMap[pId].unit_type || 'UNIT') + ']');
+            pId = uMap[pId].parent_unit_id;
+          }
+          chain.push('<strong style="color: var(--brand-teal-light);">' + (row.unit_name || row.unit_code) + ' [' + (row.unit_type || 'UNIT') + ']</strong>');
+          var pathEl = document.getElementById('org-edit-ancestry-path');
+          if (pathEl) {
+            pathEl.innerHTML = '<strong>Hierarchy Path:</strong> ' + (chain.length > 1 ? chain.join(' ➔ ') : 'Top-Level (Root Directorate)');
+          }
+
+          // Subordinates
+          var children = (units || []).filter(function(u) { return String(u.parent_unit_id) === String(pkVal); });
+          var subEl = document.getElementById('org-edit-subordinates-box');
+          if (subEl) {
+            if (children.length > 0) {
+              var childListStr = children.map(function(c) {
+                return `<span style="display: inline-block; background: rgba(13,148,136,0.15); color: var(--brand-teal-light); padding: 1px 6px; border-radius: 3px; margin: 2px 4px 2px 0;">${c.unit_name} [${c.unit_type || 'UNIT'}] (${c.unit_id})</span>`;
+              }).join(' ');
+              subEl.innerHTML = `<strong>Direct Subordinate Units (${children.length}):</strong><div style="margin-top: 4px;">${childListStr}</div>`;
+            } else {
+              subEl.innerHTML = `<strong>Direct Subordinate Units (Children):</strong> <span style="color: var(--text-muted);">No sub-units nested under this unit yet.</span>`;
+            }
+          }
+        });
+      }
+    }).catch(function(e) {
+      app.toast('Failed to load record for edit: ' + e.message, 'error');
+    });
+  },
+
+  populateEditSelects: async function(schema, row) {
+    var self = this;
+    for (var i = 0; i < schema.fields.length; i++) {
+      var f = schema.fields[i];
+      if ((f.type === 'select' || f.type === 'dependable_select') && f.source) {
+        var sel = document.getElementById('edit-field-' + f.name) || document.getElementById('field-' + f.name);
+        if (!sel) continue;
+        var currentVal = String(row[f.name] || '');
+        try {
+          var list = await api.read(f.source);
+          if (list && list.length > 0) {
+            sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
+            var seen = {};
+            list.forEach(function(item) {
+              var val = item[f.sourceKey] || item.id || item.code || item[Object.keys(item)[0]];
+              var disp = item[f.sourceDisplay] || item.name || val;
+              if (f.source === 'stations') {
+                disp = (item.station_code ? '[' + item.station_code + '] ' : '') + (item.station_name || val);
+              } else if (f.source === 'work_locations') {
+                var stnTag = (item.station_id || item.station_code) ? '[' + (item.station_id || item.station_code) + '] ' : '';
+                disp = stnTag + (item.location_name || item.location_code || val);
+              }
+              if (val && !seen[val]) {
+                seen[val] = true;
+                var opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = disp || val;
+                if (String(val) === currentVal) opt.selected = true;
+                sel.appendChild(opt);
+              }
+            });
+          }
+        } catch(err) {}
+      }
+    }
+
+    var editLocSel = document.getElementById('edit-field-location_id') || document.getElementById('field-location_id');
+    var editStnSel = document.getElementById('edit-field-station_id') || document.getElementById('edit-field-station_code') || document.getElementById('field-station_id') || document.getElementById('field-station_code');
+    if (editLocSel && editStnSel) {
+      editLocSel.addEventListener('change', function() {
+        self.updateLocationStationDependency(document.getElementById('org-edit-form'), this.value);
+      });
+      self.updateLocationStationDependency(document.getElementById('org-edit-form'), editLocSel.value || row.location_id, row.station_id || row.station_code);
+    }
+  },
+
+  handleEditSubmit: function(e, formKey, pkVal) {
+    e.preventDefault();
+    var schema = AppSchemas[formKey];
+    var form = document.getElementById('org-edit-form');
+    var formData = new FormData(form);
+    var payload = {};
+    formData.forEach(function(val, key) { payload[key] = val; });
+
+    if (formKey === 'workforce_setup') {
+      if (payload.staff_number !== undefined && payload.set_up === undefined) {
+        payload.set_up = payload.staff_number;
+      }
+    }
+
+    api.update(schema.table, schema.pk, pkVal, payload).then(function() {
+      app.toast('Record successfully updated', 'success');
+      orgViews.openViewGrid(formKey);
+    }).catch(function(err) {
+      app.toast('Update failed: ' + err.message, 'error');
+    });
+  },
+
+  deleteRecord: function(formKey, pkVal) {
+    var schema = AppSchemas[formKey];
+    if (!schema || !pkVal) return;
+
+    Components.showConfirmModal({
+      title: 'Delete ' + schema.title + ' Record',
+      message: 'Are you sure you want to permanently delete record ' + pkVal + '?',
+      onConfirm: function() {
+        api.delete(schema.table, schema.pk, pkVal).then(function() {
+          app.toast('Record deleted successfully', 'success');
+          orgViews.loadGridData(formKey, true);
+        }).catch(function(err) {
+          app.toast('Delete failed: ' + err.message, 'error');
+        });
+      }
     });
   }
-  if (btn) {
-    btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
-    btn.classList.add('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
-  }
-  Components.renderForm(schemaKey, 'org-form-container');
-}
-
-function switchOrgViewGrid(btn, schemaKey) {
-  const container = document.getElementById('org-view-buttons');
-  if (container) {
-    container.querySelectorAll('button').forEach(b => {
-      b.classList.remove('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
-      b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
-    });
-  }
-  if (btn) {
-    btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
-    btn.classList.add('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
-  }
-  Components.renderGrid(schemaKey, 'org-grid-container');
-}
-
-async function org_input_init() {
-  const container = document.getElementById('org-input-buttons');
-  if (container && container.firstElementChild) {
-    container.firstElementChild.click();
-  }
-}
-
-async function org_view_init() {
-  const container = document.getElementById('org-view-buttons');
-  if (container && container.firstElementChild) {
-    container.firstElementChild.click();
-  }
-}
-
-async function org_dashboard_init() {
-  try {
-    app.showLoader();
-    const [masterData, setups] = await Promise.all([
-      api.getMasterData(),
-      api.read('workforce_setup').catch(() => [])
-    ]);
-    const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-    setStat('stat-dir', (masterData.directorates || []).length);
-    setStat('stat-dep', (masterData.departments || []).length);
-    setStat('stat-sec', (masterData.sections || []).length);
-    setStat('stat-sh', (masterData.shifts || []).length);
-    setStat('stat-pg', (masterData.pay_groups || []).length);
-    setStat('stat-st', (masterData.stations || []).length);
-    setStat('stat-setup', (setups || []).length);
-  } catch (e) {
-    app.toast(e.message, 'error');
-  } finally {
-    app.hideLoader();
-  }
-}
+};
 </script>

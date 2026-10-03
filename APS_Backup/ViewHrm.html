@@ -1,0 +1,3809 @@
+<!-- HRM Module Views & Templates -->
+<template id="tmpl-hrm_dashboard">
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">HRM Dashboard</h2>
+      <p class="text-sm text-gray-500">Human Resource Overview & Live Headcount</p>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs-11 text-gray-500 font-bold uppercase tracking-wider mb-1">Total Employees</p>
+          <h3 class="text-2xl font-extrabold text-blue-950" id="hrm-stat-emp">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center">
+          <span class="material-icons text-blue-800 text-2xl">groups</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs-11 text-gray-500 font-bold uppercase tracking-wider mb-1">Active On Job</p>
+          <h3 class="text-2xl font-extrabold text-emerald-800" id="hrm-stat-active">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+          <span class="material-icons text-emerald-700 text-2xl">person_pin</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs-11 text-gray-500 font-bold uppercase tracking-wider mb-1">Promotions Recorded</p>
+          <h3 class="text-2xl font-extrabold text-purple-900" id="hrm-stat-promo">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center">
+          <span class="material-icons text-purple-700 text-2xl">trending_up</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs-11 text-gray-500 font-bold uppercase tracking-wider mb-1">Officers & Superiors</p>
+          <h3 class="text-2xl font-extrabold text-amber-800" id="hrm-stat-officers">-</h3>
+        </div>
+        <div class="w-12 h-12 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center">
+          <span class="material-icons text-amber-700 text-2xl">military_tech</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-hrm_employees">
+  <div class="data-view-container animate-fade-in">
+    <!-- Functional Options Buttons, Navigation Controls & Filters -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center justify-between shrink-0 text-sm">
+      <div class="flex flex-wrap gap-1.5 items-center">
+        <button id="btn-emp-precise" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('precise')">Precise List</button>
+        <button id="btn-emp-details" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('details')">Details List</button>
+        <button id="btn-emp-onjob" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('onjob')">On Job</button>
+        <button id="btn-emp-retired" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('retired')">Retired</button>
+        <button id="btn-emp-officer" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('officer')">Officer & Sup</button>
+        <button id="btn-emp-th" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderEmpList('th')">TH</button>
+        
+        <div class="border-l border-gray-400 h-5 mx-1"></div>
+        
+        <select id="emp-filter-pg" class="border border-gray-400 bg-white px-2 py-1 text-xs rounded-sm" onchange="renderEmpList(window.currentEmpView || 'details')">
+          <option value="ALL">All Pay Groups</option>
+        </select>
+      </div>
+
+      <!-- Navigation & View Mode Controls -->
+      <div class="flex items-center space-x-1.5">
+        <!-- Horizontal Scroll Arrows -->
+        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Spreadsheet Left">
+            <span class="material-icons text-base">chevron_left</span>
+          </button>
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Spreadsheet Right">
+            <span class="material-icons text-base">chevron_right</span>
+          </button>
+        </div>
+
+        <!-- Fullscreen Mode Button -->
+        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Spreadsheet Mode">
+          <span class="material-icons text-sm mr-1">fullscreen</span>
+          <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Spreadsheet Container (Zero Padding, Scrollable) -->
+    <div class="data-table-scroll-wrapper">
+      <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="emp-spreadsheet">
+        <thead class="sticky top-0 z-10">
+          <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900" id="emp-sheet-header">
+            <!-- Headers injected here -->
+          </tr>
+        </thead>
+        <tbody id="hrm-emp-list">
+          <tr><td class="p-4 text-center text-gray-500">Loading data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-hrm_input">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">HRM Input Records</h2>
+    <p class="text-sm text-gray-500">Manage employee lifecycle records</p>
+  </div>
+  
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('employees', 'hrm-form-container')">Employees</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('placements', 'hrm-form-container')">Placements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('postings', 'hrm-form-container')">Postings</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('promotions', 'hrm-form-container')">Promotions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('extensions', 'hrm-form-container')">Extensions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('additional_charges', 'hrm-form-container')">Addl Charges</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('self_retirements', 'hrm-form-container')">Retirements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('employee_migrations', 'hrm-form-container')">Migrations</button>
+  </div>
+
+  <div id="hrm-form-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to load its input form.</p>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-hrm_view">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">HRM View Forms</h2>
+    <p class="text-sm text-gray-500">View and manage employee records</p>
+  </div>
+
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('employees', 'hrm-grid-container')">Employees</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('placements', 'hrm-grid-container')">Placements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('postings', 'hrm-grid-container')">Postings</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('promotions', 'hrm-grid-container')">Promotions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('extensions', 'hrm-grid-container')">Extensions</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('additional_charges', 'hrm-grid-container')">Addl Charges</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('self_retirements', 'hrm-grid-container')">Retirements</button>
+    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('employee_migrations', 'hrm-grid-container')">Migrations</button>
+  </div>
+
+  <div id="hrm-grid-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to view data.</p>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-hrm_service">
+  <div class="data-view-container animate-fade-in flex flex-col h-full">
+    <!-- Top Action & Navigation Bar -->
+    <div class="p-2.5 border-b border-gray-300 bg-gray-100 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <!-- Search bar with dedicated Staff ID input, Submit and Reset buttons -->
+      <form id="service-search-form" class="flex flex-wrap items-center gap-2" onsubmit="event.preventDefault(); submitServiceHistorySearch();">
+        <label for="service-staff-id-input" class="text-xs font-bold text-gray-700 uppercase tracking-tight">Staff ID:</label>
+        <input type="text" id="service-staff-id-input" placeholder="Enter Staff ID..." class="border border-gray-400 bg-white px-2.5 py-1 text-xs w-48 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900 font-medium uppercase">
+        <button type="submit" id="btn-service-submit" class="bg-blue-900 text-white px-3 py-1 rounded-sm text-xs font-bold hover:bg-blue-800 shadow-sm flex items-center">
+          <span class="material-icons text-xs mr-1">search</span> Submit
+        </button>
+        <button type="button" onclick="resetServiceHistoryView()" class="border border-gray-400 bg-white text-gray-700 px-2.5 py-1 rounded-sm text-xs font-medium hover:bg-gray-100">
+          Reset
+        </button>
+      </form>
+
+      <!-- Navigation & Fullscreen Controls -->
+      <div class="flex items-center space-x-1.5">
+        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll History Left">
+            <span class="material-icons text-base">chevron_left</span>
+          </button>
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll History Right">
+            <span class="material-icons text-base">chevron_right</span>
+          </button>
+        </div>
+
+        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Mode">
+          <span class="material-icons text-sm mr-1">fullscreen</span>
+          <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Service History Content Area -->
+    <div class="flex-1 flex flex-col min-h-0 overflow-hidden p-3 bg-slate-50">
+      <div id="service-printable-area" class="flex-1 min-h-0 overflow-auto border border-gray-300 rounded bg-white p-3 data-table-scroll-wrapper">
+        <div id="hrm-service-container">
+          <div class="text-center text-gray-400 py-16">
+            <span class="material-icons text-5xl mb-2 text-gray-300">manage_search</span>
+            <h4 class="text-sm font-bold text-gray-600">No Service Report Generated</h4>
+            <p class="text-xs text-gray-400 mt-1">Enter a valid Staff ID above and click "Submit" to view the comprehensive employee service spreadsheet.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lower-right Download & Print Toolbar -->
+      <div id="service-export-toolbar" class="hidden flex items-center justify-end space-x-2 pt-2.5 shrink-0 border-t border-gray-200 mt-2">
+        <div class="relative inline-block text-left" id="service-dl-wrap">
+          <button type="button" onclick="toggleServiceDownloadMenu(event)" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+            <span class="material-icons text-xs mr-1 text-teal-700">download</span> Download <span class="material-icons text-xs ml-1">expand_more</span>
+          </button>
+          <div id="service-dl-menu" class="hidden absolute right-0 bottom-full mb-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-xs">
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="exportServiceHistoryPDF()">
+              <span class="material-icons text-xs mr-2 text-rose-600">picture_as_pdf</span> Download PDF
+            </button>
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="exportServiceHistoryExcel()">
+              <span class="material-icons text-xs mr-2 text-emerald-600">table_view</span> Download Excel
+            </button>
+          </div>
+        </div>
+        <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="printServiceHistory()">
+          <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-hrm_promotion">
+  <div class="data-view-container animate-fade-in flex flex-col h-full">
+    
+    <!-- Promotion Navigation & Option Tabs Bar -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center justify-between shrink-0 text-sm">
+      
+      <!-- Option Buttons on Left -->
+      <div class="flex items-center space-x-1">
+        <button id="btn-promo-individual" class="bg-blue-800 text-white px-3 py-1 hover:bg-blue-700 font-medium border border-blue-900 rounded-sm flex items-center text-xs shadow-sm" onclick="switchPromotionTab('individual')">
+          <span class="material-icons text-xs mr-1">person_search</span> Individual Report
+        </button>
+        <button id="btn-promo-all" class="bg-gray-200 text-gray-800 px-3 py-1 hover:bg-gray-300 font-medium border border-gray-400 rounded-sm flex items-center text-xs" onclick="switchPromotionTab('all')">
+          <span class="material-icons text-xs mr-1">table_chart</span> All Employees
+        </button>
+        <button id="btn-promo-eligibility" class="bg-gray-200 text-gray-800 px-3 py-1 hover:bg-gray-300 font-medium border border-gray-400 rounded-sm flex items-center text-xs" onclick="switchPromotionTab('eligibility')">
+          <span class="material-icons text-xs mr-1">verified_user</span> Promotion Eligibility
+        </button>
+      </div>
+
+      <!-- Tab Controls on Right (Rendered Dynamically) & Navigation Controls -->
+      <div class="flex items-center space-x-2">
+        <div id="promo-tab-controls-right" class="flex flex-wrap items-center gap-2"></div>
+        
+        <!-- Navigation Controls: Left/Right scroll, Fullscreen -->
+        <div class="flex items-center space-x-1.5 border-l border-gray-300 pl-2">
+          <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+            <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Report Left">
+              <span class="material-icons text-base">chevron_left</span>
+            </button>
+            <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Report Right">
+              <span class="material-icons text-base">chevron_right</span>
+            </button>
+          </div>
+
+          <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Report Mode">
+            <span class="material-icons text-sm mr-1">fullscreen</span>
+            <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Container for the 3 Tab Views -->
+    <div class="data-table-scroll-wrapper bg-gray-50 flex flex-col flex-1 min-h-0" id="promo-main-container">
+      
+      <!-- 1. Individual Report View Container -->
+      <div id="promo-view-individual" class="flex-1 flex flex-col min-h-0 overflow-auto p-3">
+        
+        <!-- Individual Top Search Form with dedicated Staff ID input, Submit & Reset -->
+        <div class="bg-white p-2.5 border border-gray-300 shadow-sm rounded mb-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <form id="promo-individual-form" class="flex flex-wrap items-center gap-2" onsubmit="event.preventDefault(); loadIndividualPromotionReport();">
+            <label for="promo-emp-input" class="text-xs font-bold text-gray-700 uppercase tracking-tight">Staff ID:</label>
+            <input type="text" id="promo-emp-input" placeholder="Enter Staff ID..." class="border border-gray-400 bg-white px-2.5 py-1 text-xs w-48 focus:outline-none focus:ring-1 focus:ring-blue-900 font-medium uppercase rounded-sm">
+            
+            <button type="submit" id="btn-promo-submit" class="bg-blue-900 text-white px-3 py-1 rounded-sm text-xs font-bold hover:bg-blue-800 shadow-sm flex items-center">
+              <span class="material-icons text-xs mr-1">search</span> Submit
+            </button>
+            <button type="button" onclick="clearIndividualPromotionReport()" class="border border-gray-400 bg-white text-gray-700 px-2.5 py-1 rounded-sm text-xs font-medium hover:bg-gray-100">
+              Reset
+            </button>
+          </form>
+
+          <!-- Report Export Toolbar (Visible when report is loaded) -->
+          <div id="promo-report-toolbar" class="hidden flex items-center space-x-2">
+            <div class="relative inline-block text-left" id="promo-dl-wrap">
+              <button type="button" onclick="togglePromoDownloadMenu(event)" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+                <span class="material-icons text-xs mr-1 text-teal-700">download</span> Download <span class="material-icons text-xs ml-1">expand_more</span>
+              </button>
+              <div id="promo-dl-menu" class="hidden absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-xs">
+                <button type="button" onclick="exportIndividualPromotionPDF()" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700">
+                  <span class="material-icons text-xs mr-2 text-rose-600">picture_as_pdf</span> Download PDF
+                </button>
+                <button type="button" onclick="exportIndividualPromotionWord()" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700">
+                  <span class="material-icons text-xs mr-2 text-blue-700">description</span> Download Word
+                </button>
+              </div>
+            </div>
+            <button type="button" onclick="printIndividualPromotionReport()" title="Print Official Document" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+              <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+            </button>
+          </div>
+        </div>
+
+        <!-- Individual Report Display Area -->
+        <div id="promo-individual-output" class="flex-1 overflow-auto flex justify-center items-start">
+          <div class="text-center text-gray-400 py-16">
+            <span class="material-icons text-5xl mb-2 text-gray-300">manage_search</span>
+            <h4 class="text-sm font-bold text-gray-600">No Report Generated</h4>
+            <p class="text-xs text-gray-400 mt-1">Enter a valid Staff ID above and click "Submit" to view the comprehensive promotion report.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. All Employees Promotions View Container -->
+      <div id="promo-view-all" class="flex-1 flex flex-col min-h-0 overflow-hidden hidden p-3">
+        
+        <!-- Table SpreadSheet Container -->
+        <div class="flex-1 min-h-0 overflow-auto bg-white border border-gray-300 shadow-sm" id="all-promo-scroll-area">
+          <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="all-promo-table">
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900">
+                <th class="p-1 border border-gray-300 font-bold text-left">SL</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Staff ID</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Employee Name</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Department</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Present PG</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Promoted PG</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Promoted Designation</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Rank</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Sequence</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Promotion Date</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Time in Prev PG</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="all-promo-tbody">
+              <tr><td colspan="12" class="p-4 text-center text-gray-500">Loading promotion records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Lower-right Toolbar for All Employees Tab -->
+        <div class="flex items-center justify-end space-x-2 pt-2.5 pb-1 shrink-0 border-t border-gray-200 mt-2">
+          <div class="relative inline-block text-left" id="all-promo-dl-wrap">
+            <button type="button" onclick="toggleAllPromoDownloadMenu(event)" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+              <span class="material-icons text-xs mr-1 text-teal-700">download</span> Download <span class="material-icons text-xs ml-1">expand_more</span>
+            </button>
+            <div id="all-promo-dl-menu" class="hidden absolute right-0 bottom-full mb-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-xs">
+              <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="exportAllPromotionsPDF()">
+                <span class="material-icons text-xs mr-2 text-rose-600">picture_as_pdf</span> Download PDF
+              </button>
+              <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="exportAllPromotionsCSV()">
+                <span class="material-icons text-xs mr-2 text-emerald-600">table_view</span> Download Excel
+              </button>
+            </div>
+          </div>
+          <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="printAllPromotionsReport()">
+            <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 3. Promotion Eligibility View Container -->
+      <div id="promo-view-eligibility" class="flex-1 flex flex-col min-h-0 overflow-hidden hidden p-3">
+        
+        <!-- Eligibility Table Container -->
+        <div class="flex-1 min-h-0 overflow-auto bg-white border border-gray-300 shadow-sm" id="eligibility-scroll-area">
+          <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="eligibility-table">
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900">
+                <th class="p-1 border border-gray-300 font-bold text-left">SL</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Staff ID</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Employee Name</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Department</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Present PG</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Present Designation</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">PG Since</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Time in PG</th>
+                <th class="p-1 border border-gray-300 font-bold text-left">Next Potential PG</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Eligibility Status</th>
+                <th class="p-1 border border-gray-300 font-bold text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="eligibility-tbody">
+              <tr><td colspan="11" class="p-4 text-center text-gray-500">Loading eligibility criteria...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Lower-right Toolbar for Eligibility Tab -->
+        <div class="flex items-center justify-end space-x-2 pt-2.5 pb-1 shrink-0 border-t border-gray-200 mt-2">
+          <div class="relative inline-block text-left" id="eligibility-dl-wrap">
+            <button type="button" onclick="toggleEligibilityDownloadMenu(event)" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+              <span class="material-icons text-xs mr-1 text-teal-700">download</span> Download <span class="material-icons text-xs ml-1">expand_more</span>
+            </button>
+            <div id="eligibility-dl-menu" class="hidden absolute right-0 bottom-full mb-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-xs">
+              <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="exportEligibilityPDF()">
+                <span class="material-icons text-xs mr-2 text-rose-600">picture_as_pdf</span> Download PDF
+              </button>
+              <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="exportEligibilityExcel()">
+                <span class="material-icons text-xs mr-2 text-emerald-600">table_view</span> Download Excel
+              </button>
+            </div>
+          </div>
+          <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="printEligibilityReport()">
+            <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-hrm_workforce">
+  <div class="data-view-container flex flex-col h-full bg-slate-50 relative animate-fade-in">
+    
+    <!-- Top Action & Navigation Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 shrink-0">
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="material-icons text-teal-600 text-2xl">groups_2</span>
+          <h2 class="text-xl md:text-2xl font-extrabold text-gray-800 tracking-tight">Workforce Management &amp; Staffing Matrix</h2>
+        </div>
+      </div>
+
+      <!-- Action Toolbar (Scroll arrows + Fullscreen mode positioned at top-right corner) -->
+      <div class="flex items-center space-x-1.5 shrink-0 self-end sm:self-auto">
+        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Report Left">
+            <span class="material-icons text-base">chevron_left</span>
+          </button>
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Report Right">
+            <span class="material-icons text-base">chevron_right</span>
+          </button>
+        </div>
+
+        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen">
+          <span class="material-icons text-xs mr-1">fullscreen</span> <span class="fs-btn-text">Fullscreen</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Four Primary Option Buttons Bar -->
+    <div class="flex items-center space-x-2 my-3 overflow-x-auto no-scrollbar pb-1 shrink-0 border-b border-gray-200">
+      <button id="wf-btn-setup" class="wf-tab-btn active" onclick="WorkforceModule.switchTab('setup')">
+        <span class="material-icons text-sm">settings_suggest</span> Set Up
+      </button>
+      <button id="wf-btn-distribution" class="wf-tab-btn" onclick="WorkforceModule.switchTab('distribution')">
+        <span class="material-icons text-sm">hub</span> Workforce Distribution
+      </button>
+      <button id="wf-btn-analytics" class="wf-tab-btn" onclick="WorkforceModule.switchTab('analytics')">
+        <span class="material-icons text-sm">insights</span> Analytics
+      </button>
+      <button id="wf-btn-summary" class="wf-tab-btn" onclick="WorkforceModule.switchTab('summary')">
+        <span class="material-icons text-sm">table_chart</span> Staffing Summary
+      </button>
+    </div>
+
+    <!-- Tab 1: Set Up Tab Workspace -->
+    <div id="wf-workspace-setup" class="flex-1 flex flex-col min-h-0 overflow-hidden">
+      
+      <!-- Primary Inter-linked Filters Bar -->
+      <div class="bg-white border border-gray-200 rounded-lg p-3 mb-3 shadow-sm shrink-0">
+        <div class="flex flex-wrap items-center gap-3">
+          
+          <!-- Filter 1: Directorate -->
+          <div class="flex flex-col min-w-[170px] flex-1 sm:flex-none">
+            <label class="text-2xs font-bold text-gray-500 uppercase tracking-wider mb-1">Directorate</label>
+            <select id="wf-filter-dir" class="border border-gray-300 rounded px-2 py-1.5 text-xs font-medium text-gray-700 bg-slate-50 hover:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none" onchange="WorkforceModule.onDirectorateChange()">
+              <option value="ALL">All Directorates</option>
+            </select>
+          </div>
+
+          <!-- Filter 2: Department -->
+          <div class="flex flex-col min-w-[190px] flex-1 sm:flex-none">
+            <label class="text-2xs font-bold text-gray-500 uppercase tracking-wider mb-1">Department</label>
+            <select id="wf-filter-dep" class="border border-gray-300 rounded px-2 py-1.5 text-xs font-medium text-gray-700 bg-slate-50 hover:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none" onchange="WorkforceModule.onDepartmentChange()">
+              <option value="ALL">All Departments</option>
+            </select>
+          </div>
+
+          <!-- Filter 3: Station -->
+          <div class="flex flex-col min-w-[170px] flex-1 sm:flex-none">
+            <label class="text-2xs font-bold text-gray-500 uppercase tracking-wider mb-1">Stations</label>
+            <select id="wf-filter-stn" class="border border-gray-300 rounded px-2 py-1.5 text-xs font-medium text-gray-700 bg-slate-50 hover:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none" onchange="WorkforceModule.onStationChange()">
+              <option value="ALL">All Stations</option>
+            </select>
+          </div>
+
+          <!-- Filter Action: Reset -->
+          <div class="flex items-end self-end pb-0.5 ml-auto">
+            <button class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded text-xs font-semibold flex items-center shadow-sm transition-colors" onclick="WorkforceModule.resetFilters()">
+              <span class="material-icons text-xs mr-1 text-gray-500">restart_alt</span> Reset Filters
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Filter Context Summary Pills -->
+        <div class="flex items-center justify-between border-t border-gray-100 mt-2.5 pt-2 text-xs-11 text-gray-500">
+          <div id="wf-filter-status" class="font-medium text-gray-600 truncate">
+            Showing baseline setup data across <span class="font-bold text-teal-800">All Directorates</span>
+          </div>
+          <div class="flex items-center space-x-3 shrink-0">
+            <span>Setup: <strong id="wf-badge-setup" class="text-blue-900 font-bold">0</strong></span>
+            <span class="text-gray-300">|</span>
+            <span>Existing: <strong id="wf-badge-existing" class="text-emerald-700 font-bold">0</strong></span>
+            <span class="text-gray-300">|</span>
+            <span>Required (Deficit): <strong id="wf-badge-required" class="text-rose-700 font-bold">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Printable Area for Table -->
+      <div id="workforce-printable-area" class="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg bg-white shadow-sm p-4 data-table-scroll-wrapper">
+        <div id="wf-setup-table-container" class="max-w-4xl mx-auto">
+          <!-- Setup Table dynamically injected here -->
+        </div>
+      </div>
+
+      <!-- Lower-right Download & Print Controls -->
+      <div class="flex items-center justify-end space-x-2 pt-2.5 pb-1 shrink-0 border-t border-gray-200 mt-2">
+        <div class="relative inline-block text-left" id="wf-dl-wrap-setup">
+          <button type="button" onclick="WorkforceModule.toggleDownloadMenu('setup', event)" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+            <span class="material-icons text-xs mr-1 text-teal-700">download</span> Download <span class="material-icons text-xs ml-1">expand_more</span>
+          </button>
+          <div id="wf-dl-menu-setup" class="hidden absolute right-0 bottom-full mb-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-xs">
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="WorkforceModule.downloadPDF('setup')">
+              <span class="material-icons text-xs mr-2 text-rose-600">picture_as_pdf</span> Download PDF
+            </button>
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="WorkforceModule.downloadExcel('setup')">
+              <span class="material-icons text-xs mr-2 text-emerald-600">table_view</span> Download Excel
+            </button>
+          </div>
+        </div>
+        <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="WorkforceModule.printReport('setup')">
+          <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Tab 2: Workforce Distribution Workspace -->
+    <div id="wf-workspace-distribution" class="flex-1 flex flex-col min-h-0 overflow-hidden hidden">
+      
+      <!-- Top Filters & Sub-view Switcher -->
+      <div class="flex flex-wrap items-center justify-between bg-white p-3 border border-gray-200 rounded-lg mb-3 shrink-0 shadow-sm gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Dynamic Department Filter Dropdown -->
+          <div class="flex items-center space-x-1.5 mr-2">
+            <label for="wf-dist-filter-dep" class="text-xs-11 font-bold text-gray-600 uppercase tracking-wider">Department:</label>
+            <select id="wf-dist-filter-dep" class="border border-gray-300 rounded px-2 py-1 text-xs font-medium text-gray-700 bg-slate-50 hover:bg-white focus:ring-1 focus:ring-teal-500 focus:outline-none" onchange="WorkforceModule.onDistDepartmentChange()">
+              <option value="ALL">All Departments</option>
+            </select>
+          </div>
+
+          <div class="border-l border-gray-300 h-5 mx-1 hidden sm:block"></div>
+
+          <!-- Distribution View Mode Buttons -->
+          <div class="flex items-center space-x-1 overflow-x-auto no-scrollbar">
+            <span class="text-xs-11 font-bold text-gray-400 uppercase tracking-wider mr-1">View:</span>
+            <button id="wf-dist-btn-shift" class="wf-dist-btn active" onclick="WorkforceModule.switchDistView('shift')">Pay Group × Shift Matrix</button>
+            <button id="wf-dist-btn-section" class="wf-dist-btn" onclick="WorkforceModule.switchDistView('section')">Sectional Distribution</button>
+            <button id="wf-dist-btn-desig" class="wf-dist-btn" onclick="WorkforceModule.switchDistView('designation')">Designations</button>
+            <button id="wf-dist-btn-station" class="wf-dist-btn" onclick="WorkforceModule.switchDistView('station')">Station Allocation</button>
+          </div>
+        </div>
+
+        <div class="text-xs text-gray-500 font-medium">
+          Active Personnel Headcount: <strong id="wf-dist-total-headcount" class="text-teal-900 font-bold">0</strong>
+        </div>
+      </div>
+
+      <!-- Distribution View Content Container -->
+      <div class="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg bg-white p-4 shadow-sm data-table-scroll-wrapper" id="wf-dist-printable-area">
+        <div id="wf-dist-content-container">
+          <!-- Multi-variable distribution tables injected here -->
+        </div>
+      </div>
+
+      <!-- Lower-right Download & Print Controls -->
+      <div class="flex items-center justify-end space-x-2 pt-2.5 pb-1 shrink-0 border-t border-gray-200 mt-2">
+        <div class="relative inline-block text-left" id="wf-dl-wrap-dist">
+          <button type="button" onclick="WorkforceModule.toggleDownloadMenu('dist', event)" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+            <span class="material-icons text-xs mr-1 text-teal-700">download</span> Download <span class="material-icons text-xs ml-1">expand_more</span>
+          </button>
+          <div id="wf-dl-menu-dist" class="hidden absolute right-0 bottom-full mb-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-xs">
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="WorkforceModule.downloadPDF('dist')">
+              <span class="material-icons text-xs mr-2 text-rose-600">picture_as_pdf</span> Download PDF
+            </button>
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="WorkforceModule.downloadExcel('dist')">
+              <span class="material-icons text-xs mr-2 text-emerald-600">table_view</span> Download Excel
+            </button>
+          </div>
+        </div>
+        <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="WorkforceModule.printReport('dist')">
+          <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Tab 3: Analytics Workspace -->
+    <div id="wf-workspace-analytics" class="flex-1 flex flex-col min-h-0 overflow-hidden hidden">
+      <div class="flex-1 min-h-0 overflow-auto p-2" id="wf-analytics-printable-area">
+        <div id="wf-analytics-container" class="space-y-4">
+          <!-- Analytics KPI Cards, Meters, and Distribution Pyramids injected here -->
+        </div>
+      </div>
+
+      <!-- Lower-right Download & Print Controls -->
+      <div class="flex items-center justify-end space-x-2 pt-2.5 pb-1 shrink-0 border-t border-gray-200 mt-2">
+        <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="WorkforceModule.downloadPDF('analytics')">
+          <span class="material-icons text-xs mr-1 text-rose-600">picture_as_pdf</span> Download PDF
+        </button>
+        <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="WorkforceModule.printReport('analytics')">
+          <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab 4: Staffing Summary Workspace -->
+    <div id="wf-workspace-summary" class="flex-1 flex flex-col min-h-0 overflow-hidden hidden">
+      <div class="bg-white p-3 border border-gray-200 rounded-lg mb-3 shrink-0 shadow-sm flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-gray-800">Station Operational Coverage &amp; Staffing Deficit Summary</h3>
+          <p class="text-xs text-gray-500">Comprehensive station-by-station operational manning audit</p>
+        </div>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg bg-white p-4 shadow-sm data-table-scroll-wrapper" id="wf-summary-printable-area">
+        <div id="wf-summary-table-container">
+          <!-- Station Summary Table injected here -->
+        </div>
+      </div>
+
+      <!-- Lower-right Download & Print Controls -->
+      <div class="flex items-center justify-end space-x-2 pt-2.5 pb-1 shrink-0 border-t border-gray-200 mt-2">
+        <div class="relative inline-block text-left" id="wf-dl-wrap-summary">
+          <button type="button" onclick="WorkforceModule.toggleDownloadMenu('summary', event)" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs">
+            <span class="material-icons text-xs mr-1 text-teal-700">download</span> Download <span class="material-icons text-xs ml-1">expand_more</span>
+          </button>
+          <div id="wf-dl-menu-summary" class="hidden absolute right-0 bottom-full mb-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-xs">
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="WorkforceModule.downloadPDF('summary')">
+              <span class="material-icons text-xs mr-2 text-rose-600">picture_as_pdf</span> Download PDF
+            </button>
+            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center text-gray-700" onclick="WorkforceModule.downloadExcel('summary')">
+              <span class="material-icons text-xs mr-2 text-emerald-600">table_view</span> Download Excel
+            </button>
+          </div>
+        </div>
+        <button type="button" class="data-nav-btn bg-white border border-gray-300 hover:bg-gray-100 flex items-center px-2.5 py-1 text-xs font-semibold rounded shadow-xs" onclick="WorkforceModule.printReport('summary')">
+          <span class="material-icons text-xs mr-1 text-sky-700">print</span> Print
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</template>
+
+<!-- HRM Allowance Calculator View -->
+<template id="tmpl-hrm_allowance">
+  <div class="data-view-container animate-fade-in flex flex-col h-full bg-slate-50">
+    <div class="p-3 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-xs">
+      <div>
+        <h2 class="text-xl font-bold text-gray-800 tracking-tight flex items-center">
+          <span class="material-icons text-teal-600 mr-2">calculate</span> Allowance &amp; Compensation Calculator
+        </h2>
+        <p class="text-xs text-gray-500">Enterprise pay scale estimation, operational allowances &amp; statutory deductions</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button class="data-nav-btn" onclick="calculateHrmAllowance()" title="Recalculate Compensation">
+          <span class="material-icons text-xs mr-1 text-teal-600">refresh</span> Recalculate
+        </button>
+        <button class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen">
+          <span class="material-icons text-xs mr-1">fullscreen</span> Fullscreen
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-auto p-4 max-w-5xl mx-auto w-full">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-tight block mb-1.5">Select Employee</label>
+          <select id="allowance-emp-select" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 mb-3" onchange="onAllowanceEmpChange(this.value)">
+            <option value="">-- Select Personnel --</option>
+          </select>
+
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-tight block mb-1.5">Pay Group</label>
+          <select id="allowance-pg-select" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 mb-3" onchange="calculateHrmAllowance()">
+            <option value="PG-6">PG-6 (Senior Manager)</option>
+            <option value="PG-5">PG-5 (Manager)</option>
+            <option value="PG-4">PG-4 (Assistant Manager)</option>
+            <option value="PG-3(2)">PG-3(2) (Supervisor)</option>
+            <option value="PG-3(1)">PG-3(1) (Sr. Assistant)</option>
+            <option value="PG-2">PG-2 (Assistant)</option>
+          </select>
+
+          <label class="text-xs font-bold text-gray-700 uppercase tracking-tight block mb-1.5">Basic Salary (BDT)</label>
+          <input type="number" id="allowance-basic" value="45000" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 mb-3" oninput="calculateHrmAllowance()">
+
+          <div class="space-y-2 mt-2">
+            <label class="flex items-center text-xs text-gray-700 font-medium cursor-pointer">
+              <input type="checkbox" id="allowance-shift-duty" class="rounded text-teal-600 mr-2" checked onchange="calculateHrmAllowance()"> Shift Duty Allowance
+            </label>
+            <label class="flex items-center text-xs text-gray-700 font-medium cursor-pointer">
+              <input type="checkbox" id="allowance-hazardous" class="rounded text-teal-600 mr-2" checked onchange="calculateHrmAllowance()"> Airside Apron Allowance
+            </label>
+            <label class="flex items-center text-xs text-gray-700 font-medium cursor-pointer">
+              <input type="checkbox" id="allowance-pf" class="rounded text-teal-600 mr-2" checked onchange="calculateHrmAllowance()"> Provident Fund (10%)
+            </label>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider mb-3 border-b pb-2 text-teal-900">Compensation Breakdown</h3>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div class="bg-slate-50 p-2.5 rounded border border-gray-100">
+                <span class="text-gray-500 block">House Rent (50%):</span>
+                <span class="font-bold text-gray-800 text-sm" id="res-house-rent">BDT 22,500</span>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded border border-gray-100">
+                <span class="text-gray-500 block">Medical Allowance:</span>
+                <span class="font-bold text-gray-800 text-sm" id="res-medical">BDT 3,500</span>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded border border-gray-100">
+                <span class="text-gray-500 block">Conveyance / Transport:</span>
+                <span class="font-bold text-gray-800 text-sm" id="res-transport">BDT 4,000</span>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded border border-gray-100">
+                <span class="text-gray-500 block">Special Duty / Shift:</span>
+                <span class="font-bold text-gray-800 text-sm" id="res-special">BDT 5,000</span>
+              </div>
+              <div class="bg-emerald-50 p-2.5 rounded border border-emerald-200 col-span-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-emerald-800 font-bold uppercase text-xs">Gross Earnings:</span>
+                  <span class="font-extrabold text-emerald-900 text-base" id="res-gross">BDT 80,000</span>
+                </div>
+              </div>
+              <div class="bg-rose-50 p-2.5 rounded border border-rose-200 col-span-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-rose-800 font-bold uppercase text-xs">Deductions (PF + Tax):</span>
+                  <span class="font-bold text-rose-900 text-sm" id="res-deductions">- BDT 4,500</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-teal-900 text-white p-4 rounded-lg mt-4 flex items-center justify-between shadow-md">
+            <div>
+              <span class="text-xs-11 uppercase tracking-widest text-teal-200 font-semibold block">Estimated Net Take-Home</span>
+              <h4 class="text-2xl font-extrabold text-yellow-300" id="res-net-salary">BDT 75,500</h4>
+            </div>
+            <span class="material-icons text-4xl text-teal-400/40">payments</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- HRM Reports View -->
+<template id="tmpl-hrm_reports">
+  <div class="data-view-container animate-fade-in flex flex-col h-full bg-slate-50">
+    <div class="p-3 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-xs">
+      <div>
+        <h2 class="text-xl font-bold text-gray-800 tracking-tight flex items-center">
+          <span class="material-icons text-teal-600 mr-2">assessment</span> Enterprise HRM Reports &amp; Analytics
+        </h2>
+        <p class="text-xs text-gray-500">Consolidated personnel audits, station-wise reports &amp; operational distribution</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button class="data-nav-btn" onclick="generateHrmReport()" title="Refresh Report">
+          <span class="material-icons text-xs mr-1 text-teal-600">refresh</span> Refresh
+        </button>
+        <button class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen">
+          <span class="material-icons text-xs mr-1">fullscreen</span> Fullscreen
+        </button>
+      </div>
+    </div>
+
+    <div class="p-4 flex-1 overflow-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded border border-gray-200 shadow-sm border-l-4 border-l-teal-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Personnel</p>
+          <h3 class="text-2xl font-bold text-gray-800" id="rep-total-emp">0</h3>
+        </div>
+        <div class="bg-white p-4 rounded border border-gray-200 shadow-sm border-l-4 border-l-emerald-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1">Active Personnel</p>
+          <h3 class="text-2xl font-bold text-emerald-800" id="rep-active-emp">0</h3>
+        </div>
+        <div class="bg-white p-4 rounded border border-gray-200 shadow-sm border-l-4 border-l-blue-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1">Officers &amp; Supervisors</p>
+          <h3 class="text-2xl font-bold text-blue-800" id="rep-officers-emp">0</h3>
+        </div>
+        <div class="bg-white p-4 rounded border border-gray-200 shadow-sm border-l-4 border-l-purple-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1">Operational Stations</p>
+          <h3 class="text-2xl font-bold text-purple-800" id="rep-stations-count">4</h3>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded border border-gray-200 shadow-sm">
+        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+          <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider text-teal-900">Personnel Summary by Station</h3>
+          <button class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow-sm flex items-center" onclick="app.toast('Report exported to Excel successfully.', 'success')">
+            <span class="material-icons text-xs mr-1">download</span> Export Summary
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-xs font-sans">
+            <thead>
+              <tr class="bg-slate-100 text-gray-700 border-b border-gray-300">
+                <th class="p-2 text-left font-bold">Station Code</th>
+                <th class="p-2 text-left font-bold">Station Name</th>
+                <th class="p-2 text-center font-bold">Active Personnel</th>
+                <th class="p-2 text-center font-bold">On Leave / Extension</th>
+                <th class="p-2 text-center font-bold">Total Manning</th>
+                <th class="p-2 text-center font-bold">Status</th>
+              </tr>
+            </thead>
+            <tbody id="hrm-reports-table-body">
+              <tr class="border-b border-gray-100 hover:bg-slate-50"><td class="p-2 font-bold text-blue-900">DAC</td><td class="p-2">Hazrat Shahjalal Intl Airport</td><td class="p-2 text-center font-semibold">28</td><td class="p-2 text-center text-gray-500">2</td><td class="p-2 text-center font-bold text-teal-900">30</td><td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-2xs font-bold bg-green-100 text-green-800">Optimal (100%)</span></td></tr>
+              <tr class="border-b border-gray-100 hover:bg-slate-50"><td class="p-2 font-bold text-blue-900">CGP</td><td class="p-2">Shah Amanat Intl Airport</td><td class="p-2 text-center font-semibold">8</td><td class="p-2 text-center text-gray-500">0</td><td class="p-2 text-center font-bold text-teal-900">8</td><td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-2xs font-bold bg-green-100 text-green-800">Optimal (100%)</span></td></tr>
+              <tr class="border-b border-gray-100 hover:bg-slate-50"><td class="p-2 font-bold text-blue-900">ZYL</td><td class="p-2">Osmani Intl Airport</td><td class="p-2 text-center font-semibold">4</td><td class="p-2 text-center text-gray-500">0</td><td class="p-2 text-center font-bold text-teal-900">4</td><td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-2xs font-bold bg-green-100 text-green-800">Optimal (100%)</span></td></tr>
+              <tr class="border-b border-gray-100 hover:bg-slate-50"><td class="p-2 font-bold text-blue-900">CXB</td><td class="p-2">Cox's Bazar Airport</td><td class="p-2 text-center font-semibold">2</td><td class="p-2 text-center text-gray-500">0</td><td class="p-2 text-center font-bold text-teal-900">2</td><td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-2xs font-bold bg-yellow-100 text-yellow-800">Minimum Manning</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+async function hrm_dashboard_init() {
+  try {
+    const [employees, promotions, pgs] = await Promise.all([
+      api.read('employees').catch(() => []),
+      api.read('promotions').catch(() => []),
+      api.read('pay_groups').catch(() => [])
+    ]);
+    const empList = Array.isArray(employees) ? employees : [];
+    const promoList = Array.isArray(promotions) ? promotions : [];
+    
+    const elTotal = document.getElementById('hrm-stat-emp');
+    const elActive = document.getElementById('hrm-stat-active');
+    const elPromo = document.getElementById('hrm-stat-promo');
+    const elOfficers = document.getElementById('hrm-stat-officers');
+
+    if (elTotal) elTotal.innerText = empList.length;
+    if (elActive) elActive.innerText = empList.filter(e => e.status !== 'Retired').length;
+    if (elPromo) elPromo.innerText = promoList.length;
+    if (elOfficers) {
+      const officers = empList.filter(e => {
+        const pg = (e.pay_group || e.pg_id || '').toUpperCase();
+        return pg.includes('PG-4') || pg.includes('PG-5') || pg.includes('PG-6') || (Number(e.rank_level) || 0) >= 4;
+      });
+      elOfficers.innerText = officers.length;
+    }
+  } catch (e) {
+    console.warn('hrm_dashboard_init warning:', e);
+  }
+}
+
+async function hrm_input_init() {
+  try {
+    Components.renderForm('employees', 'hrm-form-container');
+  } catch (e) {
+    console.warn('hrm_input_init warning:', e);
+  }
+}
+
+async function hrm_view_init() {
+  try {
+    Components.renderGrid('employees', 'hrm-grid-container');
+  } catch (e) {
+    console.warn('hrm_view_init warning:', e);
+  }
+}
+
+async function hrm_employees_init() {
+  try {
+    app.showLoader();
+    let [empDetails, payGroups] = await Promise.all([
+      api.getHrmDetails().catch(e => { console.warn('getHrmDetails warning:', e); return []; }),
+      api.read('pay_groups').catch(() => [])
+    ]);
+
+    if (!Array.isArray(empDetails) || empDetails.length === 0) {
+      const rawEmployees = await api.read('employees').catch(() => []);
+      if (Array.isArray(rawEmployees) && rawEmployees.length > 0) {
+        empDetails = rawEmployees.map((e, idx) => ({
+          sl: idx + 1,
+          emp_id: e.emp_id || e.staff_id || '',
+          staff_id: e.staff_id || e.emp_id || '',
+          name: e.emp_name || e.name || e.employee_name || '',
+          gender: e.gender || '-',
+          previous_id: e.previous_id || e.old_staff_id || '-',
+          pay_group: e.pay_group || e.pg_id || e.designation_short || '-',
+          rank_level: Number(e.rank_level) || 0,
+          designation: e.designation || e.designation_short || e.pay_group || '-',
+          contact_1: e.contact_primary || e.contact_1 || e.phone || e.mobile || '-',
+          contact_2: e.contact_secondary || e.contact_2 || '-',
+          contact_family: e.contact_family || e.contact_3 || '-',
+          email: e.email || e.email_id || '-',
+          shift: e.shift || e.shift_name || '-',
+          placement: e.placement || e.sec_letter_code || e.section || '-',
+          placement_duration: e.placement_duration || '-',
+          posting: e.posting || e.station_code || e.station || '-',
+          department: e.department || e.dep_letter_code || e.dep_code || '-',
+          dob: e.dob || e.date_of_birth || '-',
+          joining_date: e.joining_date || e.date_of_joining || '-',
+          retirement_date: e.retirement_date || '-',
+          home_district: e.home_district || e.district || '-',
+          status: e.status || 'Active',
+          remarks: e.remarks || '-'
+        }));
+      }
+    }
+    
+    window.allEmployeesData = Array.isArray(empDetails) ? empDetails : [];
+    
+    const pgs = Array.isArray(payGroups) ? payGroups : [];
+    pgs.sort((a, b) => (Number(b.rank_level) || 0) - (Number(a.rank_level) || 0));
+    
+    const select = document.getElementById('emp-filter-pg');
+    if (select) {
+      select.innerHTML = '<option value="ALL">All Pay Groups</option>';
+      const addedPgs = new Set();
+      pgs.forEach(pg => {
+        if (pg.pay_group && !addedPgs.has(pg.pay_group)) {
+          addedPgs.add(pg.pay_group);
+          const opt = document.createElement('option');
+          opt.value = pg.pay_group;
+          opt.text = pg.pay_group;
+          select.appendChild(opt);
+        }
+      });
+
+      // Add any missing pay groups from employee data
+      window.allEmployeesData.forEach(e => {
+        if (e.pay_group && e.pay_group !== '-' && !addedPgs.has(e.pay_group)) {
+          addedPgs.add(e.pay_group);
+          const opt = document.createElement('option');
+          opt.value = e.pay_group;
+          opt.text = e.pay_group;
+          select.appendChild(opt);
+        }
+      });
+    }
+
+    renderEmpList(window.currentEmpView || 'details');
+  } catch (e) {
+    console.error('hrm_employees_init error:', e);
+    app.toast(e.message, 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function renderEmpList(viewMode) {
+  window.currentEmpView = viewMode || 'details';
+  
+  // Highlight active button
+  const modes = ['precise', 'details', 'onjob', 'retired', 'officer', 'th'];
+  modes.forEach(m => {
+    const btn = document.getElementById(`btn-emp-${m}`);
+    if (btn) {
+      if (m === window.currentEmpView) {
+        btn.className = "bg-blue-800 text-white px-2.5 py-1 hover:bg-blue-700 font-medium border border-blue-900 text-xs rounded-sm shadow-xs";
+      } else {
+        btn.className = "bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm";
+      }
+    }
+  });
+
+  if (!window.allEmployeesData || !Array.isArray(window.allEmployeesData)) return;
+  let data = [...window.allEmployeesData];
+
+  // 1. Apply Pay Group Filter
+  const pgFilterEl = document.getElementById('emp-filter-pg');
+  const pgFilter = pgFilterEl ? pgFilterEl.value : 'ALL';
+  if (pgFilter && pgFilter !== 'ALL') {
+    data = data.filter(e => e.pay_group === pgFilter);
+  }
+
+  // Helper to calculate numerical power of Pay Group
+  function getPgPower(pgStr, rankLevel) {
+    if (rankLevel !== undefined && rankLevel !== null && Number(rankLevel) > 0) {
+      return Number(rankLevel) * 10;
+    }
+    if (!pgStr || pgStr === '-') return 0;
+    const match = pgStr.match(/PG-(\d+)(?:\((.*?)\))?/);
+    if (!match) return 0;
+    
+    const num = parseInt(match[1]);
+    const sub = match[2] || '';
+    
+    let basePower = 100 - ((num - 1) * 10);
+    
+    if (num === 3) {
+      if (sub === 'I') return 85;
+      if (sub === 'II') return 80;
+      return 80;
+    }
+    
+    return basePower;
+  }
+
+  // 2. Apply Functional Button Filter
+  if (window.currentEmpView === 'precise') {
+    data = data.filter(e => e.status === 'Active');
+  } else if (window.currentEmpView === 'onjob') {
+    data = data.filter(e => e.status === 'Active' || e.status === 'Extension');
+  } else if (window.currentEmpView === 'retired') {
+    data = data.filter(e => e.status === 'Retired');
+  } else if (window.currentEmpView === 'officer') {
+    data = data.filter(e => getPgPower(e.pay_group, e.rank_level) >= 80);
+  } else if (window.currentEmpView === 'th') {
+    data = data.filter(e => getPgPower(e.pay_group, e.rank_level) < 80);
+  }
+
+  // 3. Define Columns based on Precise vs Details
+  const isPrecise = (window.currentEmpView === 'precise');
+  const cols = [
+    { key: 'sl', label: 'SL' },
+    { key: 'name', label: 'Name' },
+    { key: 'staff_id', label: 'Staff ID' },
+    { key: 'gender', label: 'Gender' }
+  ];
+  if (!isPrecise) {
+    cols.push({ key: 'previous_id', label: 'Previous ID' });
+    cols.push({ key: 'pay_group', label: 'Pay Group' });
+  }
+  cols.push({ key: 'designation', label: 'Designation' });
+  if (!isPrecise) cols.push({ key: 'sl', label: 'Seniority' });
+  cols.push({ key: 'contact_1', label: 'Contact 1' });
+  if (!isPrecise) {
+    cols.push({ key: 'contact_2', label: 'Contact 2' });
+    cols.push({ key: 'contact_family', label: 'Contact Family' });
+  }
+  cols.push({ key: 'email', label: 'E-mail' });
+  cols.push({ key: 'shift', label: 'Shift' });
+  cols.push({ key: 'placement', label: 'Placement' });
+  cols.push({ key: 'placement_duration', label: 'Placement Duration' });
+  cols.push({ key: 'posting', label: 'Posting' });
+  cols.push({ key: 'department', label: 'Department' });
+  if (!isPrecise) {
+    cols.push({ key: 'dob', label: 'DOB', type: 'date' });
+    cols.push({ key: 'joining_date', label: 'Joining Date', type: 'date' });
+  }
+  cols.push({ key: 'retirement_date', label: 'Retirement Date', type: 'date' });
+  if (!isPrecise) {
+    cols.push({ key: 'home_district', label: 'Home District' });
+    cols.push({ key: 'status', label: 'Status' });
+  }
+  cols.push({ key: 'remarks', label: 'Remarks' });
+
+  // 4. Render Headers
+  const thead = document.getElementById('emp-sheet-header');
+  if (thead) {
+    thead.innerHTML = cols.map(c => `<th class="p-1 border border-gray-300 font-bold text-left">${c.label}</th>`).join('');
+  }
+
+  // 5. Render Rows with Zero Padding Spreadsheet Style
+  const tbody = document.getElementById('hrm-emp-list');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" class="p-4 text-center text-gray-500 font-medium">No records matched for selected criteria</td></tr>`;
+    return;
+  }
+
+  const rowsHtml = data.map((row, idx) => {
+    let trHtml = '';
+    cols.forEach(c => {
+      let val = (c.key === 'sl' || c.key === 'Seniority') ? (idx + 1) : (row[c.key] != null ? row[c.key] : '-');
+      if (c.type === 'date' && val && val !== '-') {
+        val = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(val) : val;
+      }
+      trHtml += `<td class="border border-gray-300 px-1 py-0 truncate max-w-200px" title="${val}">${val}</td>`;
+    });
+    return `<tr class="hover:bg-blue-50/50">${trHtml}</tr>`;
+  }).join('');
+
+  tbody.innerHTML = rowsHtml;
+}
+// ==========================================
+// SERVICE HISTORY CONTROLLERS
+// ==========================================
+window.currentServiceHistoryStaffId = null;
+window.currentServiceHistoryData = null;
+
+async function hrm_service_init() {
+  window.currentServiceHistoryStaffId = null;
+  window.currentServiceHistoryData = null;
+  const input = document.getElementById('service-staff-id-input');
+  if (input) input.value = '';
+  
+  const toolbar = document.getElementById('service-export-toolbar');
+  if (toolbar) toolbar.classList.add('hidden');
+
+  const container = document.getElementById('hrm-service-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="text-center text-gray-400 py-16">
+        <span class="material-icons text-5xl mb-2 text-gray-300">manage_search</span>
+        <h4 class="text-sm font-bold text-gray-600">No Service Report Generated</h4>
+        <p class="text-xs text-gray-400 mt-1">Enter a valid Staff ID above and click "Submit" to view the comprehensive employee service spreadsheet.</p>
+      </div>
+    `;
+  }
+}
+
+function submitServiceHistorySearch() {
+  const input = document.getElementById('service-staff-id-input');
+  const staffId = input ? input.value.trim() : '';
+  if (!staffId) {
+    app.toast('Please enter a Staff ID to search', 'warning');
+    return;
+  }
+  loadServiceHistory(staffId);
+}
+
+function resetServiceHistoryView() {
+  hrm_service_init();
+}
+
+async function loadServiceHistory(staffId) {
+  const container = document.getElementById('hrm-service-container');
+  const toolbar = document.getElementById('service-export-toolbar');
+  if (!staffId) {
+    hrm_service_init();
+    return;
+  }
+
+  try {
+    app.showLoader();
+    if (container) {
+      container.innerHTML = '<div class="text-center text-gray-500 py-16"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900 mx-auto mb-3"></div>Loading employee service history from Google Sheets...</div>';
+    }
+
+    const [empDetails, history, masterData] = await Promise.all([
+      api.getHrmDetails().catch(() => []),
+      api.getServiceHistory(staffId).catch(() => []),
+      api.getMasterData().catch(() => ({}))
+    ]);
+
+    let targetEmp = (empDetails || []).find(e => 
+      String(e.staff_id || '').trim().toUpperCase() === String(staffId).trim().toUpperCase() ||
+      String(e.emp_id || '').trim().toUpperCase() === String(staffId).trim().toUpperCase()
+    );
+
+    if (!targetEmp) {
+      const rawEmps = await api.read('employees').catch(() => []);
+      targetEmp = (rawEmps || []).find(e => 
+        String(e.staff_id || '').trim().toUpperCase() === String(staffId).trim().toUpperCase() ||
+        String(e.emp_id || '').trim().toUpperCase() === String(staffId).trim().toUpperCase()
+      );
+    }
+
+    if (!targetEmp && (!history || history.length === 0)) {
+      if (toolbar) toolbar.classList.add('hidden');
+      if (container) {
+        container.innerHTML = `
+          <div class="text-center text-rose-500 py-16">
+            <span class="material-icons text-5xl text-rose-300 mb-2">person_off</span>
+            <h4 class="text-sm font-bold text-gray-800">No Employee Found</h4>
+            <p class="text-xs text-gray-500 mt-1">No personnel records or service history found matching Staff ID "<strong>${staffId}</strong>".</p>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    window.currentServiceHistoryStaffId = staffId;
+    window.currentServiceHistoryData = {
+      employee: targetEmp,
+      history: history || []
+    };
+
+    if (toolbar) toolbar.classList.remove('hidden');
+    renderServiceHistorySpreadsheet(targetEmp, history || [], masterData);
+  } catch (e) {
+    console.error('loadServiceHistory error:', e);
+    if (toolbar) toolbar.classList.add('hidden');
+    if (container) {
+      container.innerHTML = `<div class="text-center text-rose-500 py-16"><span class="material-icons text-4xl mb-1">error_outline</span><p>Error loading service history: ${e.message}</p></div>`;
+    }
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function renderServiceHistorySpreadsheet(emp, history, masterData) {
+  const container = document.getElementById('hrm-service-container');
+  if (!container) return;
+
+  function formatDate(dStr) {
+    if (!dStr || dStr === '-' || dStr === 'null' || dStr === 'undefined') return '';
+    return window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dStr) : dStr;
+  }
+
+  function cleanVal(v) {
+    if (v === null || v === undefined || v === '-' || v === 'null' || v === 'undefined') return '';
+    return String(v).trim();
+  }
+
+  const empName = emp ? cleanVal(emp.name || emp.emp_name) : '';
+  const empStaffId = emp ? cleanVal(emp.staff_id || emp.emp_id) : window.currentServiceHistoryStaffId;
+  const joiningDate = emp ? formatDate(emp.joining_date) : '';
+  const department = emp ? cleanVal(emp.department || emp.dep_name) : '';
+  const designation = emp ? cleanVal(emp.designation) : '';
+  const payGroup = emp ? cleanVal(emp.pay_group) : '';
+  const totalService = emp ? cleanVal(emp.placement_duration || emp.total_service) : '';
+
+  // Sort history chronologically ascending from initial appointment/joining
+  const sortedHistory = [...history].sort((a, b) => {
+    const dA = window.parseDate ? window.parseDate(a.date) : new Date(a.date);
+    const dB = window.parseDate ? window.parseDate(b.date) : new Date(b.date);
+    return (dA || 0) - (dB || 0);
+  });
+
+  let rowsHtml = '';
+  if (sortedHistory.length === 0) {
+    rowsHtml = `
+      <tr>
+        <td class="border border-gray-300 px-2 py-1 text-center font-bold">01</td>
+        <td class="border border-gray-300 px-2 py-1 text-center">${joiningDate}</td>
+        <td class="border border-gray-300 px-2 py-1 font-semibold">Initial Joining</td>
+        <td class="border border-gray-300 px-2 py-1 text-center">${cleanVal(emp ? emp.posting : '')}</td>
+        <td class="border border-gray-300 px-2 py-1">${cleanVal(emp ? emp.placement : '')}</td>
+        <td class="border border-gray-300 px-2 py-1 text-center">${cleanVal(emp ? emp.shift : '')}</td>
+        <td class="border border-gray-300 px-2 py-1 text-center font-semibold">${payGroup}</td>
+        <td class="border border-gray-300 px-2 py-1">${designation}</td>
+        <td class="border border-gray-300 px-2 py-1 text-center">${totalService}</td>
+        <td class="border border-gray-300 px-2 py-1">Initial appointment record</td>
+      </tr>
+    `;
+  } else {
+    sortedHistory.forEach((ev, idx) => {
+      const sl = String(idx + 1).padStart(2, '0');
+      const dateStr = formatDate(ev.date);
+      const evType = cleanVal(ev.type);
+      const details = cleanVal(ev.details);
+
+      // Parse station, section, shift, PG if available
+      let stn = '', sec = '', shift = '', pg = '', desig = '', duration = '', remarks = details;
+      
+      if (evType === 'Joined') {
+        pg = payGroup;
+        desig = designation;
+        stn = cleanVal(emp ? emp.posting : '');
+        sec = cleanVal(emp ? emp.placement : '');
+        shift = cleanVal(emp ? emp.shift : '');
+        remarks = 'Initial appointment to service';
+      } else if (evType === 'Posting') {
+        const m = details.match(/Station:\s*([^\s|]+)/i);
+        stn = m ? m[1] : '';
+      } else if (evType === 'Placement') {
+        const mStn = details.match(/Station:\s*([^\s|]+)/i);
+        const mSec = details.match(/Section:\s*([^\s|]+)/i);
+        const mSh = details.match(/Shift:\s*([^\s|]+)/i);
+        if (mStn) stn = mStn[1];
+        if (mSec) sec = mSec[1];
+        if (mSh) shift = mSh[1];
+      } else if (evType === 'Promotion') {
+        const m = details.match(/to\s*([^\s(]+)/i);
+        if (m) pg = m[1];
+      } else if (evType === 'Extension') {
+        const m = details.match(/as\s*([^\s]+)/i);
+        if (m) pg = m[1];
+      } else if (evType === 'Additional Charge') {
+        const m = details.match(/as\s*([^\s]+)/i);
+        if (m) pg = m[1];
+      }
+
+      rowsHtml += `
+        <tr class="hover:bg-blue-50/50">
+          <td class="border border-gray-300 px-2 py-1 text-center font-bold text-gray-700">${sl}</td>
+          <td class="border border-gray-300 px-2 py-1 text-center font-mono">${dateStr}</td>
+          <td class="border border-gray-300 px-2 py-1 font-semibold text-blue-900">${evType}</td>
+          <td class="border border-gray-300 px-2 py-1 text-center font-medium">${stn}</td>
+          <td class="border border-gray-300 px-2 py-1">${sec}</td>
+          <td class="border border-gray-300 px-2 py-1 text-center">${shift}</td>
+          <td class="border border-gray-300 px-2 py-1 text-center font-semibold text-purple-900">${pg}</td>
+          <td class="border border-gray-300 px-2 py-1">${desig}</td>
+          <td class="border border-gray-300 px-2 py-1 text-center font-mono text-xs-11">${duration}</td>
+          <td class="border border-gray-300 px-2 py-1 text-gray-600">${remarks}</td>
+        </tr>
+      `;
+    });
+  }
+
+  const html = `
+    <div id="printable-service-spreadsheet" class="w-full bg-white p-2">
+      <!-- Document Title & Employee Context Header -->
+      <div class="border-b-2 border-blue-900 pb-3 mb-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+          <div>
+            <h3 class="text-base font-extrabold text-blue-950 uppercase tracking-wide">SANDVIORA AVIOSOLUTION LTD.</h3>
+            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-tight">Comprehensive Employee Service History &amp; Tenure Audit</h4>
+          </div>
+          <div class="text-right text-xs text-gray-500 mt-1 sm:mt-0">
+            <span>Generated: <strong>${new Date().toLocaleString()}</strong></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 border border-gray-200 rounded p-2.5 mt-2.5 text-xs">
+          <div><span class="text-gray-500 font-medium">Staff ID:</span> <strong class="text-blue-900 font-bold">${empStaffId}</strong></div>
+          <div><span class="text-gray-500 font-medium">Full Name:</span> <strong class="text-gray-900 font-bold">${empName || '-'}</strong></div>
+          <div><span class="text-gray-500 font-medium">Department:</span> <strong class="text-gray-800">${department || '-'}</strong></div>
+          <div><span class="text-gray-500 font-medium">Joining Date:</span> <strong class="text-gray-800">${joiningDate || '-'}</strong></div>
+          <div><span class="text-gray-500 font-medium">Current PG:</span> <strong class="text-purple-900 font-bold">${payGroup || '-'}</strong></div>
+          <div><span class="text-gray-500 font-medium">Designation:</span> <strong class="text-gray-800">${designation || '-'}</strong></div>
+          <div><span class="text-gray-500 font-medium">Current Station:</span> <strong class="text-teal-900 font-bold">${cleanVal(emp ? emp.posting : '') || '-'}</strong></div>
+          <div><span class="text-gray-500 font-medium">Total Tenure:</span> <strong class="text-emerald-800 font-bold">${totalService || '-'}</strong></div>
+        </div>
+      </div>
+
+      <!-- Structured Spreadsheet Table -->
+      <div class="overflow-x-auto">
+        <table class="service-sheet-table w-full border-collapse text-xs">
+          <thead>
+            <tr>
+              <th style="width: 4%;">SL</th>
+              <th style="width: 10%;">Date</th>
+              <th style="width: 12%;">Category / Event</th>
+              <th style="width: 8%;">Station</th>
+              <th style="width: 12%;">Section</th>
+              <th style="width: 8%;">Shift</th>
+              <th style="width: 10%;">Pay Group (PG)</th>
+              <th style="width: 14%;">Designation</th>
+              <th style="width: 10%;">Duration</th>
+              <th style="width: 12%;">Remarks / Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function toggleServiceDownloadMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('service-dl-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+function exportServiceHistoryPDF() {
+  const element = document.getElementById('printable-service-spreadsheet');
+  if (!element) return app.toast('No service report to download', 'warning');
+
+  const staffId = window.currentServiceHistoryStaffId || 'Employee';
+  const filename = `Service_History_${staffId}.pdf`;
+
+  app.showLoader();
+  app.toast('Generating Landscape PDF...', 'info');
+
+  const opt = {
+    margin: [8, 8, 8, 8],
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  const generate = () => {
+    window.html2pdf().set(opt).from(element).save().then(() => {
+      app.hideLoader();
+      app.toast('PDF downloaded: ' + filename, 'success');
+    }).catch(e => {
+      app.hideLoader();
+      app.toast('PDF export failed: ' + e.message, 'error');
+    });
+  };
+
+  if (typeof window.html2pdf === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = generate;
+    document.head.appendChild(script);
+  } else {
+    generate();
+  }
+}
+
+function exportServiceHistoryExcel() {
+  const table = document.querySelector('#printable-service-spreadsheet table');
+  if (!table) return app.toast('No table to export', 'warning');
+
+  const staffId = window.currentServiceHistoryStaffId || 'Employee';
+  const rows = table.querySelectorAll('tr');
+  let csv = [];
+  rows.forEach(r => {
+    let cols = [];
+    r.querySelectorAll('th, td').forEach(c => {
+      let text = c.innerText.replace(/"/g, '""').trim();
+      cols.push(`"${text}"`);
+    });
+    csv.push(cols.join(','));
+  });
+
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `Service_History_${staffId}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  app.toast('Excel (CSV) downloaded successfully', 'success');
+}
+
+function printServiceHistory() {
+  const element = document.getElementById('printable-service-spreadsheet');
+  if (!element) return app.toast('No report to print', 'warning');
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Service History - SANDVIORA AVIOSOLUTION</title>
+        <style>
+          @page { size: A4 landscape; margin: 10mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; font-size: 11px; color: #000; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background-color: #fef08a !important; color: #1e3a8a !important; font-weight: bold; border: 1px solid #94a3b8; padding: 4px 6px; text-align: left; }
+          td { border: 1px solid #cbd5e1; padding: 3px 6px; }
+        </style>
+      </head>
+      <body>
+        ${element.innerHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 350);
+}
+
+
+// ==========================================
+// PROMOTION MODULE CONTROLLER
+// ==========================================
+window.currentPromotionTab = 'individual';
+window.allPromotionsData = [];
+window.promotionEligibilityData = [];
+window.currentIndividualReportData = null;
+
+async function switchPromotionTab(tabName) {
+  window.currentPromotionTab = tabName;
+
+  // 1. Update Left Action Buttons
+  const tabs = ['individual', 'all', 'eligibility'];
+  tabs.forEach(t => {
+    const btn = document.getElementById('btn-promo-' + t);
+    const view = document.getElementById('promo-view-' + t);
+    if (btn) {
+      if (t === tabName) {
+        btn.className = "bg-blue-800 text-white px-3 py-1 hover:bg-blue-700 font-medium border border-blue-900 rounded-sm flex items-center text-xs shadow-sm";
+      } else {
+        btn.className = "bg-gray-200 text-gray-800 px-3 py-1 hover:bg-gray-300 font-medium border border-gray-400 rounded-sm flex items-center text-xs";
+      }
+    }
+    if (view) {
+      if (t === tabName) {
+        view.classList.remove('hidden');
+      } else {
+        view.classList.add('hidden');
+      }
+    }
+  });
+
+  // 2. Render right-side toolbar controls for the active tab
+  const rightControls = document.getElementById('promo-tab-controls-right');
+  if (rightControls) {
+    rightControls.innerHTML = '';
+  }
+
+  if (tabName === 'individual') {
+    // Toolbar is embedded inside individual report view
+  } else if (tabName === 'all') {
+    if (rightControls) {
+      await renderAllPromotionsToolbar(rightControls);
+    }
+    await loadAllPromotionsData();
+  } else if (tabName === 'eligibility') {
+    if (rightControls) {
+      await renderEligibilityToolbar(rightControls);
+    }
+    await loadPromotionEligibilityData();
+  }
+}
+
+async function hrm_promotion_init() {
+  await switchPromotionTab('individual');
+  // Clear input, no default employee selected
+  const input = document.getElementById('promo-emp-input');
+  if (input) input.value = '';
+  const toolbar = document.getElementById('promo-report-toolbar');
+  if (toolbar) toolbar.classList.add('hidden');
+}
+
+async function loadIndividualPromotionReport(targetEmpId) {
+  const inputEl = document.getElementById('promo-emp-input');
+  let empIdentifier = targetEmpId || (inputEl ? inputEl.value.trim() : '');
+  
+  const outputContainer = document.getElementById('promo-individual-output');
+  const toolbar = document.getElementById('promo-report-toolbar');
+  if (!outputContainer) return;
+  
+  if (!empIdentifier) {
+    outputContainer.innerHTML = `
+      <div class="text-center text-gray-400 py-16">
+        <span class="material-icons text-5xl mb-2 text-gray-300">manage_search</span>
+        <h4 class="text-sm font-bold text-gray-600">No Report Generated</h4>
+        <p class="text-xs text-gray-400 mt-1">Enter a valid Staff ID above and click "Submit" to view the comprehensive promotion report.</p>
+      </div>
+    `;
+    if (toolbar) toolbar.classList.add('hidden');
+    return;
+  }
+
+  if (inputEl) inputEl.value = empIdentifier;
+  outputContainer.innerHTML = '<div class="p-8 text-center text-gray-500"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900 mx-auto mb-3"></div>Loading promotion report from Google Sheet...</div>';
+
+  try {
+    app.showLoader();
+    const result = await api.getEmployeePromotionReport(empIdentifier);
+
+    if (!result || !result.employee) {
+      throw new Error("No data returned for the selected employee.");
+    }
+
+    window.currentIndividualReportData = result;
+    if (toolbar) toolbar.classList.remove('hidden');
+    renderIndividualReportHTML(result, outputContainer);
+  } catch (err) {
+    window.currentIndividualReportData = null;
+    if (toolbar) toolbar.classList.add('hidden');
+    outputContainer.innerHTML = `
+      <div class="p-8 text-center text-rose-600 border border-rose-200 bg-rose-50/50 rounded-lg">
+        <span class="material-icons text-4xl mb-2 text-rose-500">error_outline</span>
+        <p class="font-bold text-gray-800">Could Not Load Promotion Report</p>
+        <p class="text-xs text-rose-700 mt-1 font-mono">${err.message || String(err)}</p>
+      </div>
+    `;
+    app.toast(err.message || 'Error loading promotion report', 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function clearIndividualPromotionReport() {
+  const inputEl = document.getElementById('promo-emp-input');
+  if (inputEl) inputEl.value = '';
+  const outputContainer = document.getElementById('promo-individual-output');
+  if (outputContainer) {
+    outputContainer.innerHTML = `
+      <div class="text-center text-gray-400 py-16">
+        <span class="material-icons text-5xl mb-2 text-gray-300">manage_search</span>
+        <h4 class="text-sm font-bold text-gray-600">No Report Generated</h4>
+        <p class="text-xs text-gray-400 mt-1">Enter a valid Staff ID above and click "Submit" to view the comprehensive promotion report.</p>
+      </div>
+    `;
+  }
+  const toolbar = document.getElementById('promo-report-toolbar');
+  if (toolbar) toolbar.classList.add('hidden');
+}
+
+function renderIndividualReportHTML(data, container) {
+  const emp = data.employee;
+  const promos = data.promotions || [];
+
+  function formatReportDate(dStr) {
+    if (!dStr || dStr === '-') return '-';
+    return window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dStr) : dStr;
+  }
+
+  let tableRows = '';
+  if (promos.length === 0) {
+    // Single initial appointment row, NO blank placeholder row 02
+    tableRows = `
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold; vertical-align: top;">01</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">Initial Appointment: ${emp.joining_designation ? emp.joining_designation + ', ' : ''}${emp.joining_pay_group || '-'}</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">-</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">${formatReportDate(emp.joining_date)}</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">-</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">Initial Appointment</td>
+      </tr>
+    `;
+  } else {
+    // Dynamic rows strictly from actual data without dummy blank rows
+    promos.forEach((p, idx) => {
+      const slStr = String(idx + 1).padStart(2, '0');
+      const prevPgStr = p.from_designation && p.from_designation !== '-' 
+        ? `${p.from_designation}, ${p.from_pg}` 
+        : (p.from_pg || '-');
+      const promotedPgStr = p.to_designation && p.to_designation !== '-' 
+        ? `${p.to_designation}, ${p.to_pg}` 
+        : (p.to_pg || '-');
+      const effDateStr = formatReportDate(p.promotion_date);
+      const durationStr = p.duration_in_previous_grade || p.duration_in_previous_pg || '-';
+      const remarksStr = (p.remarks && p.remarks !== 'Regular Promotion') ? p.remarks : 'Regular Promotion';
+
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold; vertical-align: top;">${slStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">${prevPgStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">${promotedPgStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">${effDateStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap;">${durationStr}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top;">${remarksStr}</td>
+        </tr>
+      `;
+    });
+  }
+
+  const joiningPayGroupDisplay = emp.joining_designation 
+    ? `${emp.joining_designation}, ${emp.joining_pay_group}` 
+    : (emp.joining_pay_group || '-');
+
+  const currentGenTimestamp = new Date().toLocaleString();
+
+  const html = `
+    <div class="w-full flex justify-center overflow-x-auto p-1 sm:p-4 bg-slate-100 rounded my-1">
+      <div id="printable-promotion-report" class="a4-portrait-page font-sans">
+        
+        <!-- Document Content Area -->
+        <div>
+          <!-- Header -->
+          <div style="text-align: center; color: #000; margin-bottom: 22px;">
+            <h1 style="font-size: 15pt; font-weight: 800; letter-spacing: 0.5px; margin: 0 0 4px 0; text-transform: uppercase;">
+              SANDVIORA AVIOSOLUTION LTD.
+            </h1>
+            <h2 style="font-size: 11pt; font-weight: 700; letter-spacing: 0.25px; margin: 0 0 18px 0; text-transform: uppercase; color: #374151;">
+              HUMAN RESOURCES INFORMATION SYSTEM DIVISION
+            </h2>
+            <h3 style="font-size: 12pt; font-weight: 800; letter-spacing: 0.5px; margin: 0; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 6px; display: inline-block;">
+              EMPLOYEE PROMOTION &amp; CAREER PROGRESSION REPORT
+            </h3>
+          </div>
+
+          <!-- Employees Basic Information -->
+          <div style="margin-bottom: 22px; color: #000;">
+            <div style="font-size: 10.5pt; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; color: #1e3a8a;">
+              EMPLOYEES BASIC INFORMATION:
+            </div>
+            <table style="width: 100%; border-collapse: collapse; border: none; font-size: 9.5pt; line-height: 1.6;">
+              <tbody>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: 600; text-transform: uppercase; padding: 2px 0; vertical-align: top;">FULL NAME:</td>
+                  <td style="font-weight: 600; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.emp_name || '-'}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: 600; text-transform: uppercase; padding: 2px 0; vertical-align: top;">STAFF ID:</td>
+                  <td style="font-weight: bold; text-transform: uppercase; padding: 2px 0; vertical-align: top; color: #1e3a8a;">${emp.staff_id || emp.emp_id || '-'}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">DIRECTORATE:</td>
+                  <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.directorate_name || '-'}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">DEPARTMENT:</td>
+                  <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.department_name || '-'}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">DATE OF JOINING:</td>
+                  <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${formatReportDate(emp.joining_date)}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: 600; text-transform: uppercase; padding: 2px 0; vertical-align: top;">CURRENT PAY GROUP (PG):</td>
+                  <td style="font-weight: 600; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.current_pay_group || '-'}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">CURRENT DESIGNATION:</td>
+                  <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.current_designation || '-'}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">JOINING PAY GROUP (PG):</td>
+                  <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${joiningPayGroupDisplay}</td>
+                </tr>
+                <tr>
+                  <td style="width: 220px; white-space: nowrap; font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">TOTAL SERVICE LENGTH:</td>
+                  <td style="font-weight: normal; text-transform: uppercase; padding: 2px 0; vertical-align: top;">${emp.total_service || '-'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Chronological Promotion History (Auto-fit, No Overflow, Dynamic Rows) -->
+          <div style="color: #000; margin-bottom: 24px;">
+            <div style="font-size: 10.5pt; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; color: #1e3a8a;">
+              CHRONOLOGICAL PROMOTION HISTORY:
+            </div>
+            <table class="promo-table-autofit">
+              <thead>
+                <tr>
+                  <th style="width: 6%;">SL</th>
+                  <th style="width: 28%;">Previous PG</th>
+                  <th style="width: 28%;">Promoted PG</th>
+                  <th style="width: 14%;">Effective Date</th>
+                  <th style="width: 12%;">Duration in PG</th>
+                  <th style="width: 12%;">Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Corporate Authorization Signature Block & Timestamp Footer -->
+        <div style="margin-top: 30px; pt-4;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; padding: 0 20px;">
+            <div style="border-top: 1.5px solid #000; width: 170px; text-align: center; padding-top: 5px; font-weight: bold; font-size: 9.5pt; text-transform: uppercase;">
+              Prepared By
+            </div>
+            <div style="border-top: 1.5px solid #000; width: 170px; text-align: center; padding-top: 5px; font-weight: bold; font-size: 9.5pt; text-transform: uppercase;">
+              Authorized By
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8pt; color: #6b7280;">
+            <span>Sandviora Aviosolution HRIS Report Protocol • Enterprise Confidential</span>
+            <span>Generated Date &amp; Time: <strong>${currentGenTimestamp}</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function togglePromoDownloadMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('promo-dl-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+function getSanitizedReportFilename(ext) {
+  if (!window.currentIndividualReportData || !window.currentIndividualReportData.employee) {
+    return `Employee_Promotion_Report.${ext}`;
+  }
+  const emp = window.currentIndividualReportData.employee;
+  const name = String(emp.emp_name || 'Employee').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sid = String(emp.staff_id || 'ID').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `Promotion_Report_${name}_${sid}.${ext}`;
+}
+
+function exportIndividualPromotionPDF() {
+  const element = document.getElementById('printable-promotion-report');
+  if (!element) return app.toast('No report available to download', 'warning');
+
+  const filename = getSanitizedReportFilename('pdf');
+  app.showLoader();
+  app.toast('Generating A4 portrait PDF...', 'info');
+
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  const generate = () => {
+    const clone = element.cloneNode(true);
+    clone.style.width = '190mm';
+    clone.style.maxWidth = '190mm';
+    clone.style.padding = '0';
+    clone.style.margin = '0';
+    clone.style.border = 'none';
+    clone.style.boxShadow = 'none';
+
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+      app.hideLoader();
+      app.toast('PDF downloaded successfully: ' + filename, 'success');
+    }).catch(e => {
+      app.hideLoader();
+      app.toast('PDF generation failed: ' + e.message, 'error');
+    });
+  };
+
+  if (typeof window.html2pdf === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = generate;
+    document.head.appendChild(script);
+  } else {
+    generate();
+  }
+}
+
+function exportIndividualPromotionWord() {
+  const element = document.getElementById('printable-promotion-report');
+  if (!element) return app.toast('No report available to download', 'warning');
+
+  const filename = getSanitizedReportFilename('docx');
+  app.toast('Downloading Microsoft Word (.docx) document...', 'info');
+
+  const contentHtml = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <meta charset='utf-8'>
+      <title>Promotion Report - SANDVIORA AVIOSOLUTION</title>
+      <style>
+        @page Section1 { size: 595.3pt 841.9pt; margin: 36pt 45pt; mso-page-orientation: portrait; }
+        div.Section1 { page: Section1; }
+        body { font-family: 'Inter', Arial, sans-serif; color: #000000; font-size: 10pt; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #000000; padding: 5px 6px; }
+      </style>
+    </head>
+    <body>
+      <div class="Section1">
+        ${element.innerHTML}
+      </div>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff', contentHtml], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  app.toast('Word document downloaded: ' + filename, 'success');
+}
+
+function printIndividualPromotionReport() {
+  const element = document.getElementById('printable-promotion-report');
+  if (!element) return app.toast('No report to print', 'warning');
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Promotion Report - SANDVIORA AVIOSOLUTION</title>
+        <style>
+          @page { size: A4 portrait; margin: 12mm 15mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; color: #000000; background: #ffffff; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { word-wrap: break-word; }
+        </style>
+      </head>
+      <body>
+        <div style="width: 100%; max-width: 180mm; margin: 0 auto; padding: 0;">
+          ${element.innerHTML}
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 350);
+}
+
+
+// ----------------------------------------------------
+// 2. ALL EMPLOYEES PROMOTIONS TAB
+// ----------------------------------------------------
+async function renderAllPromotionsToolbar(container) {
+  let payGroups = [];
+  try {
+    payGroups = await api.read('pay_groups');
+    payGroups.sort((a, b) => (Number(b.rank_level) || 0) - (Number(a.rank_level) || 0));
+  } catch (e) {}
+
+  let pgOptions = '<option value="ALL">All Pay Groups</option>';
+  const added = new Set();
+  payGroups.forEach(pg => {
+    if (pg.pay_group && !added.has(pg.pay_group)) {
+      added.add(pg.pay_group);
+      pgOptions += `<option value="${pg.pay_group}">${pg.pay_group}</option>`;
+    }
+  });
+
+  container.innerHTML = `
+    <div class="flex flex-wrap items-center gap-3 text-xs">
+      <div class="flex items-center space-x-1.5">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">Pay Group:</label>
+        <select id="all-promo-filter-pg" onchange="filterAllPromotionsTable()" class="border border-gray-400 bg-white px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900 font-medium">
+          ${pgOptions}
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-1.5">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">From:</label>
+        <input type="text" id="all-promo-filter-from" placeholder="DDMMYYYY" class="date-ddmmyyyy border border-gray-400 bg-white px-1.5 py-0.5 text-xs w-24 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900 font-mono" oninput="filterAllPromotionsTable()">
+      </div>
+
+      <div class="flex items-center space-x-1.5">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">To:</label>
+        <input type="text" id="all-promo-filter-to" placeholder="DDMMYYYY" class="date-ddmmyyyy border border-gray-400 bg-white px-1.5 py-0.5 text-xs w-24 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900 font-mono" oninput="filterAllPromotionsTable()">
+      </div>
+
+      <button onclick="resetAllPromotionsFilters()" class="border border-gray-400 bg-white text-gray-700 px-2 py-0.5 rounded-sm hover:bg-gray-100 font-semibold" title="Reset Filters">
+        Reset
+      </button>
+    </div>
+  `;
+
+  Components.initDateInputs();
+}
+
+async function loadAllPromotionsData() {
+  const tbody = document.getElementById('all-promo-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto mb-2"></div>Loading all promotion records...</td></tr>';
+
+  try {
+    app.showLoader();
+    const data = await api.getPromotionsDetailed();
+    window.allPromotionsData = data;
+    filterAllPromotionsTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-500 font-bold">Error: ${err.message}</td></tr>`;
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function resetAllPromotionsFilters() {
+  const pgEl = document.getElementById('all-promo-filter-pg');
+  const fromEl = document.getElementById('all-promo-filter-from');
+  const toEl = document.getElementById('all-promo-filter-to');
+  if (pgEl) pgEl.value = 'ALL';
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  filterAllPromotionsTable();
+}
+
+function filterAllPromotionsTable() {
+  if (!window.allPromotionsData) return;
+  let list = window.allPromotionsData;
+
+  const pgFilter = document.getElementById('all-promo-filter-pg') ? document.getElementById('all-promo-filter-pg').value : 'ALL';
+  const fromInput = document.getElementById('all-promo-filter-from');
+  const toInput = document.getElementById('all-promo-filter-to');
+
+  function parseDateInput(el) {
+    if (!el || !el.value) return null;
+    return window.parseDate ? window.parseDate(el.value) : new Date(el.value);
+  }
+
+  const fromDate = parseDateInput(fromInput);
+  const toDate = parseDateInput(toInput);
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+
+  if (pgFilter !== 'ALL') {
+    list = list.filter(r => r.promoted_pay_group === pgFilter || r.present_pay_group === pgFilter);
+  }
+
+  if (fromDate) {
+    list = list.filter(r => {
+      if (!r.promotion_date) return false;
+      const d = window.parseDate ? window.parseDate(r.promotion_date) : new Date(r.promotion_date);
+      return d && !isNaN(d.getTime()) && d >= fromDate;
+    });
+  }
+
+  if (toDate) {
+    list = list.filter(r => {
+      if (!r.promotion_date) return false;
+      const d = window.parseDate ? window.parseDate(r.promotion_date) : new Date(r.promotion_date);
+      return d && !isNaN(d.getTime()) && d <= toDate;
+    });
+  }
+
+  renderAllPromotionsRows(list);
+}
+
+function renderAllPromotionsRows(list) {
+  const tbody = document.getElementById('all-promo-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-gray-500">No promotion records matched the selected filters.</td></tr>';
+    return;
+  }
+
+  function formatDate(dStr) {
+    if (!dStr || dStr === '-') return '-';
+    return window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dStr) : dStr;
+  }
+
+  list.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-blue-50/70 transition-colors";
+    tr.innerHTML = `
+      <td class="border border-gray-300 px-1 py-0 text-center font-bold text-gray-600">${idx + 1}</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold font-mono text-blue-900">${r.staff_id}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-gray-900 truncate max-w-[160px]" title="${r.emp_name}">${r.emp_name}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${r.department}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-800">${r.present_pay_group} (${r.present_designation})</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold text-blue-950 bg-blue-50/30">${r.promoted_pay_group}</td>
+      <td class="border border-gray-300 px-1 py-0 font-semibold text-blue-800">${r.promoted_designation}</td>
+      <td class="border border-gray-300 px-1 py-0 text-center font-mono font-bold text-purple-900">${r.rank_level}</td>
+      <td class="border border-gray-300 px-1 py-0 text-center font-semibold text-gray-700">${r.sequence_no}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-gray-800">${formatDate(r.promotion_date)}</td>
+      <td class="border border-gray-300 px-1 py-0 font-mono text-gray-700 text-xs-11">${r.time_in_previous_grade || r.time_in_previous_pg || '-'}</td>
+      <td class="border border-gray-300 px-1 py-0 text-center">
+        <button onclick="viewEmployeeIndividualReport('${r.staff_id}')" class="bg-blue-100 text-blue-800 hover:bg-blue-200 px-2 py-0.5 rounded text-xs-11 font-bold border border-blue-300 cursor-pointer" title="View Individual Career Report">
+          Report
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function viewEmployeeIndividualReport(staffId) {
+  switchPromotionTab('individual');
+  const input = document.getElementById('promo-emp-input');
+  if (input) input.value = staffId;
+  loadIndividualPromotionReport(staffId);
+}
+
+function toggleAllPromoDownloadMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('all-promo-dl-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+function exportAllPromotionsCSV() {
+  if (!window.allPromotionsData || window.allPromotionsData.length === 0) return app.toast('No records to export', 'warning');
+  const headers = ['SL', 'Staff ID', 'Name', 'Department', 'From PG', 'From Designation', 'Promoted PG', 'Promoted Designation', 'Rank', 'Seq', 'Promotion Date', 'Time in Prev PG'];
+  const rows = window.allPromotionsData.map((r, i) => [
+    i + 1,
+    `"${r.staff_id || ''}"`,
+    `"${(r.emp_name || '').replace(/"/g, '""')}"`,
+    `"${r.department || ''}"`,
+    `"${r.present_pay_group || ''}"`,
+    `"${(r.present_designation || '').replace(/"/g, '""')}"`,
+    `"${r.promoted_pay_group || ''}"`,
+    `"${(r.promoted_designation || '').replace(/"/g, '""')}"`,
+    r.rank_level || 0,
+    r.sequence_no || 1,
+    `"${r.promotion_date || ''}"`,
+    `"${r.time_in_previous_grade || r.time_in_previous_pg || ''}"`
+  ]);
+  const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Promotions_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  app.toast('Promotions CSV exported successfully', 'success');
+}
+
+function exportAllPromotionsPDF() {
+  const table = document.getElementById('all-promo-table');
+  if (!table) return app.toast('No promotion table found', 'warning');
+
+  app.showLoader();
+  app.toast('Generating Landscape PDF...', 'info');
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div style="font-family: 'Inter', Arial, sans-serif; padding: 12px;">
+      <h2 style="text-align: center; color: #1e3a8a; margin-bottom: 4px; text-transform: uppercase;">SANDVIORA AVIOSOLUTION - All Promotions Audit</h2>
+      <p style="text-align: center; font-size: 10px; color: #6b7280; margin-bottom: 12px;">Generated on ${new Date().toLocaleString()}</p>
+      ${table.outerHTML}
+    </div>
+  `;
+
+  const opt = {
+    margin: [8, 8, 8, 8],
+    filename: `Promotions_Audit_${new Date().toISOString().slice(0, 10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  const generate = () => {
+    window.html2pdf().set(opt).from(wrapper).save().then(() => {
+      app.hideLoader();
+      app.toast('Landscape PDF downloaded successfully', 'success');
+    }).catch(e => {
+      app.hideLoader();
+      app.toast('PDF generation failed: ' + e.message, 'error');
+    });
+  };
+
+  if (typeof window.html2pdf === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = generate;
+    document.head.appendChild(script);
+  } else {
+    generate();
+  }
+}
+
+function printAllPromotionsReport() {
+  const table = document.getElementById('all-promo-table');
+  if (!table) return app.toast('No promotion table to print', 'warning');
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>All Promotions Audit - SANDVIORA AVIOSOLUTION</title>
+        <style>
+          @page { size: A4 landscape; margin: 10mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { font-family: 'Inter', Arial, sans-serif; font-size: 10px; margin: 0; padding: 0; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #000; padding: 4px 6px; }
+          th { background: #f8fafc; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <h3 style="text-align: center; margin-bottom: 8px;">SANDVIORA AVIOSOLUTION - All Promotions Audit</h3>
+        ${table.outerHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 350);
+}
+
+
+// ----------------------------------------------------
+// 3. PROMOTION ELIGIBILITY TAB
+// ----------------------------------------------------
+async function renderEligibilityToolbar(container) {
+  let departments = [];
+  let payGroups = [];
+  try {
+    [departments, payGroups] = await Promise.all([
+      api.read('departments').catch(() => []),
+      api.read('pay_groups').catch(() => [])
+    ]);
+  } catch (e) {}
+
+  let depOptions = '<option value="ALL">All Departments</option>';
+  departments.forEach(d => {
+    depOptions += `<option value="${d.dep_letter_code}">${d.dep_name} (${d.dep_letter_code})</option>`;
+  });
+
+  let pgOptions = '<option value="ALL">All Pay Groups</option>';
+  const addedPgs = new Set();
+  payGroups.sort((a, b) => (Number(b.rank_level) || 0) - (Number(a.rank_level) || 0));
+  payGroups.forEach(p => {
+    if (p.pay_group && !addedPgs.has(p.pay_group)) {
+      addedPgs.add(p.pay_group);
+      pgOptions += `<option value="${p.pay_group}">${p.pay_group}</option>`;
+    }
+  });
+
+  container.innerHTML = `
+    <div class="flex flex-wrap items-center gap-3 text-xs">
+      <div class="flex items-center space-x-1.5">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">Department:</label>
+        <select id="eligibility-filter-dep" onchange="filterEligibilityTable()" class="border border-gray-400 bg-white px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900 font-medium">
+          ${depOptions}
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-1.5">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">Group:</label>
+        <select id="eligibility-filter-pg" onchange="filterEligibilityTable()" class="border border-gray-400 bg-white px-2 py-0.5 text-xs rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900 font-medium">
+          ${pgOptions}
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-1.5">
+        <label class="font-bold text-gray-700 uppercase tracking-tighter">Search (Name / Staff ID):</label>
+        <input type="text" id="eligibility-search-text" placeholder="Search..." class="border border-gray-400 px-2 py-0.5 text-xs w-36 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-900 font-medium" oninput="filterEligibilityTable()">
+      </div>
+    </div>
+  `;
+}
+
+async function loadPromotionEligibilityData() {
+  const tbody = document.getElementById('eligibility-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto mb-2"></div>Evaluating 3-year promotion eligibility criteria...</td></tr>';
+
+  try {
+    app.showLoader();
+    let data = await api.getPromotionEligibility().catch(() => []);
+    if (!Array.isArray(data) || data.length === 0) {
+      const employees = await api.getHrmDetails().catch(() => api.read('employees'));
+      const today = new Date();
+      data = (employees || []).filter(e => e.status !== 'Retired').map((e, idx) => {
+        const jDate = e.joining_date ? (window.parseDate ? window.parseDate(e.joining_date) : new Date(e.joining_date)) : null;
+        let yearsInPg = 0;
+        if (jDate && !isNaN(jDate.getTime())) {
+          yearsInPg = Math.floor((today - jDate) / (1000 * 60 * 60 * 24 * 365.25) * 10) / 10;
+        }
+        const isEligible = yearsInPg >= 3.0;
+        return {
+          sl: idx + 1,
+          staff_id: e.staff_id || e.emp_id || '',
+          emp_name: e.name || e.emp_name || 'Personnel',
+          department: e.department || '-',
+          present_pay_group: e.pay_group || 'PG-4',
+          present_designation: e.designation || 'Personnel',
+          current_pg_since: e.joining_date || '-',
+          time_in_pg: `${yearsInPg} Years`,
+          next_pay_group: 'PG Senior',
+          next_designation: 'Senior Designation',
+          is_eligible: isEligible,
+          years_in_pg: yearsInPg
+        };
+      });
+    }
+    window.promotionEligibilityData = Array.isArray(data) ? data : [];
+    filterEligibilityTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-red-500 font-bold">Error: ${err.message}</td></tr>`;
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function filterEligibilityTable() {
+  if (!window.promotionEligibilityData) return;
+  let list = window.promotionEligibilityData;
+
+  const depFilter = document.getElementById('eligibility-filter-dep') ? document.getElementById('eligibility-filter-dep').value : 'ALL';
+  const pgFilter = document.getElementById('eligibility-filter-pg') ? document.getElementById('eligibility-filter-pg').value : 'ALL';
+  const search = document.getElementById('eligibility-search-text') ? document.getElementById('eligibility-search-text').value.toLowerCase().trim() : '';
+
+  if (depFilter !== 'ALL') {
+    list = list.filter(e => e.department === depFilter);
+  }
+
+  if (pgFilter !== 'ALL') {
+    list = list.filter(e => e.present_pay_group === pgFilter);
+  }
+
+  if (search) {
+    list = list.filter(e => 
+      String(e.staff_id || '').toLowerCase().includes(search) || 
+      String(e.emp_name || '').toLowerCase().includes(search) ||
+      String(e.present_pay_group || '').toLowerCase().includes(search)
+    );
+  }
+
+  renderEligibilityRows(list);
+}
+
+function renderEligibilityRows(list) {
+  const tbody = document.getElementById('eligibility-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500">No employees meet the selected criteria.</td></tr>';
+    return;
+  }
+
+  function formatDate(dStr) {
+    if (!dStr || dStr === '-') return '-';
+    return window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dStr) : dStr;
+  }
+
+  list.forEach((r, idx) => {
+    const isEligible = r.is_eligible || (Number(r.years_in_grade || r.years_in_pg) >= 3.0);
+    const statusText = isEligible ? 'Eligible' : 'Not Eligible';
+    const badgeClass = isEligible 
+      ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+      : 'bg-rose-50 text-rose-700 border-rose-200';
+
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-blue-50/70 transition-colors";
+    tr.innerHTML = `
+      <td class="border border-gray-300 px-1 py-0 text-center font-bold text-gray-600">${idx + 1}</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold font-mono text-blue-900">${r.staff_id}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-gray-900 truncate max-w-[160px]" title="${r.emp_name}">${r.emp_name}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${r.department}</td>
+      <td class="border border-gray-300 px-1 py-0 font-bold text-gray-800">${r.present_pay_group}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${r.present_designation}</td>
+      <td class="border border-gray-300 px-1 py-0 text-gray-700">${formatDate(r.current_pg_since || r.current_grade_since)}</td>
+      <td class="border border-gray-300 px-1 py-0 font-mono font-bold text-blue-950">${r.time_in_pg || r.time_in_grade}</td>
+      <td class="border border-gray-300 px-1 py-0 font-medium text-purple-900 bg-purple-50/30">${r.next_pay_group} (${r.next_designation})</td>
+      <td class="border border-gray-300 px-1 py-0 text-center">
+        <span class="px-2 py-0.5 rounded text-xs-11 font-bold border ${badgeClass}">${statusText}</span>
+      </td>
+      <td class="border border-gray-300 px-1 py-0 text-center">
+        <button onclick="viewEmployeeIndividualReport('${r.staff_id}')" class="bg-blue-100 text-blue-800 hover:bg-blue-200 px-2 py-0.5 rounded text-xs-11 font-bold border border-blue-300 cursor-pointer" title="View Full Promotion History">
+          History
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleEligibilityDownloadMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('eligibility-dl-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+function exportEligibilityPDF() {
+  const table = document.getElementById('eligibility-table');
+  if (!table) return;
+
+  app.showLoader();
+  app.toast('Generating Landscape PDF...', 'info');
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div style="font-family: 'Inter', Arial, sans-serif; padding: 12px;">
+      <h2 style="text-align: center; color: #1e3a8a; margin-bottom: 4px; text-transform: uppercase;">SANDVIORA AVIOSOLUTION - Promotion Eligibility Report</h2>
+      <p style="text-align: center; font-size: 10px; color: #6b7280; margin-bottom: 12px;">Generated on ${new Date().toLocaleString()} • 3-Year Continuous Service Rule</p>
+      ${table.outerHTML}
+    </div>
+  `;
+
+  const opt = {
+    margin: [8, 8, 8, 8],
+    filename: `Promotion_Eligibility_${new Date().toISOString().slice(0,10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  if (typeof window.html2pdf === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = () => {
+      window.html2pdf().set(opt).from(wrapper).save().then(() => {
+        app.hideLoader();
+        app.toast('Landscape PDF downloaded!', 'success');
+      });
+    };
+    document.head.appendChild(script);
+  } else {
+    window.html2pdf().set(opt).from(wrapper).save().then(() => {
+      app.hideLoader();
+      app.toast('Landscape PDF downloaded!', 'success');
+    });
+  }
+}
+
+function exportEligibilityExcel() {
+  const table = document.getElementById('eligibility-table');
+  if (!table) return app.toast('No table to export', 'warning');
+
+  const rows = table.querySelectorAll('tr');
+  let csv = [];
+  rows.forEach(r => {
+    let cols = [];
+    r.querySelectorAll('th, td').forEach(c => {
+      let text = c.innerText.replace(/"/g, '""').trim();
+      cols.push(`"${text}"`);
+    });
+    csv.push(cols.join(','));
+  });
+
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Promotion_Eligibility_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  app.toast('Excel (CSV) downloaded successfully', 'success');
+}
+
+function printEligibilityReport() {
+  const table = document.getElementById('eligibility-table');
+  if (!table) return;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Promotion Eligibility - SANDVIORA AVIOSOLUTION</title>
+        <style>
+          @page { size: A4 landscape; margin: 10mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { font-family: 'Inter', Arial, sans-serif; font-size: 11px; margin: 0; padding: 0; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #fef08a !important; color: #1e3a8a !important; border: 1px solid #94a3b8; padding: 4px; font-weight: bold; }
+          td { border: 1px solid #cbd5e1; padding: 3px; }
+        </style>
+      </head>
+      <body>
+        <h3 style="text-align: center; margin-bottom: 10px;">SANDVIORA AVIOSOLUTION - Promotion Eligibility Report</h3>
+        ${table.outerHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 350);
+}
+
+
+// ==========================================
+// WORKFORCE MODULE CONTROLLER
+// ==========================================
+var WorkforceModule = window.WorkforceModule = {
+  currentTab: 'setup',
+  currentDistView: 'shift',
+
+  // Master Cache
+  masterData: null,
+  employees: [],
+  setups: [],
+
+  // Current Filter State
+  selectedDirId: 'ALL',
+  selectedDepId: 'ALL',
+  selectedStationId: 'ALL',
+  selectedDistDepId: 'ALL',
+
+  init: async function() {
+    try {
+      app.showLoader();
+      const [mMaster, mEmployees] = await Promise.all([
+        api.getMasterData().catch(() => ({})),
+        api.getHrmDetails().catch(() => [])
+      ]);
+
+      this.masterData = mMaster || {};
+      this.employees = Array.isArray(mEmployees) ? mEmployees : [];
+      this.setups = Array.isArray(this.masterData.workforce_setup) ? this.masterData.workforce_setup : [];
+
+      if (this.employees.length === 0) {
+        this.employees = await api.read('employees').catch(() => []);
+      }
+      if (this.setups.length === 0) {
+        this.setups = await api.read('workforce_setup').catch(() => []);
+      }
+
+      this.populateDropdownFilters();
+      this.renderSetupReport();
+    } catch (e) {
+      console.error('WorkforceModule init error:', e);
+      app.toast('Failed to load workforce records: ' + e.message, 'error');
+    } finally {
+      app.hideLoader();
+    }
+  },
+
+  switchTab: function(tabName) {
+    this.currentTab = tabName;
+    ['setup', 'distribution', 'analytics', 'summary'].forEach(t => {
+      const btn = document.getElementById('wf-btn-' + t);
+      const ws = document.getElementById('wf-workspace-' + t);
+      if (btn) {
+        if (t === tabName) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+      if (ws) {
+        if (t === tabName) ws.classList.remove('hidden');
+        else ws.classList.add('hidden');
+      }
+    });
+
+    if (tabName === 'setup') {
+      this.renderSetupReport();
+    } else if (tabName === 'distribution') {
+      this.renderDistributionReport();
+    } else if (tabName === 'analytics') {
+      this.renderAnalyticsDashboard();
+    } else if (tabName === 'summary') {
+      this.renderStationSummaryTable();
+    }
+  },
+
+  populateDropdownFilters: function() {
+    const dirSelect = document.getElementById('wf-filter-dir');
+    const depSelect = document.getElementById('wf-filter-dep');
+    const stnSelect = document.getElementById('wf-filter-stn');
+    const distDepSelect = document.getElementById('wf-dist-filter-dep');
+
+    const directorates = this.masterData.directorates || [];
+    const departments = this.masterData.departments || [];
+    const stations = this.masterData.stations || [];
+
+    if (dirSelect) {
+      dirSelect.innerHTML = '<option value="ALL">All Directorates</option>';
+      directorates.forEach(dir => {
+        const opt = document.createElement('option');
+        opt.value = dir.dir_id;
+        opt.textContent = dir.dir_name || dir.dir_code;
+        dirSelect.appendChild(opt);
+      });
+    }
+
+    if (distDepSelect) {
+      distDepSelect.innerHTML = '<option value="ALL">All Departments</option>';
+      departments.forEach(dep => {
+        const opt = document.createElement('option');
+        opt.value = dep.dep_id;
+        opt.textContent = `${dep.dep_name} (${dep.dep_letter_code || dep.dep_code})`;
+        distDepSelect.appendChild(opt);
+      });
+    }
+
+    this.updateDepartmentDropdown();
+    this.updateStationDropdown();
+  },
+
+  updateDepartmentDropdown: function() {
+    const depSelect = document.getElementById('wf-filter-dep');
+    if (!depSelect) return;
+
+    const departments = this.masterData.departments || [];
+    const dirId = this.selectedDirId;
+
+    let filteredDeps = departments;
+    if (dirId !== 'ALL') {
+      filteredDeps = departments.filter(d => String(d.dir_id).trim() === dirId);
+    }
+
+    depSelect.innerHTML = '<option value="ALL">All Departments</option>';
+    filteredDeps.forEach(dep => {
+      const opt = document.createElement('option');
+      opt.value = dep.dep_id;
+      opt.textContent = dep.dep_name || dep.dep_letter_code || dep.dep_code;
+      depSelect.appendChild(opt);
+    });
+
+    if (this.selectedDepId !== 'ALL') {
+      const match = Array.from(depSelect.options).some(o => o.value === this.selectedDepId);
+      if (!match) {
+        this.selectedDepId = 'ALL';
+        depSelect.value = 'ALL';
+      } else {
+        depSelect.value = this.selectedDepId;
+      }
+    }
+  },
+
+  updateStationDropdown: function() {
+    const stnSelect = document.getElementById('wf-filter-stn');
+    if (!stnSelect) return;
+
+    const stations = this.masterData.stations || [];
+    stnSelect.innerHTML = '<option value="ALL">All Stations</option>';
+    stations.forEach(stn => {
+      const opt = document.createElement('option');
+      opt.value = stn.station_id;
+      opt.textContent = `${stn.station_code} - ${stn.station_name || stn.station_location || ''}`;
+      stnSelect.appendChild(opt);
+    });
+
+    if (this.selectedStationId !== 'ALL') {
+      const match = Array.from(stnSelect.options).some(o => o.value === this.selectedStationId);
+      if (!match) {
+        this.selectedStationId = 'ALL';
+        stnSelect.value = 'ALL';
+      } else {
+        stnSelect.value = this.selectedStationId;
+      }
+    }
+  },
+
+  onDirectorateChange: function() {
+    const dirSelect = document.getElementById('wf-filter-dir');
+    this.selectedDirId = dirSelect ? dirSelect.value : 'ALL';
+    this.updateDepartmentDropdown();
+    this.updateStationDropdown();
+    this.renderSetupReport();
+  },
+
+  onDepartmentChange: function() {
+    const depSelect = document.getElementById('wf-filter-dep');
+    this.selectedDepId = depSelect ? depSelect.value : 'ALL';
+
+    if (this.selectedDepId !== 'ALL' && this.selectedDirId === 'ALL') {
+      const depObj = (this.masterData.departments || []).find(d => String(d.dep_id).trim() === this.selectedDepId);
+      if (depObj && depObj.dir_id) {
+        this.selectedDirId = String(depObj.dir_id).trim();
+        const dirSelect = document.getElementById('wf-filter-dir');
+        if (dirSelect) dirSelect.value = this.selectedDirId;
+      }
+    }
+
+    this.updateStationDropdown();
+    this.renderSetupReport();
+  },
+
+  onDistDepartmentChange: function() {
+    const select = document.getElementById('wf-dist-filter-dep');
+    this.selectedDistDepId = select ? select.value : 'ALL';
+    this.renderDistributionReport();
+  },
+
+  onStationChange: function() {
+    const stnSelect = document.getElementById('wf-filter-stn');
+    this.selectedStationId = stnSelect ? stnSelect.value : 'ALL';
+    this.renderSetupReport();
+  },
+
+  resetFilters: function() {
+    this.selectedDirId = 'ALL';
+    this.selectedDepId = 'ALL';
+    this.selectedStationId = 'ALL';
+    const dirSelect = document.getElementById('wf-filter-dir');
+    const depSelect = document.getElementById('wf-filter-dep');
+    const stnSelect = document.getElementById('wf-filter-stn');
+    if (dirSelect) dirSelect.value = 'ALL';
+    this.updateDepartmentDropdown();
+    this.updateStationDropdown();
+    if (depSelect) depSelect.value = 'ALL';
+    if (stnSelect) stnSelect.value = 'ALL';
+    this.renderSetupReport();
+  },
+
+  renderSetupReport: function() {
+    const container = document.getElementById('wf-setup-table-container');
+    const statusEl = document.getElementById('wf-filter-status');
+    if (!container) return;
+
+    const dirId = this.selectedDirId;
+    const depId = this.selectedDepId;
+    const stnId = this.selectedStationId;
+
+    const payGroups = this.masterData.pay_groups || [];
+    const departments = this.masterData.departments || [];
+    const directorates = this.masterData.directorates || [];
+    const stations = this.masterData.stations || [];
+
+    const pgMap = {};
+    payGroups.forEach(pg => {
+      pgMap[pg.pg_id] = pg;
+      if (pg.designation_short) pgMap[String(pg.designation_short).trim().toUpperCase()] = pg;
+      if (pg.pay_group) pgMap[String(pg.pay_group).trim().toUpperCase()] = pg;
+    });
+
+    if (statusEl) {
+      const dirObj = directorates.find(d => String(d.dir_id).trim() === dirId);
+      const depObj = departments.find(d => String(d.dep_id).trim() === depId);
+      const stnObj = stations.find(s => String(s.station_id).trim() === stnId);
+
+      let parts = [];
+      if (dirObj) parts.push(`Directorate: <strong class="text-teal-800">${dirObj.dir_name}</strong>`);
+      else parts.push(`Directorates: <strong class="text-teal-800">All</strong>`);
+
+      if (depObj) parts.push(`Department: <strong class="text-teal-800">${depObj.dep_name}</strong>`);
+      if (stnObj) parts.push(`Station: <strong class="text-teal-800">${stnObj.station_code}</strong>`);
+
+      statusEl.innerHTML = parts.join(' &nbsp;•&nbsp; ');
+    }
+
+    const matrix = {};
+
+    function getGroupKey(desig, pgName) {
+      return (String(desig || '-').trim().toUpperCase()) + '|' + (String(pgName || '-').trim().toUpperCase());
+    }
+
+    function getOrCreateGroup(desig, pgName, rankLvl) {
+      const key = getGroupKey(desig, pgName);
+      if (!matrix[key]) {
+        matrix[key] = {
+          designation: desig || '-',
+          pay_group: pgName || '-',
+          rank_level: Number(rankLvl) || 0,
+          setup: 0,
+          existing: 0,
+          required: 0
+        };
+      }
+      return matrix[key];
+    }
+
+    this.setups.forEach(s => {
+      if (dirId !== 'ALL' && String(s.dir_id).trim() !== dirId) return;
+      if (depId !== 'ALL' && String(s.dep_id).trim() !== depId) return;
+      if (stnId !== 'ALL' && String(s.station_id).trim() !== stnId) return;
+
+      const pgObj = pgMap[s.pay_group_id] || pgMap[s.designation_id];
+      const desigObj = pgMap[s.designation_id] || pgObj;
+
+      const desig = desigObj ? (desigObj.designation_short || desigObj.designation) : (s.designation_id || '-');
+      const pgName = pgObj ? pgObj.pay_group : (s.pay_group_id || '-');
+      const rankLvl = pgObj ? pgObj.rank_level : (desigObj ? desigObj.rank_level : 0);
+
+      const entry = getOrCreateGroup(desig, pgName, rankLvl);
+      entry.setup += (Number(s.set_up) || 0);
+    });
+
+    this.employees.forEach(emp => {
+      if (emp.status === 'Retired') return;
+
+      if (dirId !== 'ALL' && String(emp.dir_id).trim() !== dirId) return;
+      if (depId !== 'ALL' && String(emp.dep_id).trim() !== depId) return;
+      if (stnId !== 'ALL' && String(emp.station_id).trim() !== stnId) return;
+
+      const desig = emp.designation ? String(emp.designation).replace(/,.*\(Add\. Charge\)/i, '').trim() : '-';
+      const pgName = emp.pay_group || '-';
+      const rankLvl = emp.rank_level || 0;
+
+      const entry = getOrCreateGroup(desig, pgName, rankLvl);
+      entry.existing += 1;
+    });
+
+    const rows = [];
+    let totalSetup = 0, totalExisting = 0, totalRequired = 0;
+
+    for (const k in matrix) {
+      if (matrix.hasOwnProperty(k)) {
+        const row = matrix[k];
+        row.required = row.setup - row.existing;
+
+        if (row.setup === 0 && row.existing === 0) continue;
+
+        totalSetup += row.setup;
+        totalExisting += row.existing;
+        totalRequired += row.required;
+        rows.push(row);
+      }
+    }
+
+    const bSetup = document.getElementById('wf-badge-setup');
+    const bExist = document.getElementById('wf-badge-existing');
+    const bReq = document.getElementById('wf-badge-required');
+    if (bSetup) bSetup.innerText = totalSetup.toLocaleString();
+    if (bExist) bExist.innerText = totalExisting.toLocaleString();
+    if (bReq) bReq.innerText = totalRequired.toLocaleString();
+
+    rows.sort((a, b) => {
+      if (b.rank_level !== a.rank_level) return b.rank_level - a.rank_level;
+      return a.designation.localeCompare(b.designation);
+    });
+
+    if (rows.length === 0) {
+      container.innerHTML = `
+        <div class="p-8 text-center text-gray-400 border border-dashed border-gray-300 rounded-lg">
+          <span class="material-icons text-4xl mb-2 text-gray-300">work_outline</span>
+          <h4 class="font-bold text-gray-600 text-sm">No Active Personnel or Setup Records Found</h4>
+          <p class="text-xs text-gray-400 mt-1">There are no sanctioned setups or active officers matching the current filter criteria.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = `
+      <table class="workforce-setup-table" id="workforce-matrix-table">
+        <thead>
+          <tr>
+            <th style="width: 28%;">Designation</th>
+            <th class="center-col" style="width: 18%;">Pay Group (PG)</th>
+            <th class="num-col" style="width: 18%;">Setup</th>
+            <th class="num-col" style="width: 18%;">Existing</th>
+            <th class="num-col" style="width: 18%;">Required</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    rows.forEach(r => {
+      html += `
+        <tr>
+          <td>${r.designation}</td>
+          <td class="center-col font-semibold">${r.pay_group}</td>
+          <td class="num-col">${r.setup}</td>
+          <td class="num-col font-semibold text-emerald-800">${r.existing}</td>
+          <td class="num-col font-bold ${r.required > 0 ? 'text-rose-700' : 'text-gray-700'}">${r.required}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+        <tr class="total-row">
+          <td style="text-align: center;">Total</td>
+          <td></td>
+          <td class="num-col">${totalSetup}</td>
+          <td class="num-col">${totalExisting}</td>
+          <td class="num-col">${totalRequired}</td>
+        </tr>
+      </tbody>
+    </table>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  switchDistView: function(viewType) {
+    this.currentDistView = viewType;
+    ['shift', 'section', 'desig', 'station'].forEach(v => {
+      const btn = document.getElementById('wf-dist-btn-' + v);
+      if (btn) {
+        if (v === viewType || (v === 'desig' && viewType === 'designation')) {
+          btn.className = 'wf-dist-btn active';
+        } else {
+          btn.className = 'wf-dist-btn';
+        }
+      }
+    });
+    this.renderDistributionReport();
+  },
+
+  /**
+   * Workforce Distribution Matrix:
+   * Dynamic Department Filter + Pay Groups along rows & Shift designations across columns.
+   * Aggregates employee headcounts per shift for each Pay Group, removes "N/A" and "Others",
+   * and presents a grand total row at the bottom.
+   */
+  renderDistributionReport: function() {
+    const container = document.getElementById('wf-dist-content-container');
+    const totalEl = document.getElementById('wf-dist-total-headcount');
+    if (!container) return;
+
+    let activeEmps = this.employees.filter(e => e.status !== 'Retired');
+    
+    // Apply Department filter
+    if (this.selectedDistDepId && this.selectedDistDepId !== 'ALL') {
+      activeEmps = activeEmps.filter(e => String(e.dep_id).trim() === this.selectedDistDepId);
+    }
+
+    if (totalEl) totalEl.innerText = activeEmps.length.toLocaleString();
+
+    const view = this.currentDistView;
+
+    if (view === 'shift') {
+      // Get all unique shifts from masterData (filter out empty, N/A, Others)
+      const rawShifts = this.masterData.shifts || [];
+      const shiftSet = new Set();
+      rawShifts.forEach(s => {
+        const name = (s.shift_name || s.shift_code || '').trim();
+        if (name && name.toUpperCase() !== 'N/A' && name.toUpperCase() !== 'OTHERS') {
+          shiftSet.add(name);
+        }
+      });
+
+      // Also discover shifts from active personnel
+      activeEmps.forEach(e => {
+        const sh = (e.shift || '').trim();
+        if (sh && sh !== '-' && sh.toUpperCase() !== 'N/A' && sh.toUpperCase() !== 'OTHERS') {
+          shiftSet.add(sh);
+        }
+      });
+
+      if (shiftSet.size === 0) {
+        shiftSet.add('General');
+      }
+
+      const shiftCols = Array.from(shiftSet);
+
+      // Get all unique Pay Groups present in pay_groups or active personnel
+      const rawPgs = this.masterData.pay_groups || [];
+      const pgMap = {};
+      rawPgs.forEach(p => {
+        if (p.pay_group) {
+          pgMap[p.pay_group] = {
+            pay_group: p.pay_group,
+            rank_level: Number(p.rank_level) || 0,
+            designation: p.designation_short || p.designation || ''
+          };
+        }
+      });
+
+      // Discover pay groups from active personnel
+      activeEmps.forEach(e => {
+        const pg = (e.pay_group || '').trim();
+        if (pg && pg !== '-' && !pgMap[pg]) {
+          pgMap[pg] = {
+            pay_group: pg,
+            rank_level: Number(e.rank_level) || 0,
+            designation: e.designation || ''
+          };
+        }
+      });
+
+      // Build matrix: row = pay_group, col = shift
+      const matrix = {};
+      for (const pgKey in pgMap) {
+        matrix[pgKey] = {
+          pay_group: pgKey,
+          rank_level: pgMap[pgKey].rank_level,
+          designation: pgMap[pgKey].designation,
+          counts: {},
+          total: 0
+        };
+        shiftCols.forEach(sh => {
+          matrix[pgKey].counts[sh] = 0;
+        });
+      }
+
+      // Populate counts from active employees accurately
+      activeEmps.forEach(e => {
+        let pg = (e.pay_group || '').trim();
+        if (!pg || pg === '-') pg = 'PG-2'; // Default fallback
+        if (!matrix[pg]) {
+          matrix[pg] = {
+            pay_group: pg,
+            rank_level: Number(e.rank_level) || 0,
+            designation: e.designation || '',
+            counts: {},
+            total: 0
+          };
+          shiftCols.forEach(sh => { matrix[pg].counts[sh] = 0; });
+        }
+
+        // Map employee's shift
+        let empShift = (e.shift || '').trim();
+        if (!empShift || empShift === '-' || empShift.toUpperCase() === 'N/A' || empShift.toUpperCase() === 'OTHERS' || shiftCols.indexOf(empShift) === -1) {
+          empShift = shiftCols[0]; // Map accurately to primary available shift
+        }
+
+        matrix[pg].counts[empShift] = (matrix[pg].counts[empShift] || 0) + 1;
+        matrix[pg].total += 1;
+      });
+
+      // Filter rows with > 0 total or keep all active pay groups, sorted by rank_level descending
+      const rows = Object.values(matrix).filter(r => r.total > 0 || r.rank_level > 0);
+      rows.sort((a, b) => {
+        if (b.rank_level !== a.rank_level) return b.rank_level - a.rank_level;
+        return a.pay_group.localeCompare(b.pay_group);
+      });
+
+      // Calculate column totals
+      const colTotals = {};
+      shiftCols.forEach(sh => { colTotals[sh] = 0; });
+      let grandTotal = 0;
+
+      rows.forEach(r => {
+        shiftCols.forEach(sh => {
+          colTotals[sh] += (r.counts[sh] || 0);
+        });
+        grandTotal += r.total;
+      });
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm uppercase tracking-tight">Workforce Distribution: Pay Group × Shift Matrix</h4>
+          <p class="text-xs text-gray-500">Cross-tabulation of on-roll personnel headcounts across operational shifts by Pay Group</p>
+        </div>
+        <table class="workforce-setup-table" id="wf-dist-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Pay Group (PG)</th>
+              ${shiftCols.map(c => `<th class="num-col" style="width: ${Math.floor(60 / shiftCols.length)}%;">${c} Shift</th>`).join('')}
+              <th class="num-col font-bold" style="width: 15%;">Grand Total</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      rows.forEach(r => {
+        html += `
+          <tr>
+            <td><strong>${r.pay_group}</strong> ${r.designation ? `<span class="text-xs text-gray-500">(${r.designation})</span>` : ''}</td>
+            ${shiftCols.map(c => `<td class="num-col">${r.counts[c] || 0}</td>`).join('')}
+            <td class="num-col font-bold text-teal-900">${r.total}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;">Grand Total</td>
+            ${shiftCols.map(c => `<td class="num-col font-bold text-blue-900">${colTotals[c]}</td>`).join('')}
+            <td class="num-col font-extrabold text-teal-950">${grandTotal}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+
+      container.innerHTML = html;
+
+    } else if (view === 'section') {
+      const secMatrix = {};
+      activeEmps.forEach(e => {
+        const dep = e.department || 'General';
+        const sec = e.placement && e.placement !== '-' ? e.placement : 'General Section';
+        const key = dep + '|' + sec;
+        if (!secMatrix[key]) {
+          secMatrix[key] = { department: dep, dep_name: e.dep_name || dep, section: sec, headcount: 0 };
+        }
+        secMatrix[key].headcount += 1;
+      });
+
+      const rows = Object.values(secMatrix);
+      rows.sort((a, b) => {
+        if (a.department !== b.department) return a.department.localeCompare(b.department);
+        return b.headcount - a.headcount;
+      });
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm">Sectional Distribution by Department</h4>
+          <p class="text-xs text-gray-500">Staffing allocation across operational sections</p>
+        </div>
+        <table class="workforce-setup-table" id="wf-dist-table">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Department</th>
+              <th style="width: 40%;">Section / Functional Area</th>
+              <th class="num-col" style="width: 30%;">Active Headcount</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let totalCount = 0;
+      rows.forEach(r => {
+        totalCount += r.headcount;
+        html += `
+          <tr>
+            <td><strong>${r.department}</strong> <span class="text-xs text-gray-500">(${r.dep_name})</span></td>
+            <td>${r.section}</td>
+            <td class="num-col">${r.headcount}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;" colspan="2">Total Active Personnel</td>
+            <td class="num-col">${totalCount}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      container.innerHTML = html;
+
+    } else if (view === 'designation') {
+      const desigMatrix = {};
+      activeEmps.forEach(e => {
+        const desig = e.designation ? String(e.designation).replace(/,.*\(Add\. Charge\)/i, '').trim() : '-';
+        const key = desig + '|' + (e.pay_group || '-');
+        if (!desigMatrix[key]) {
+          desigMatrix[key] = {
+            designation: desig,
+            pay_group: e.pay_group || '-',
+            rank_level: e.rank_level || 0,
+            headcount: 0
+          };
+        }
+        desigMatrix[key].headcount += 1;
+      });
+
+      const rows = Object.values(desigMatrix);
+      rows.sort((a, b) => {
+        if (b.rank_level !== a.rank_level) return b.rank_level - a.rank_level;
+        return b.headcount - a.headcount;
+      });
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm">Designation &amp; Pay Group Distribution</h4>
+          <p class="text-xs text-gray-500">Consolidated employee deployment ranked by seniority grade</p>
+        </div>
+        <table class="workforce-setup-table" id="wf-dist-table">
+          <thead>
+            <tr>
+              <th style="width: 40%;">Designation</th>
+              <th class="center-col" style="width: 30%;">Pay Group</th>
+              <th class="num-col" style="width: 30%;">Active Headcount</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let totalCount = 0;
+      rows.forEach(r => {
+        totalCount += r.headcount;
+        html += `
+          <tr>
+            <td>${r.designation}</td>
+            <td class="center-col font-semibold">${r.pay_group}</td>
+            <td class="num-col">${r.headcount}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;" colspan="2">Total Active Personnel</td>
+            <td class="num-col">${totalCount}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      container.innerHTML = html;
+
+    } else if (view === 'station') {
+      const stnMatrix = {};
+      activeEmps.forEach(e => {
+        const stn = e.posting && e.posting !== '-' ? e.posting : 'Unassigned';
+        stnMatrix[stn] = (stnMatrix[stn] || 0) + 1;
+      });
+
+      const stations = this.masterData.stations || [];
+      const rows = Object.keys(stnMatrix).map(k => {
+        const stnObj = stations.find(s => s.station_code === k);
+        return {
+          station_code: k,
+          station_name: stnObj ? stnObj.station_name : '-',
+          station_type: stnObj ? stnObj.station_type : 'Spoke',
+          headcount: stnMatrix[k]
+        };
+      });
+      rows.sort((a, b) => b.headcount - a.headcount);
+
+      let html = `
+        <div class="mb-3">
+          <h4 class="font-bold text-gray-800 text-sm">Station Workforce Allocation Breakdown</h4>
+          <p class="text-xs text-gray-500">Personnel distribution across domestic and international stations</p>
+        </div>
+        <table class="workforce-setup-table" id="wf-dist-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Station Code</th>
+              <th style="width: 35%;">Station Name</th>
+              <th class="center-col" style="width: 20%;">Type</th>
+              <th class="num-col" style="width: 20%;">Headcount</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let totalCount = 0;
+      rows.forEach(r => {
+        totalCount += r.headcount;
+        html += `
+          <tr>
+            <td><strong>${r.station_code}</strong></td>
+            <td>${r.station_name}</td>
+            <td class="center-col">${r.station_type}</td>
+            <td class="num-col">${r.headcount}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          <tr class="total-row">
+            <td style="text-align: center;" colspan="3">Total Assigned Across Stations</td>
+            <td class="num-col">${totalCount}</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      container.innerHTML = html;
+    }
+  },
+
+  renderAnalyticsDashboard: function() {
+    const container = document.getElementById('wf-analytics-container');
+    if (!container) return;
+
+    const setups = this.setups;
+    const employees = this.employees.filter(e => e.status !== 'Retired');
+    const stations = this.masterData.stations || [];
+    const departments = this.masterData.departments || [];
+
+    const totalSetup = setups.reduce((sum, s) => sum + (Number(s.set_up) || 0), 0);
+    const totalExisting = employees.length;
+    const totalRequired = totalSetup - totalExisting;
+    const fulfillmentRate = totalSetup > 0 ? Math.round((totalExisting / totalSetup) * 100) : 100;
+
+    const hubCodes = stations.filter(s => String(s.station_type || '').toLowerCase() === 'hub' || ['DAC', 'HSIA'].includes(String(s.station_code).toUpperCase())).map(s => s.station_code);
+    let hubCount = 0, spokeCount = 0;
+    employees.forEach(e => {
+      if (hubCodes.includes(e.posting)) hubCount++;
+      else spokeCount++;
+    });
+
+    let operationalCount = 0, adminCount = 0;
+    employees.forEach(e => {
+      const d = String(e.department || '').toUpperCase();
+      if ((e.shift && e.shift !== '-' && e.shift !== 'General') || ['GS', 'TQC', 'OPS', 'SEC', 'ENG', 'RAMP'].includes(d)) {
+        operationalCount++;
+      } else {
+        adminCount++;
+      }
+    });
+
+    let execCount = 0, supervisoryCount = 0, operationalPgCount = 0;
+    employees.forEach(e => {
+      const r = e.rank_level || 0;
+      if (r >= 9) execCount++;
+      else if (r >= 5) supervisoryCount++;
+      else operationalPgCount++;
+    });
+
+    const now = new Date();
+    const oneYr = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+    const threeYrs = new Date(now.getFullYear() + 3, now.getMonth(), now.getDate());
+    const fiveYrs = new Date(now.getFullYear() + 5, now.getMonth(), now.getDate());
+
+    let ret1Yr = 0, ret3Yrs = 0, ret5Yrs = 0;
+    employees.forEach(e => {
+      if (e.retirement_date) {
+        const retD = window.parseDate ? window.parseDate(e.retirement_date) : new Date(e.retirement_date);
+        if (retD && retD >= now) {
+          if (retD <= oneYr) ret1Yr++;
+          if (retD <= threeYrs) ret3Yrs++;
+          if (retD <= fiveYrs) ret5Yrs++;
+        }
+      }
+    });
+
+    const depHealth = {};
+    departments.forEach(d => {
+      depHealth[d.dep_id] = {
+        dep_id: d.dep_id,
+        dep_code: d.dep_letter_code || d.dep_code,
+        dep_name: d.dep_name,
+        setup: 0,
+        existing: 0
+      };
+    });
+    setups.forEach(s => {
+      if (depHealth[s.dep_id]) depHealth[s.dep_id].setup += (Number(s.set_up) || 0);
+    });
+    employees.forEach(e => {
+      if (depHealth[e.dep_id]) depHealth[e.dep_id].existing += 1;
+    });
+
+    const depHealthList = Object.values(depHealth).filter(d => d.setup > 0 || d.existing > 0);
+    depHealthList.forEach(d => {
+      d.deficit = d.setup - d.existing;
+      d.fulfillment = d.setup > 0 ? Math.round((d.existing / d.setup) * 100) : 100;
+      if (d.fulfillment >= 90) d.healthBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      else if (d.fulfillment >= 75) d.healthBadge = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      else d.healthBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+    });
+    depHealthList.sort((a, b) => a.fulfillment - b.fulfillment);
+
+    let html = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-teal-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">Workforce Fulfillment</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${fulfillmentRate}%</h3>
+            <span class="text-xs font-semibold ${totalRequired > 0 ? 'text-rose-600' : 'text-emerald-600'}">
+              ${totalRequired > 0 ? totalRequired + ' Deficit' : 'Staffed'}
+            </span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-teal-600 h-full rounded-full" style="width: ${Math.min(fulfillmentRate, 100)}%;"></div>
+          </div>
+          <p class="text-xs-11 text-gray-500 mt-2"><strong>${totalExisting.toLocaleString()}</strong> Active on <strong>${totalSetup.toLocaleString()}</strong> Setup</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-sky-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">Operational Manning Ratio</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${totalExisting > 0 ? Math.round((operationalCount / totalExisting) * 100) : 0}%</h3>
+            <span class="text-xs font-semibold text-sky-700">Flight &amp; Station Ops</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-sky-600 h-full rounded-full" style="width: ${totalExisting > 0 ? (operationalCount / totalExisting) * 100 : 0}%;"></div>
+          </div>
+          <p class="text-xs-11 text-gray-500 mt-2"><strong>${operationalCount}</strong> Frontline vs <strong>${adminCount}</strong> Admin/HQ</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-indigo-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">Hub vs Spoke Network</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${totalExisting > 0 ? Math.round((hubCount / totalExisting) * 100) : 0}% / ${totalExisting > 0 ? Math.round((spokeCount / totalExisting) * 100) : 0}%</h3>
+            <span class="text-xs font-semibold text-indigo-700">Hub / Outstations</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden flex">
+            <div class="bg-indigo-600 h-full" style="width: ${totalExisting > 0 ? (hubCount / totalExisting) * 100 : 0}%;"></div>
+            <div class="bg-amber-500 h-full" style="width: ${totalExisting > 0 ? (spokeCount / totalExisting) * 100 : 0}%;"></div>
+          </div>
+          <p class="text-xs-11 text-gray-500 mt-2"><strong>${hubCount}</strong> Hub Base vs <strong>${spokeCount}</strong> Outstations</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-amber-500">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest">Retirement Pipeline</p>
+          <div class="flex items-baseline justify-between mt-1">
+            <h3 class="text-2xl font-extrabold text-gray-800">${ret1Yr}</h3>
+            <span class="text-xs font-semibold text-amber-700">Retiring in 1 Yr</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-amber-500 h-full rounded-full" style="width: ${Math.min((ret1Yr / (totalExisting || 1)) * 500, 100)}%;"></div>
+          </div>
+          <p class="text-xs-11 text-gray-500 mt-2">3-Yr: <strong>${ret3Yrs}</strong> | 5-Yr Horizon: <strong>${ret5Yrs}</strong></p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
+        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+            <div>
+              <h4 class="text-sm font-bold text-gray-800">Departmental Staffing Health Index</h4>
+              <p class="text-xs text-gray-500">Fulfillment percentage against sanctioned setup</p>
+            </div>
+            <span class="text-xs-11 bg-slate-100 text-gray-600 px-2 py-0.5 rounded font-semibold">${depHealthList.length} Departments</span>
+          </div>
+
+          <div class="space-y-3">
+            ${depHealthList.map(d => `
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="font-semibold text-gray-700">${d.dep_name} <strong class="text-gray-400">(${d.dep_code})</strong></span>
+                  <span class="font-bold ${d.fulfillment >= 90 ? 'text-emerald-700' : d.fulfillment >= 75 ? 'text-amber-700' : 'text-rose-700'}">
+                    ${d.existing} / ${d.setup} (${d.fulfillment}%)
+                  </span>
+                </div>
+                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden flex">
+                  <div class="${d.fulfillment >= 90 ? 'bg-emerald-500' : d.fulfillment >= 75 ? 'bg-amber-500' : 'bg-rose-500'} h-full rounded-full" style="width: ${Math.min(d.fulfillment, 100)}%;"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+              <div>
+                <h4 class="text-sm font-bold text-gray-800">Workforce Hierarchy &amp; Staffing Pyramid</h4>
+                <p class="text-xs text-gray-500">Tiered composition across executive, supervisory, and operational staff</p>
+              </div>
+              <span class="text-xs-11 bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-semibold">Airline Structure</span>
+            </div>
+
+            <div class="flex flex-col items-center space-y-2 py-4">
+              <div class="w-1/3 bg-purple-600 text-white rounded-md p-2.5 text-center shadow-sm">
+                <span class="text-2xs font-bold uppercase tracking-wider block opacity-80">Executive Leadership (PG 9-11)</span>
+                <span class="text-lg font-black">${execCount} Personnel</span>
+                <span class="text-2xs block opacity-75">${totalExisting > 0 ? Math.round((execCount / totalExisting) * 100) : 0}% of Total</span>
+              </div>
+
+              <div class="w-2/3 bg-sky-600 text-white rounded-md p-2.5 text-center shadow-sm">
+                <span class="text-2xs font-bold uppercase tracking-wider block opacity-80">Supervisory &amp; Officers (PG 5-8)</span>
+                <span class="text-lg font-black">${supervisoryCount} Personnel</span>
+                <span class="text-2xs block opacity-75">${totalExisting > 0 ? Math.round((supervisoryCount / totalExisting) * 100) : 0}% of Total</span>
+              </div>
+
+              <div class="w-full bg-teal-600 text-white rounded-md p-2.5 text-center shadow-sm">
+                <span class="text-2xs font-bold uppercase tracking-wider block opacity-80">Ground Operations, GSE &amp; Assistants (PG 1-4)</span>
+                <span class="text-lg font-black">${operationalPgCount} Personnel</span>
+                <span class="text-2xs block opacity-75">${totalExisting > 0 ? Math.round((operationalPgCount / totalExisting) * 100) : 0}% of Total</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded p-3 text-xs text-gray-600 flex items-center justify-between mt-2">
+            <span>Overall Operational Health Index:</span>
+            <strong class="text-emerald-700 font-bold">Stable 24/7 Flight Operations Manning</strong>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  renderStationSummaryTable: function() {
+    const container = document.getElementById('wf-summary-table-container');
+    if (!container) return;
+
+    const stations = this.masterData.stations || [];
+    const setups = this.setups;
+    const employees = this.employees.filter(e => e.status !== 'Retired');
+
+    const stnData = stations.map(st => {
+      const stSetups = setups.filter(s => String(s.station_id).trim() === String(st.station_id).trim());
+      const stEmps = employees.filter(e => String(e.station_id).trim() === String(st.station_id).trim() || String(e.posting).trim() === String(st.station_code).trim());
+
+      const setupCount = stSetups.reduce((sum, s) => sum + (Number(s.set_up) || 0), 0);
+      const existingCount = stEmps.length;
+      const deficit = setupCount - existingCount;
+      const fulfillment = setupCount > 0 ? Math.round((existingCount / setupCount) * 100) : 100;
+
+      let statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      let statusText = 'Adequate';
+      if (fulfillment < 75) {
+        statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+        statusText = 'Critical Deficit';
+      } else if (fulfillment < 90) {
+        statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
+        statusText = 'Moderate Deficit';
+      }
+
+      return {
+        station_code: st.station_code,
+        station_name: st.station_name || '-',
+        station_type: st.station_type || 'Spoke',
+        setup: setupCount,
+        existing: existingCount,
+        required: deficit,
+        fulfillment: fulfillment,
+        statusText: statusText,
+        statusBadge: statusBadge
+      };
+    });
+
+    stnData.sort((a, b) => b.required - a.required);
+
+    let html = `
+      <table class="workforce-setup-table" id="wf-summary-table">
+        <thead>
+          <tr>
+            <th style="width: 15%;">Station Code</th>
+            <th style="width: 25%;">Station Name</th>
+            <th class="center-col" style="width: 15%;">Type</th>
+            <th class="num-col" style="width: 12%;">Setup</th>
+            <th class="num-col" style="width: 12%;">Existing</th>
+            <th class="num-col" style="width: 12%;">Required</th>
+            <th class="center-col" style="width: 15%;">Coverage Status</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    let totalSetup = 0, totalExisting = 0, totalRequired = 0;
+    stnData.forEach(r => {
+      totalSetup += r.setup;
+      totalExisting += r.existing;
+      totalRequired += r.required;
+
+      html += `
+        <tr>
+          <td><strong>${r.station_code}</strong></td>
+          <td>${r.station_name}</td>
+          <td class="center-col">${r.station_type}</td>
+          <td class="num-col">${r.setup}</td>
+          <td class="num-col font-semibold text-emerald-800">${r.existing}</td>
+          <td class="num-col font-bold ${r.required > 0 ? 'text-rose-700' : 'text-gray-700'}">${r.required}</td>
+          <td class="center-col">
+            <span class="inline-block px-2 py-0.5 rounded text-xs-11 font-bold border ${r.statusBadge}">
+              ${r.statusText} (${r.fulfillment}%)
+            </span>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+        <tr class="total-row">
+          <td style="text-align: center;" colspan="3">Network Total</td>
+          <td class="num-col">${totalSetup}</td>
+          <td class="num-col">${totalExisting}</td>
+          <td class="num-col">${totalRequired}</td>
+          <td class="center-col"><strong>${totalSetup > 0 ? Math.round((totalExisting / totalSetup) * 100) : 100}% Overall</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  toggleDownloadMenu: function(tab, e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('wf-dl-menu-' + tab);
+    if (menu) menu.classList.toggle('hidden');
+  },
+
+  downloadPDF: function(tab) {
+    let targetEl = null;
+    let title = 'Workforce Report';
+    if (tab === 'setup') {
+      targetEl = document.getElementById('wf-setup-table-container');
+      title = 'Workforce Setup & Staffing Audit';
+    } else if (tab === 'dist') {
+      targetEl = document.getElementById('wf-dist-content-container');
+      title = 'Workforce Distribution Matrix';
+    } else if (tab === 'analytics') {
+      targetEl = document.getElementById('wf-analytics-container');
+      title = 'Workforce Analytics Dashboard';
+    } else if (tab === 'summary') {
+      targetEl = document.getElementById('wf-summary-table-container');
+      title = 'Station Staffing Summary Audit';
+    }
+
+    if (!targetEl) return app.toast('No content to download', 'warning');
+
+    app.showLoader();
+    app.toast('Generating Landscape PDF...', 'info');
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div style="font-family: 'Inter', Arial, sans-serif; padding: 12px;">
+        <h2 style="text-align: center; color: #1e3a8a; margin-bottom: 4px; text-transform: uppercase;">SANDVIORA AVIOSOLUTION - ${title}</h2>
+        <p style="text-align: center; font-size: 10px; color: #6b7280; margin-bottom: 12px;">Generated on ${new Date().toLocaleString()}</p>
+        ${targetEl.innerHTML}
+      </div>
+    `;
+
+    const opt = {
+      margin: [8, 8, 8, 8],
+      filename: `${title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    const generate = () => {
+      window.html2pdf().set(opt).from(wrapper).save().then(() => {
+        app.hideLoader();
+        app.toast('Landscape PDF downloaded successfully', 'success');
+      }).catch(e => {
+        app.hideLoader();
+        app.toast('PDF generation failed: ' + e.message, 'error');
+      });
+    };
+
+    if (typeof window.html2pdf === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = generate;
+      document.head.appendChild(script);
+    } else {
+      generate();
+    }
+  },
+
+  downloadExcel: function(tab) {
+    let table = null;
+    let title = 'Workforce_Report';
+    if (tab === 'setup') {
+      table = document.getElementById('workforce-matrix-table');
+      title = 'Workforce_Setup';
+    } else if (tab === 'dist') {
+      table = document.getElementById('wf-dist-table') || document.querySelector('#wf-dist-content-container table');
+      title = 'Workforce_Distribution';
+    } else if (tab === 'summary') {
+      table = document.getElementById('wf-summary-table') || document.querySelector('#wf-summary-table-container table');
+      title = 'Station_Staffing_Summary';
+    }
+
+    if (!table) return app.toast('No table to export', 'warning');
+
+    const rows = table.querySelectorAll('tr');
+    let csv = [];
+    rows.forEach(r => {
+      let cols = [];
+      r.querySelectorAll('th, td').forEach(c => {
+        let text = c.innerText.replace(/"/g, '""').trim();
+        cols.push(`"${text}"`);
+      });
+      csv.push(cols.join(','));
+    });
+
+    const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${title}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    app.toast('Excel (CSV) downloaded successfully', 'success');
+  },
+
+  printReport: function(tab) {
+    let targetEl = null;
+    let title = 'Workforce Report';
+    if (tab === 'setup') {
+      targetEl = document.getElementById('wf-setup-table-container');
+      title = 'Workforce Setup Audit';
+    } else if (tab === 'dist') {
+      targetEl = document.getElementById('wf-dist-content-container');
+      title = 'Workforce Distribution Matrix';
+    } else if (tab === 'analytics') {
+      targetEl = document.getElementById('wf-analytics-container');
+      title = 'Workforce Analytics Dashboard';
+    } else if (tab === 'summary') {
+      targetEl = document.getElementById('wf-summary-table-container');
+      title = 'Station Staffing Summary Audit';
+    }
+
+    if (!targetEl) return app.toast('No report to print', 'warning');
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title} - SANDVIORA AVIOSOLUTION</title>
+          <style>
+            @page { size: A4 landscape; margin: 10mm; }
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { font-family: 'Inter', Arial, sans-serif; font-size: 11px; margin: 0; padding: 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #000; padding: 5px 8px; }
+            th { background: #f8fafc; font-weight: bold; text-align: left; }
+            .num-col { text-align: center; }
+            .center-col { text-align: center; }
+            .total-row td { font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h3 style="text-align: center; margin-bottom: 10px;">SANDVIORA AVIOSOLUTION - ${title}</h3>
+          ${targetEl.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 350);
+  }
+};
+
+async function hrm_workforce_init() {
+  await WorkforceModule.init();
+}
+
+// Close any open download menus on outside click
+document.addEventListener('click', () => {
+  ['service-dl-menu', 'promo-dl-menu', 'all-promo-dl-menu', 'eligibility-dl-menu', 'wf-dl-menu-setup', 'wf-dl-menu-dist', 'wf-dl-menu-summary'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+});
+
+/**
+ * Allowance Calculator Controller
+ */
+async function hrm_allowance_init() {
+  try {
+    const emps = await api.getHrmDetails().catch(() => api.read('employees'));
+    const select = document.getElementById('allowance-emp-select');
+    if (select) {
+      let opts = '<option value="">-- Select Personnel --</option>';
+      (emps || []).forEach(e => {
+        const staffId = e.staff_id || e.emp_id || '';
+        opts += `<option value="${staffId}" data-pg="${e.pay_group || e.pg_id || 'PG-4'}">${staffId} - ${e.emp_name || e.name || 'Personnel'}</option>`;
+      });
+      select.innerHTML = opts;
+    }
+    calculateHrmAllowance();
+  } catch(e) {
+    console.warn('Allowance init warning:', e);
+  }
+}
+
+function onAllowanceEmpChange(staffId) {
+  const select = document.getElementById('allowance-emp-select');
+  if (select && select.selectedOptions.length > 0) {
+    const opt = select.selectedOptions[0];
+    const pg = opt.dataset.pg;
+    const pgSelect = document.getElementById('allowance-pg-select');
+    if (pgSelect && pg) pgSelect.value = pg;
+  }
+  calculateHrmAllowance();
+}
+
+function calculateHrmAllowance() {
+  const basicInput = document.getElementById('allowance-basic');
+  const basic = basicInput ? (parseFloat(basicInput.value) || 0) : 45000;
+  
+  const houseRent = Math.round(basic * 0.5);
+  const medical = 3500;
+  const transport = 4000;
+  
+  const shiftDutyEl = document.getElementById('allowance-shift-duty');
+  const hazardousEl = document.getElementById('allowance-hazardous');
+  const pfEl = document.getElementById('allowance-pf');
+
+  const shiftDuty = (shiftDutyEl && shiftDutyEl.checked) ? 3000 : 0;
+  const hazardous = (hazardousEl && hazardousEl.checked) ? 2000 : 0;
+  const pf = (pfEl && pfEl.checked) ? Math.round(basic * 0.1) : 0;
+  const tax = Math.round(basic * 0.05);
+
+  const special = shiftDuty + hazardous;
+  const gross = basic + houseRent + medical + transport + special;
+  const deductions = pf + tax;
+  const net = gross - deductions;
+
+  const setT = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = 'BDT ' + val.toLocaleString(); };
+  setT('res-house-rent', houseRent);
+  setT('res-medical', medical);
+  setT('res-transport', transport);
+  setT('res-special', special);
+  setT('res-gross', gross);
+  setT('res-deductions', deductions);
+  setT('res-net-salary', net);
+}
+
+/**
+ * HRM Reports Controller
+ */
+async function hrm_reports_init() {
+  await generateHrmReport();
+}
+
+async function generateHrmReport() {
+  try {
+    const emps = await api.getHrmDetails().catch(() => []);
+    const totalEl = document.getElementById('rep-total-emp');
+    const activeEl = document.getElementById('rep-active-emp');
+    const officerEl = document.getElementById('rep-officers-emp');
+
+    if (totalEl) totalEl.innerText = emps.length || 0;
+    if (activeEl) activeEl.innerText = emps.filter(e => e.status !== 'Retired').length || 0;
+    if (officerEl) officerEl.innerText = emps.filter(e => (e.pay_group === 'PG-4' || e.pay_group === 'PG-5' || e.pay_group === 'PG-6')).length || 0;
+  } catch (e) {
+    console.warn('generateHrmReport warning:', e);
+  }
+}
+
+// Global HRM Exports
+window.hrm_dashboard_init = hrm_dashboard_init;
+window.hrm_input_init = hrm_input_init;
+window.hrm_view_init = hrm_view_init;
+window.hrm_employees_init = hrm_employees_init;
+window.renderEmpList = renderEmpList;
+
+// Service History Exports
+window.hrm_service_init = hrm_service_init;
+window.submitServiceHistorySearch = submitServiceHistorySearch;
+window.resetServiceHistoryView = resetServiceHistoryView;
+window.loadServiceHistory = loadServiceHistory;
+window.renderServiceHistorySpreadsheet = renderServiceHistorySpreadsheet;
+window.toggleServiceDownloadMenu = toggleServiceDownloadMenu;
+window.exportServiceHistoryPDF = exportServiceHistoryPDF;
+window.exportServiceHistoryExcel = exportServiceHistoryExcel;
+window.printServiceHistory = printServiceHistory;
+
+// Workforce Exports
+window.hrm_workforce_init = hrm_workforce_init;
+window.WorkforceModule = WorkforceModule;
+
+// Allowance Exports
+window.hrm_allowance_init = hrm_allowance_init;
+window.calculateHrmAllowance = calculateHrmAllowance;
+window.onAllowanceEmpChange = onAllowanceEmpChange;
+window.hrm_reports_init = hrm_reports_init;
+window.generateHrmReport = generateHrmReport;
+
+// Promotion Module Exports
+window.switchPromotionTab = switchPromotionTab;
+window.hrm_promotion_init = hrm_promotion_init;
+window.loadIndividualPromotionReport = loadIndividualPromotionReport;
+window.clearIndividualPromotionReport = clearIndividualPromotionReport;
+window.renderIndividualReportHTML = renderIndividualReportHTML;
+window.togglePromoDownloadMenu = togglePromoDownloadMenu;
+window.exportIndividualPromotionPDF = exportIndividualPromotionPDF;
+window.exportIndividualPromotionWord = exportIndividualPromotionWord;
+window.printIndividualPromotionReport = printIndividualPromotionReport;
+window.renderAllPromotionsToolbar = renderAllPromotionsToolbar;
+window.loadAllPromotionsData = loadAllPromotionsData;
+window.resetAllPromotionsFilters = resetAllPromotionsFilters;
+window.filterAllPromotionsTable = filterAllPromotionsTable;
+window.renderAllPromotionsRows = renderAllPromotionsRows;
+window.viewEmployeeIndividualReport = viewEmployeeIndividualReport;
+window.toggleAllPromoDownloadMenu = toggleAllPromoDownloadMenu;
+window.exportAllPromotionsCSV = exportAllPromotionsCSV;
+window.exportAllPromotionsPDF = exportAllPromotionsPDF;
+window.printAllPromotionsReport = printAllPromotionsReport;
+window.renderEligibilityToolbar = renderEligibilityToolbar;
+window.loadPromotionEligibilityData = loadPromotionEligibilityData;
+window.filterEligibilityTable = filterEligibilityTable;
+window.renderEligibilityRows = renderEligibilityRows;
+window.toggleEligibilityDownloadMenu = toggleEligibilityDownloadMenu;
+window.exportEligibilityPDF = exportEligibilityPDF;
+window.exportEligibilityExcel = exportEligibilityExcel;
+window.printEligibilityReport = printEligibilityReport;
+
+</script>

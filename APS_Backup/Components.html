@@ -1,0 +1,961 @@
+<script>
+const ALL_COUNTRY_CODES = [
+  {n:"Afghanistan",c:"+93"},{n:"Albania",c:"+355"},{n:"Algeria",c:"+213"},{n:"Andorra",c:"+376"},{n:"Angola",c:"+244"},{n:"Argentina",c:"+54"},{n:"Armenia",c:"+374"},{n:"Australia",c:"+61"},{n:"Austria",c:"+43"},{n:"Azerbaijan",c:"+994"},{n:"Bahamas",c:"+1-242"},{n:"Bahrain",c:"+973"},{n:"Bangladesh",c:"+880"},{n:"Belarus",c:"+375"},{n:"Belgium",c:"+32"},{n:"Belize",c:"+501"},{n:"Bhutan",c:"+975"},{n:"Bolivia",c:"+591"},{n:"Bosnia and Herzegovina",c:"+387"},{n:"Botswana",c:"+267"},{n:"Brazil",c:"+55"},{n:"Brunei",c:"+673"},{n:"Bulgaria",c:"+359"},{n:"Cambodia",c:"+855"},{n:"Cameroon",c:"+237"},{n:"Canada",c:"+1"},{n:"Chile",c:"+56"},{n:"China",c:"+86"},{n:"Colombia",c:"+57"},{n:"Costa Rica",c:"+506"},{n:"Croatia",c:"+385"},{n:"Cuba",c:"+53"},{n:"Cyprus",c:"+357"},{n:"Czech Republic",c:"+420"},{n:"Denmark",c:"+45"},{n:"Ecuador",c:"+593"},{n:"Egypt",c:"+20"},{n:"Estonia",c:"+372"},{n:"Ethiopia",c:"+251"},{n:"Fiji",c:"+679"},{n:"Finland",c:"+358"},{n:"France",c:"+33"},{n:"Georgia",c:"+995"},{n:"Germany",c:"+49"},{n:"Ghana",c:"+233"},{n:"Greece",c:"+30"},{n:"Guatemala",c:"+502"},{n:"Haiti",c:"+509"},{n:"Honduras",c:"+504"},{n:"Hungary",c:"+36"},{n:"Iceland",c:"+354"},{n:"India",c:"+91"},{n:"Indonesia",c:"+62"},{n:"Iran",c:"+98"},{n:"Iraq",c:"+964"},{n:"Ireland",c:"+353"},{n:"Israel",c:"+972"},{n:"Italy",c:"+39"},{n:"Jamaica",c:"+1-876"},{n:"Japan",c:"+81"},{n:"Jordan",c:"+962"},{n:"Kazakhstan",c:"+7"},{n:"Kenya",c:"+254"},{n:"Kuwait",c:"+965"},{n:"Kyrgyzstan",c:"+996"},{n:"Latvia",c:"+371"},{n:"Lebanon",c:"+961"},{n:"Libya",c:"+218"},{n:"Lithuania",c:"+370"},{n:"Luxembourg",c:"+352"},{n:"Malaysia",c:"+60"},{n:"Maldives",c:"+960"},{n:"Malta",c:"+356"},{n:"Mexico",c:"+52"},{n:"Moldova",c:"+373"},{n:"Monaco",c:"+377"},{n:"Mongolia",c:"+976"},{n:"Montenegro",c:"+382"},{n:"Morocco",c:"+212"},{n:"Myanmar",c:"+95"},{n:"Nepal",c:"+977"},{n:"Netherlands",c:"+31"},{n:"New Zealand",c:"+64"},{n:"Nigeria",c:"+234"},{n:"North Korea",c:"+850"},{n:"Norway",c:"+47"},{n:"Oman",c:"+968"},{n:"Pakistan",c:"+92"},{n:"Palestine",c:"+970"},{n:"Panama",c:"+507"},{n:"Papua New Guinea",c:"+675"},{n:"Paraguay",c:"+595"},{n:"Peru",c:"+51"},{n:"Philippines",c:"+63"},{n:"Poland",c:"+48"},{n:"Portugal",c:"+351"},{n:"Qatar",c:"+974"},{n:"Romania",c:"+40"},{n:"Russia",c:"+7"},{n:"Rwanda",c:"+250"},{n:"Saudi Arabia",c:"+966"},{n:"Senegal",c:"+221"},{n:"Serbia",c:"+381"},{n:"Singapore",c:"+65"},{n:"Slovakia",c:"+421"},{n:"Slovenia",c:"+386"},{n:"Somalia",c:"+252"},{n:"South Africa",c:"+27"},{n:"South Korea",c:"+82"},{n:"Spain",c:"+34"},{n:"Sri Lanka",c:"+94"},{n:"Sudan",c:"+249"},{n:"Sweden",c:"+46"},{n:"Switzerland",c:"+41"},{n:"Syria",c:"+963"},{n:"Taiwan",c:"+886"},{n:"Tajikistan",c:"+992"},{n:"Tanzania",c:"+255"},{n:"Thailand",c:"+66"},{n:"Tunisia",c:"+216"},{n:"Turkey",c:"+90"},{n:"Turkmenistan",c:"+993"},{n:"Uganda",c:"+256"},{n:"Ukraine",c:"+380"},{n:"United Arab Emirates",c:"+971"},{n:"United Kingdom",c:"+44"},{n:"United States",c:"+1"},{n:"Uruguay",c:"+598"},{n:"Uzbekistan",c:"+998"},{n:"Vatican City",c:"+379"},{n:"Venezuela",c:"+58"},{n:"Vietnam",c:"+84"},{n:"Yemen",c:"+967"},{n:"Zambia",c:"+260"},{n:"Zimbabwe",c:"+263"}
+];
+
+/**
+ * Universal Date Parser & Formatter for Client UI
+ * Enforces "dd mmm yyyy" format across the entire application UI
+ */
+window.parseDate = function(val) {
+  if (!val || val === '-' || val === 'null' || val === 'undefined') return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'number') {
+    if (val >= 10000000 && val <= 99999999) {
+      var s = String(val);
+      return new Date(parseInt(s.substring(4, 8), 10), parseInt(s.substring(2, 4), 10) - 1, parseInt(s.substring(0, 2), 10));
+    } else if (val > 10000 && val < 100000) {
+      return new Date(Math.round((val - 25569) * 86400 * 1000));
+    }
+  }
+  var s = String(val).trim();
+  if (s.startsWith("'")) s = s.substring(1).trim();
+  if (!s || s === '-') return null;
+
+  // 8 digits DDMMYYYY
+  if (/^\d{8}$/.test(s)) {
+    var day = parseInt(s.substring(0, 2), 10);
+    var month = parseInt(s.substring(2, 4), 10) - 1;
+    var year = parseInt(s.substring(4, 8), 10);
+    var d = new Date(year, month, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // DD MMM YYYY or DD-MMM-YYYY or DD/MMM/YYYY
+  var m = s.match(/^(\d{1,2})[-/\s]([A-Za-z]{3})[-/\s](\d{4})$/);
+  if (m) {
+    var months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    var day = parseInt(m[1], 10);
+    var mIdx = months.indexOf(m[2].toLowerCase());
+    var year = parseInt(m[3], 10);
+    if (mIdx !== -1) {
+      var d = new Date(year, mIdx, day);
+      return isNaN(d.getTime()) ? null : d;
+    }
+  }
+
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+window.formatToDDMmmYYYY = function(val) {
+  if (!val || val === '-' || val === 'null' || val === 'undefined') return '-';
+  var d = window.parseDate(val);
+  if (!d || isNaN(d.getTime())) return String(val);
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var day = String(d.getDate()).padStart(2, '0');
+  var month = months[d.getMonth()];
+  var year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+/**
+ * UI Components & Formatters
+ */
+var Components = window.Components = {
+  parseDate: window.parseDate,
+  formatToDDMmmYYYY: window.formatToDDMmmYYYY,
+  gridState: {},
+
+  /**
+   * Export Grid Data to CSV (Excel)
+   */
+  exportToCSV: function(schemaKey) {
+    const schema = AppSchemas[schemaKey];
+    const data = this.gridState[schemaKey];
+    if (!data || data.length === 0) return app.toast('No data to export', 'warning');
+
+    const headers = [schema.prefix + ' ID', ...schema.fields.map(f => f.label)];
+    const keys = [schema.pk, ...schema.fields.map(f => f.name)];
+
+    let csvContent = headers.join(',') + '\n';
+    data.forEach(row => {
+      const rowData = keys.map(k => {
+        let val = row[k] || '';
+        val = String(val).replace(/"/g, '""');
+        return `"${val}"`;
+      });
+      csvContent += rowData.join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${schema.title}_Export.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    app.toast('Excel (CSV) downloaded!', 'success');
+  },
+
+  /**
+   * Export Grid Data to PDF using html2pdf
+   */
+  exportToPDF: function(schemaKey) {
+    const schema = AppSchemas[schemaKey];
+    const data = this.gridState[schemaKey];
+    if (!data || data.length === 0) return app.toast('No data to export', 'warning');
+
+    app.showLoader();
+    app.toast('Generating PDF...', 'info');
+
+    let html = `
+      <div style="font-family: sans-serif; padding: 20px;">
+        <h2 style="text-align: center; color: #1e3a8a; margin-bottom: 20px;">${schema.title} Report</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+          <thead>
+            <tr style="background-color: #f3f4f6;">
+              <th style="border: 1px solid #d1d5db; padding: 6px; text-align: left;">${schema.prefix} ID</th>
+              ${schema.fields.map(f => `<th style="border: 1px solid #d1d5db; padding: 6px; text-align: left;">${f.label}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(row => `
+              <tr>
+                <td style="border: 1px solid #d1d5db; padding: 6px;">${row[schema.pk] || '-'}</td>
+                ${schema.fields.map(f => `<td style="border: 1px solid #d1d5db; padding: 6px;">${row[f.name] || '-'}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <p style="margin-top: 20px; font-size: 8px; color: #6b7280; text-align: right;">Generated on ${new Date().toLocaleString()}</p>
+      </div>
+    `;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+
+    if (typeof window.html2pdf === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = () => {
+        window.html2pdf().from(wrapper).save(`${schema.title}_Report.pdf`).then(() => {
+          app.hideLoader();
+          app.toast('PDF downloaded!', 'success');
+        });
+      };
+      document.head.appendChild(script);
+    } else {
+      window.html2pdf().from(wrapper).save(`${schema.title}_Report.pdf`).then(() => {
+        app.hideLoader();
+        app.toast('PDF downloaded!', 'success');
+      });
+    }
+  },
+
+  handleDependentDropdowns: function(sourceSelect) {
+    const form = sourceSelect.closest('form');
+    if (!form) return;
+    const changedName = sourceSelect.name;
+    const changedVal = sourceSelect.value;
+    const sourceData = window.currentFormSourceData;
+    if (!sourceData) return;
+
+    if (changedName === 'dir_id') {
+      const depSelect = form.querySelector('[name="dep_id"]');
+      if (depSelect && sourceData['departments']) {
+        const prevVal = depSelect.value;
+        const deps = sourceData['departments'].filter(d => !changedVal || String(d.dir_id) === String(changedVal));
+        depSelect.innerHTML = '<option value="">-- Select --</option>';
+        deps.forEach(d => {
+          depSelect.innerHTML += `<option value="${d.dep_id}">${d.dep_name}</option>`;
+        });
+        if (prevVal && deps.some(d => String(d.dep_id) === String(prevVal))) {
+          depSelect.value = prevVal;
+        }
+      }
+    }
+
+    if (changedName === 'dep_id') {
+      // Auto-populate dir_id from selected department if empty
+      const dirSelect = form.querySelector('[name="dir_id"]');
+      if (dirSelect && changedVal && sourceData['departments']) {
+        const matchedDep = sourceData['departments'].find(d => String(d.dep_id) === String(changedVal));
+        if (matchedDep && matchedDep.dir_id && (!dirSelect.value || dirSelect.value !== matchedDep.dir_id)) {
+          dirSelect.value = matchedDep.dir_id;
+        }
+      }
+
+      const secSelect = form.querySelector('[name="sec_id"]');
+      if (secSelect && sourceData['sections']) {
+        const sections = sourceData['sections'].filter(s => !changedVal || String(s.dep_id) === String(changedVal));
+        const prevVal = secSelect.value;
+        secSelect.innerHTML = '<option value="">-- Select --</option>';
+        sections.forEach(s => {
+          secSelect.innerHTML += `<option value="${s.sec_id}">${s.sec_letter_code}</option>`;
+        });
+        if (prevVal && sections.some(s => String(s.sec_id) === String(prevVal))) {
+          secSelect.value = prevVal;
+        }
+      }
+
+      // Filter Pay Groups & Designations if present
+      const pgSelect = form.querySelector('[name="pay_group_id"]');
+      const desigSelect = form.querySelector('[name="designation_id"]');
+      if ((pgSelect || desigSelect) && sourceData['pay_groups']) {
+        const pgs = sourceData['pay_groups'].filter(p => !changedVal || !p.dep_id || String(p.dep_id) === String(changedVal));
+        if (pgSelect) {
+          const prevPg = pgSelect.value;
+          pgSelect.innerHTML = '<option value="">-- Select --</option>';
+          pgs.forEach(p => {
+            pgSelect.innerHTML += `<option value="${p.pg_id}">${p.pay_group}</option>`;
+          });
+          if (prevPg && pgs.some(p => String(p.pg_id) === String(prevPg))) {
+            pgSelect.value = prevPg;
+          }
+        }
+        if (desigSelect) {
+          const prevDesig = desigSelect.value;
+          desigSelect.innerHTML = '<option value="">-- Select --</option>';
+          pgs.forEach(p => {
+            desigSelect.innerHTML += `<option value="${p.pg_id}">${p.designation_short}</option>`;
+          });
+          if (prevDesig && pgs.some(p => String(p.pg_id) === String(prevDesig))) {
+            desigSelect.value = prevDesig;
+          }
+        }
+      }
+    }
+
+    if (changedName === 'station_id') {
+      const secSelect = form.querySelector('[name="sec_id"]');
+      if (secSelect && sourceData['sections']) {
+        const sections = sourceData['sections'].filter(s => !changedVal || String(s.station_id) === String(changedVal));
+        const prevVal = secSelect.value;
+        secSelect.innerHTML = '<option value="">-- Select --</option>';
+        sections.forEach(s => {
+          secSelect.innerHTML += `<option value="${s.sec_id}">${s.sec_letter_code}</option>`;
+        });
+        if (prevVal && sections.some(s => String(s.sec_id) === String(prevVal))) {
+          secSelect.value = prevVal;
+        }
+      }
+      
+      const shiftSelect = form.querySelector('[name="shift_id"]');
+      if (shiftSelect && sourceData['shifts']) {
+        const shifts = sourceData['shifts'].filter(s => !changedVal || String(s.station_id) === String(changedVal));
+        const prevVal = shiftSelect.value;
+        shiftSelect.innerHTML = '<option value="">-- Select --</option>';
+        shifts.forEach(s => {
+          shiftSelect.innerHTML += `<option value="${s.shift_id}">${s.shift_name}</option>`;
+        });
+        if (prevVal && shifts.some(s => String(s.shift_id) === String(prevVal))) {
+          shiftSelect.value = prevVal;
+        }
+      }
+    }
+
+    if (changedName === 'pay_group_id') {
+      const desigSelect = form.querySelector('[name="designation_id"]');
+      if (desigSelect && changedVal) {
+        desigSelect.value = changedVal;
+      }
+    }
+
+    if (changedName === 'designation_id') {
+      const pgSelect = form.querySelector('[name="pay_group_id"]');
+      if (pgSelect && changedVal) {
+        pgSelect.value = changedVal;
+      }
+    }
+  },
+
+  /**
+   * Professional Customized Confirmation Modal
+   */
+  confirm: function(title, message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center transition-opacity duration-200 opacity-0';
+    overlay.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all duration-200 scale-95" id="modal-box">
+        <div class="bg-red-50 p-6 flex flex-col items-center border-b border-red-100">
+          <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+            <span class="material-icons text-4xl">warning</span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900">${title}</h3>
+        </div>
+        <div class="p-6 text-center text-gray-600">
+          <p>${message}</p>
+        </div>
+        <div class="p-4 bg-gray-50 flex justify-center space-x-4 border-t border-gray-100">
+          <button class="px-2 py-2 rounded-lg text-gray-600 font-medium hover:bg-gray-200 transition-colors" id="modal-cancel">Cancel</button>
+          <button class="px-2 py-2 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-md shadow-red-200 flex items-center" id="modal-confirm">
+            <span class="material-icons text-sm mr-2">delete_forever</span> Confirm Delete
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Animate In
+    setTimeout(() => {
+      overlay.classList.remove('opacity-0');
+      overlay.querySelector('#modal-box').classList.replace('scale-95', 'scale-100');
+    }, 10);
+
+    const close = () => {
+      overlay.classList.add('opacity-0');
+      overlay.querySelector('#modal-box').classList.replace('scale-100', 'scale-95');
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    overlay.querySelector('#modal-cancel').onclick = close;
+    overlay.querySelector('#modal-confirm').onclick = () => {
+      close();
+      if(onConfirm) onConfirm();
+    };
+  },
+
+  /**
+   * Attaches DDMMYYYY listener to input elements
+   */
+  initDateInputs: function() {
+    const inputs = document.querySelectorAll('.date-ddmmyyyy');
+    if (!inputs) return;
+    inputs.forEach(input => {
+      if (!input || input.dataset.dateBound === 'true') return;
+      input.dataset.dateBound = 'true';
+
+      let hiddenInput = null;
+      if (input.name && input.parentNode) {
+        hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = input.name;
+        input.removeAttribute('name'); 
+        input.parentNode.insertBefore(hiddenInput, input.nextSibling);
+      }
+
+      // If pre-filled by rowData, initialize hidden input & display formatted date
+      if (input.dataset.isoValue) {
+        const formatted = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(input.dataset.isoValue) : input.dataset.isoValue;
+        if (formatted && formatted !== '-') {
+          if (hiddenInput) hiddenInput.value = formatted;
+          input.value = formatted;
+        } else {
+          if (hiddenInput) hiddenInput.value = input.dataset.isoValue;
+        }
+      }
+
+      input.addEventListener('blur', (e) => {
+        const raw = e.target.value.trim();
+        const digits = raw.replace(/[^0-9]/g, '');
+        if (digits.length === 8) {
+          const day = digits.substring(0, 2);
+          const month = digits.substring(2, 4);
+          const year = digits.substring(4, 8);
+          const dateObj = new Date(year, parseInt(month)-1, day);
+          
+          if (!isNaN(dateObj.getTime())) {
+            const formatted = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(dateObj) : `${day}/${month}/${year}`;
+            e.target.value = formatted;
+            if (hiddenInput) hiddenInput.value = formatted;
+            e.target.classList.remove('border-red-500');
+            return;
+          }
+        }
+        
+        if (raw) {
+          const parsed = new Date(raw);
+          if (!isNaN(parsed.getTime()) && raw.length >= 8) {
+            const formatted = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(parsed) : raw;
+            e.target.value = formatted;
+            if (hiddenInput) hiddenInput.value = formatted;
+            e.target.classList.remove('border-red-500');
+            return;
+          }
+        }
+        
+        if (raw !== '') {
+          e.target.classList.add('border-red-500');
+        } else {
+          e.target.classList.remove('border-red-500');
+          if (hiddenInput) hiddenInput.value = '';
+        }
+      });
+
+      input.addEventListener('focus', (e) => {
+        const currentVal = (hiddenInput && hiddenInput.value) || e.target.value;
+        if (currentVal) {
+          const d = window.parseDate(currentVal);
+          if (d && !isNaN(d.getTime())) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            e.target.value = `${day}${month}${year}`;
+          }
+        }
+      });
+      
+      // Fire blur to format pre-filled data
+      if (input.dataset.isoValue && !input.value) {
+        input.dispatchEvent(new Event('focus'));
+        input.dispatchEvent(new Event('blur'));
+      }
+    });
+  },
+
+  /**
+   * Dynamically renders a Form based on schema key
+   * Passes rowData for Update Mode.
+   */
+  renderForm: async function(schemaKey, containerId, rowData = null) {
+    const schema = AppSchemas[schemaKey];
+    if (!schema) return;
+    const isUpdate = !!rowData;
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="p-4 text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto"></div></div>';
+
+    let html = `<div class="bg-white shadow-sm border border-gray-200 p-4 animate-fade-in w-full h-calc-140 flex flex-col">
+                  <div class="flex justify-between border-b border-gray-200 pb-2 mb-4 shrink-0">
+                    <div>
+                      <h3 class="text-lg font-bold text-gray-800 tracking-tight">${isUpdate ? 'Edit' : 'New'} ${schema.title}</h3>
+                    </div>
+                    ${isUpdate ? `<div class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-mono font-bold border border-yellow-300 self-center">ID: ${rowData[schema.pk]}</div>` : ''}
+                  </div>
+                  
+                  <div class="flex-1 overflow-auto">
+                    <form id="form-${schemaKey}" class="space-y-3">
+                      <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">`;
+
+    if (schemaKey === 'promotions' && !isUpdate) {
+      html += `
+        <div class="col-span-full bg-blue-50 p-2.5 rounded border border-blue-200 flex items-center space-x-3 mb-1 shadow-sm">
+          <input type="checkbox" id="promotion-bulk-toggle" class="h-4 w-4 text-blue-950 border-gray-300 rounded focus:ring-blue-900 cursor-pointer">
+          <div>
+            <label for="promotion-bulk-toggle" class="text-xs font-bold text-blue-950 uppercase cursor-pointer selection:bg-transparent">Bulk Entry Mode</label>
+            <p class="text-2xs text-gray-600 leading-normal">Enable to promote multiple employees simultaneously using their Staff IDs and Sequence Numbers.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // Fetch dropdown data concurrently
+    const selects = schema.fields.filter(f => f.type === 'select' && f.source);
+    const sourceData = {};
+      if (selects.length > 0) {
+        await Promise.all(selects.map(async (field) => {
+          try { sourceData[field.source] = await api.read(field.source); } 
+          catch (e) { sourceData[field.source] = []; }
+        }));
+      }
+      window.currentFormSourceData = sourceData;
+
+    schema.fields.forEach(f => {
+      const requiredHtml = f.required ? '<span class="text-red-500">*</span>' : '';
+      
+      // Dynamic Col Span for denser layout
+      let colSpan = 'col-span-1 md:col-span-2 lg:col-span-2';
+      if (f.name.endsWith('_code') || (f.name.endsWith('_id') && !f.label.includes('Name') && f.type !== 'select') || f.type === 'date_custom' || f.name === 'pay_group') {
+        colSpan = 'col-span-1 md:col-span-1 lg:col-span-1'; // small codes & dates
+      } else if (f.name.includes('name') || f.name.includes('email') || f.name.includes('remarks') || f.label.includes('Name')) {
+        colSpan = 'col-span-1 md:col-span-3 lg:col-span-3'; // wider fields
+      }
+
+      let wrapperClass = '';
+      if (schemaKey === 'promotions' && !isUpdate && (f.name === 'emp_id' || f.name === 'sequence_no')) {
+        wrapperClass = 'promotion-single-field';
+      }
+
+      html += `<div class="${colSpan} ${wrapperClass}"><label class="block text-xs font-bold text-gray-600 mb-0.5 uppercase tracking-tighter">${f.label} ${requiredHtml}</label>`;
+
+      if (f.type === 'select') {
+        html += `<select name="${f.name}" data-source="${f.source || ''}" onchange="Components.handleDependentDropdowns(this)" class="w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>
+                   <option value="">-- Select --</option>`;
+        if (f.options) {
+          f.options.forEach(opt => { html += `<option value="${opt}">${opt}</option>`; });
+        } else if (f.source && sourceData[f.source]) {
+          const pkField = AppSchemas[f.source].pk;
+          sourceData[f.source].forEach(row => { 
+            const val = f.saveDisplayValue ? row[f.sourceDisplay] : row[pkField];
+            html += `<option value="${val}">${row[f.sourceDisplay]}</option>`; 
+          });
+        }
+        html += `</select>`;
+        } else if (f.name.includes('contact')) {
+          const placeholderText = "Enter Mobile Number";
+          let optionsHtml = '';
+          ALL_COUNTRY_CODES.forEach(country => {
+            const selected = country.c === '+880' ? 'selected' : '';
+            optionsHtml += `<option value="${country.c}" ${selected} title="${country.n}">${country.c}</option>`;
+          });
+          
+          html += `<div class="flex items-center space-x-1">
+                     <select id="${f.name}_cc" class="w-70px border border-gray-400 rounded-sm px-0.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50 text-center cursor-pointer">
+                       ${optionsHtml}
+                     </select>
+                     <input type="text" id="${f.name}_num" placeholder="${placeholderText}" class="flex-1 w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>
+                     <input type="hidden" name="${f.name}" id="${f.name}_hidden">
+                   </div>`;
+      } else if (f.type === 'date_custom') {
+        html += `<input type="text" name="${f.name}" placeholder="DDMMYYYY" class="date-ddmmyyyy w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>`;
+      } else if (f.type === 'image') {
+        html += `<input type="file" id="${f.name}_file" accept="image/*" class="w-full border border-gray-400 rounded-sm text-xs bg-gray-50 file:mr-2 file:py-1 file:px-2 file:border-0 file:text-xs file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300 cursor-pointer" ${f.required ? 'required' : ''}>
+                 <input type="hidden" name="${f.name}" id="${f.name}_hidden">`;
+      } else {
+        const placeholderText = `Enter ${f.label.split(' (')[0]}`;
+        html += `<input type="${f.type}" name="${f.name}" placeholder="${placeholderText}" class="w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50" ${f.required ? 'required' : ''}>`;
+      }
+      html += `</div>`;
+    });
+
+    if (schemaKey === 'promotions' && !isUpdate) {
+      html += `
+        <div class="col-span-1 md:col-span-3 lg:col-span-3 promotion-bulk-field hidden">
+          <label class="block text-xs font-bold text-gray-600 mb-0.5 uppercase tracking-tighter">
+            Bulk Staff IDs & Sequence Numbers <span class="text-red-500">*</span>
+          </label>
+          <textarea id="bulk_staff_data" name="bulk_staff_data" rows="1" placeholder="Format: StaffID1 Seq1 StaffID2 Seq2 ... (e.g. S101 1 S102 1 S103 2)" class="w-full border border-gray-400 rounded-sm px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50 h-7 resize-y min-h-7"></textarea>
+        </div>
+      `;
+    }
+
+    html += `</div>
+              <div class="mt-4 flex justify-between items-center pt-2 border-t border-gray-200">
+                <div>
+                  ${isUpdate ? `<button type="button" id="btn-delete-${schemaKey}" class="px-2 py-1 bg-red-50 border border-red-500 text-red-700 rounded-sm hover:bg-red-100 text-xs font-bold flex items-center shadow-sm"><span class="material-icons text-xs mr-1">delete</span> Delete</button>` : ''}
+                </div>
+                <div class="flex space-x-2">
+                  <button type="button" onclick="${isUpdate ? `Components.renderGrid('${schemaKey}', '${containerId}')` : `document.getElementById('form-${schemaKey}').reset()`}" class="px-2 py-1 border border-gray-400 bg-white rounded-sm text-gray-700 hover:bg-gray-100 text-xs font-bold shadow-sm">${isUpdate ? 'Cancel' : 'Clear'}</button>
+                  ${isUpdate ? `<button type="submit" class="px-2 py-1 bg-green-700 text-white rounded-sm hover:bg-green-800 text-xs font-bold shadow-sm flex items-center"><span class="material-icons text-xs mr-1">save</span> Update</button>` : `<button type="submit" class="px-2 py-1 bg-blue-900 text-white rounded-sm hover:bg-blue-800 text-xs font-bold shadow-sm flex items-center"><span class="material-icons text-xs mr-1">add_circle</span> Save</button>`}
+                </div>
+              </div>
+            </form></div></div>`;
+
+    container.innerHTML = html;
+
+    const form = document.getElementById(`form-${schemaKey}`);
+
+    // Setup Promotion Bulk Toggle behavior
+    if (schemaKey === 'promotions' && !isUpdate) {
+      const bulkToggle = document.getElementById('promotion-bulk-toggle');
+      const singleFields = container.querySelectorAll('.promotion-single-field');
+      const bulkFields = container.querySelectorAll('.promotion-bulk-field');
+      const bulkTextarea = document.getElementById('bulk_staff_data');
+      
+      const updateVisibility = () => {
+        if (bulkToggle.checked) {
+          singleFields.forEach(el => {
+            el.classList.add('hidden');
+            const input = el.querySelector('input');
+            if (input) input.removeAttribute('required');
+          });
+          bulkFields.forEach(el => el.classList.remove('hidden'));
+          if (bulkTextarea) bulkTextarea.setAttribute('required', 'required');
+        } else {
+          singleFields.forEach(el => {
+            el.classList.remove('hidden');
+            const input = el.querySelector('input');
+            if (input) input.setAttribute('required', 'required');
+          });
+          bulkFields.forEach(el => el.classList.add('hidden'));
+          if (bulkTextarea) bulkTextarea.removeAttribute('required');
+        }
+      };
+      
+      if (bulkToggle) {
+        bulkToggle.addEventListener('change', updateVisibility);
+        form.addEventListener('reset', () => {
+          setTimeout(updateVisibility, 0);
+        });
+        updateVisibility(); // run once on initialization
+      }
+    }
+
+    // Bind Contact Number Dropdown Synchronization
+    schema.fields.forEach(f => {
+      if (f.name.includes('contact')) {
+        const ccSelect = document.getElementById(`${f.name}_cc`);
+        const numInput = document.getElementById(`${f.name}_num`);
+        const hiddenInput = document.getElementById(`${f.name}_hidden`);
+        const syncContact = () => {
+          let raw = numInput.value.replace(/[^0-9]/g, '');
+          if (ccSelect.value === '+880' && raw.startsWith('0')) {
+            raw = raw.substring(1);
+          }
+          if (raw.length > 4) {
+            numInput.value = raw.substring(0, 4) + '-' + raw.substring(4);
+          } else {
+            numInput.value = raw;
+          }
+          if (!raw) {
+            hiddenInput.value = '';
+          } else {
+            // Clean E.164 without space, hyphen, or apostrophe
+            hiddenInput.value = `${ccSelect.value}${raw}`;
+          }
+        };
+        if (ccSelect && numInput) {
+          ccSelect.addEventListener('change', syncContact);
+          numInput.addEventListener('input', syncContact);
+        }
+      } else if (f.type === 'image') {
+        const fileInput = document.getElementById(`${f.name}_file`);
+        const hiddenInput = document.getElementById(`${f.name}_hidden`);
+        
+        if (fileInput) {
+          fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function(evt) {
+                hiddenInput.value = evt.target.result;
+              };
+              reader.readAsDataURL(file);
+            } else {
+              hiddenInput.value = '';
+            }
+          });
+        }
+      }
+    });
+
+    // Pre-populate fields in UPDATE mode
+    if (isUpdate) {
+      schema.fields.forEach(f => {
+        let rawVal = rowData[f.name];
+        if (f.name === 'pg_id' && (rawVal === undefined || rawVal === null || rawVal === '')) {
+          rawVal = rowData.designation_short || rowData.designation;
+        }
+
+        if (rawVal !== undefined && rawVal !== null) {
+          const input = form.elements[f.name];
+          if (f.type === 'date_custom') {
+            if (input && rawVal && rawVal !== '-') {
+              input.dataset.isoValue = rawVal;
+            }
+          } else if (f.name.includes('contact')) {
+            let val = rawVal || '';
+            val = String(val).replace(/['"]/g, '').trim();
+            const ccSelect = document.getElementById(`${f.name}_cc`);
+            const numInput = document.getElementById(`${f.name}_num`);
+            const hiddenInput = document.getElementById(`${f.name}_hidden`);
+            
+            let digits = val.replace(/[^\+0-9]/g, '');
+            if (digits.startsWith('+880') && digits.length > 4) {
+              let cc = '+880';
+              let num = digits.substring(4);
+              if (ccSelect) ccSelect.value = cc;
+              if (numInput) {
+                if (num.length > 4) numInput.value = num.substring(0, 4) + '-' + num.substring(4);
+                else numInput.value = num;
+              }
+              if (hiddenInput) hiddenInput.value = `+880${num}`;
+            } else if (digits.startsWith('+') && digits.length > 4) {
+              let cc = digits.substring(0, 4);
+              let num = digits.substring(4);
+              if (ccSelect) ccSelect.value = cc;
+              if (numInput) {
+                if (num.length > 4) numInput.value = num.substring(0, 4) + '-' + num.substring(4);
+                else numInput.value = num;
+              }
+              if (hiddenInput) hiddenInput.value = digits;
+            } else if (digits.length === 11 && digits.startsWith('01')) {
+              let cc = '+880';
+              let num = digits.substring(1);
+              if (ccSelect) ccSelect.value = cc;
+              if (numInput) numInput.value = num.substring(0, 4) + '-' + num.substring(4);
+              if (hiddenInput) hiddenInput.value = `+880${num}`;
+            } else {
+              if (numInput) numInput.value = val;
+              if (hiddenInput) hiddenInput.value = val;
+            }
+          } else if (f.type === 'select' && f.source && sourceData[f.source]) {
+            if (input) {
+              const pkField = AppSchemas[f.source].pk;
+              const displayField = f.sourceDisplay;
+              let matchedVal = rawVal;
+              const matchedRow = sourceData[f.source].find(r => 
+                String(r[pkField]) === String(rawVal) || 
+                String(r[displayField]) === String(rawVal) ||
+                (f.source === 'pay_groups' && (String(r.designation) === String(rawVal) || String(r.pay_group) === String(rawVal) || String(r.designation_short) === String(rawVal))) ||
+                (f.source === 'departments' && (String(r.dep_code) === String(rawVal) || String(r.dep_letter_code) === String(rawVal) || String(r.dep_name) === String(rawVal))) ||
+                (f.source === 'directorates' && (String(r.dir_code) === String(rawVal) || String(r.dir_letter_code) === String(rawVal) || String(r.dir_name) === String(rawVal))) ||
+                (f.source === 'stations' && (String(r.station_code) === String(rawVal) || String(r.station_name) === String(rawVal)))
+              );
+              if (matchedRow) {
+                matchedVal = matchedRow[pkField];
+              }
+              input.value = matchedVal;
+            }
+          } else if (f.type === 'image') {
+            if (input) input.value = rawVal || '';
+          } else {
+            if (input) input.value = rawVal;
+          }
+        }
+      });
+
+      // Trigger dependent dropdowns to filter appropriately on edit load
+      const dirInput = form.elements['dir_id'];
+      if (dirInput) Components.handleDependentDropdowns(dirInput);
+      const depInput = form.elements['dep_id'];
+      if (depInput) Components.handleDependentDropdowns(depInput);
+      const stationInput = form.elements['station_id'];
+      if (stationInput) Components.handleDependentDropdowns(stationInput);
+      const secInput = form.elements['sec_id'];
+      if (secInput) Components.handleDependentDropdowns(secInput);
+
+      // Bind Delete Button
+      document.getElementById(`btn-delete-${schemaKey}`).addEventListener('click', () => {
+        Components.confirm('Confirm Deletion', 'Are you absolutely sure you want to permanently delete this record? This action cannot be undone.', async () => {
+          try {
+            app.showLoader();
+            await api.delete(schema.table, schema.pk, rowData[schema.pk]);
+            app.toast('Data successfully deleted', 'success');
+            Components.renderGrid(schemaKey, containerId); // Return to grid
+          } catch(err) {
+            app.toast(err.message, 'error');
+          } finally {
+            app.hideLoader();
+          }
+        });
+      });
+    }
+
+    // Attach submit event (Create or Update)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      try {
+        app.showLoader();
+        if (isUpdate) {
+          await api.update(schema.table, schema.pk, rowData[schema.pk], data);
+          app.toast('Data successfully updated', 'success');
+          Components.renderGrid(schemaKey, containerId); // Return to grid
+        } else {
+          const bulkToggle = document.getElementById('promotion-bulk-toggle');
+          if (bulkToggle && bulkToggle.checked) {
+            await api.call('api_create_bulk_promotions', data, schema.prefix, schema.pk);
+            app.toast('Bulk promotions saved successfully', 'success');
+            e.target.reset();
+          } else {
+            await api.create(schema.table, data, schema.prefix, schema.pk);
+            app.toast('Record saved successfully', 'success');
+            e.target.reset();
+          }
+        }
+      } catch (err) {
+        app.toast(err.message, 'error');
+      } finally {
+        app.hideLoader();
+      }
+    });
+
+    // Initialize custom dates for this new HTML
+    this.initDateInputs();
+  },
+
+  /**
+   * Dynamically renders a Data Grid (View Forms) based on schema key
+   */
+  renderGrid: async function(schemaKey, containerId) {
+    const schema = AppSchemas[schemaKey];
+    if (!schema) return;
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="p-4 text-gray-500"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900 mx-auto"></div></div>';
+
+    let html = `<div class="data-view-container animate-fade-in">
+                  <!-- Toolbar with Search, Navigation, Fullscreen & Close -->
+                  <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap justify-between items-center gap-2 shrink-0">
+                    <div class="flex items-center space-x-2">
+                      <div class="relative">
+                        <span class="material-icons absolute left-1.5 top-half -translate-y-half text-gray-500 text-xs">search</span>
+                        <input type="text" id="search-${schemaKey}" placeholder="Search ${schema.title}..." class="pl-6 pr-2 py-0.5 border border-gray-400 text-xs focus:outline-none w-44 sm:w-56 bg-white rounded-sm">
+                      </div>
+                      <span class="text-xs font-bold text-gray-600 hidden md:inline uppercase">${schema.title}</span>
+                    </div>
+
+                    <!-- Navigation Controls: Left/Right scroll, Fullscreen, Close -->
+                    <div class="flex items-center space-x-1.5">
+                      <!-- Horizontal Scroll Arrows -->
+                      <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+                        <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Table Left">
+                          <span class="material-icons text-base">chevron_left</span>
+                        </button>
+                        <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Table Right">
+                          <span class="material-icons text-base">chevron_right</span>
+                        </button>
+                      </div>
+
+                      <select class="border border-gray-400 bg-white text-xs px-1 py-0.5 text-gray-800 rounded-sm">
+                        <option>20</option><option>50</option><option>100</option><option>All</option>
+                      </select>
+                      
+                      <button onclick="Components.exportToCSV('${schemaKey}')" class="bg-green-600 text-white border border-green-700 px-2 py-0.5 hover:bg-green-700 flex items-center text-xs font-medium cursor-pointer rounded-sm" title="Export Excel">
+                        <span class="material-icons text-xs mr-0.5">grid_on</span> Excel
+                      </button>
+                      <button onclick="Components.exportToPDF('${schemaKey}')" class="bg-red-600 text-white border border-red-700 px-2 py-0.5 hover:bg-red-700 flex items-center text-xs font-medium cursor-pointer rounded-sm" title="Export PDF">
+                        <span class="material-icons text-xs mr-0.5">picture_as_pdf</span> PDF
+                      </button>
+                      
+                      <!-- Fullscreen Toggle Button -->
+                      <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Mode">
+                        <span class="material-icons text-sm mr-1">fullscreen</span>
+                        <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Table Container (Spreadsheet Style with Dedicated Scroller) -->
+                  <div class="data-table-scroll-wrapper">
+                    <table class="w-full border-collapse whitespace-nowrap text-xs font-sans">
+                      <thead class="sticky top-0 z-10">
+                        <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900">
+                          <th class="p-1 border border-gray-300 font-bold text-left">${schema.prefix} ID</th>`;
+    
+    schema.fields.forEach(f => {
+      html += `<th class="p-1 border border-gray-300 font-bold text-left">${f.label}</th>`;
+    });
+
+    html += `             <th class="p-1 border border-gray-300 font-bold text-center w-16">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="grid-tbody-${schemaKey}">
+                        <tr><td colspan="${schema.fields.length + 2}" class="p-4 text-center text-gray-500">Loading spreadsheet data...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>`;
+
+    container.innerHTML = html;
+
+    try {
+      const [data, masterData] = await Promise.all([
+        api.read(schema.table),
+        api.getMasterData().catch(() => ({}))
+      ]);
+      Components.gridState[schemaKey] = data; // Store state for export
+      const tbody = document.getElementById(`grid-tbody-${schemaKey}`);
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${schema.fields.length + 2}" class="px-1 py-4 text-center text-gray-500 font-medium">No records found. Click 'Input Records' to create one.</td></tr>`;
+        return;
+      }
+
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-blue-50";
+        
+        // PK Column
+        const tdPk = document.createElement('td');
+        tdPk.className = 'border border-gray-300 px-1 py-0 truncate max-w-120 font-bold text-blue-900';
+        tdPk.textContent = row[schema.pk];
+        tr.appendChild(tdPk);
+        
+        // Data Columns
+        schema.fields.forEach(f => {
+          let val = row[f.name];
+          if (f.name === 'pg_id' && (val === undefined || val === null || val === '')) {
+            val = row.designation_short || row.designation;
+          }
+          if (val === undefined || val === null || val === '') {
+            val = '-';
+          }
+
+          // If field is select with source, resolve relational ID to display text
+          if (f.type === 'select' && f.source && masterData[f.source] && val !== '-') {
+            const srcTable = masterData[f.source];
+            const pkField = (AppSchemas[f.source] && AppSchemas[f.source].pk) || f.source + '_id';
+            const displayField = f.sourceDisplay;
+            
+            const matched = srcTable.find(item => 
+              String(item[pkField]) === String(val) || 
+              String(item[displayField]) === String(val) ||
+              (f.source === 'pay_groups' && (String(item.designation) === String(val) || String(item.pay_group) === String(val) || String(item.designation_short) === String(val))) ||
+              (f.source === 'departments' && (String(item.dep_code) === String(val) || String(item.dep_letter_code) === String(val) || String(item.dep_name) === String(val))) ||
+              (f.source === 'directorates' && (String(item.dir_code) === String(val) || String(item.dir_letter_code) === String(val) || String(item.dir_name) === String(val))) ||
+              (f.source === 'stations' && (String(item.station_code) === String(val) || String(item.station_name) === String(val)))
+            );
+            if (matched && matched[displayField]) {
+              val = matched[displayField];
+            }
+          }
+
+          if (f.type === 'date_custom' && val !== '-') {
+             val = window.formatToDDMmmYYYY(val);
+          } else if (f.name.includes('contact') && val !== '-') {
+            let strVal = String(val).replace(/['"]/g, '').trim();
+            let digits = strVal.replace(/[^\+0-9]/g, '');
+            if (digits.startsWith('+880') && digits.length >= 14) {
+              val = digits.substring(0, 8) + '-' + digits.substring(8);
+            } else if (digits.startsWith('+880') && digits.length > 8) {
+              val = digits.substring(0, 8) + '-' + digits.substring(8);
+            } else if (digits.startsWith('+') && digits.length > 7) {
+              val = digits.substring(0, digits.length - 6) + '-' + digits.substring(digits.length - 6);
+            } else if (digits.length === 11 && digits.startsWith('01')) {
+              val = '+880' + digits.substring(1, 5) + '-' + digits.substring(5);
+            } else {
+              val = strVal;
+            }
+          }
+          const td = document.createElement('td');
+          td.className = 'border border-gray-300 px-1 py-0 truncate max-w-200px text-gray-800';
+          td.title = val;
+          td.textContent = val;
+          tr.appendChild(td);
+        });
+
+        // Actions Column
+        const tdActions = document.createElement('td');
+        tdActions.className = 'border border-gray-300 px-1 py-0 text-center space-x-0.5 whitespace-nowrap bg-gray-50';
+        
+        const btnView = document.createElement('button');
+        btnView.className = 'text-blue-800 bg-blue-100 hover:bg-blue-200 px-1 rounded-sm border border-blue-300 transition-colors';
+        btnView.title = 'View / Edit';
+        btnView.innerHTML = '<span class="material-icons text-sm-14 leading-none">edit_document</span>';
+        btnView.onclick = () => Components.renderForm(schemaKey, containerId, row);
+        
+        const btnDel = document.createElement('button');
+        btnDel.className = 'text-red-800 bg-red-100 hover:bg-red-200 px-1 rounded-sm border border-red-300 transition-colors';
+        btnDel.title = 'Delete';
+        btnDel.innerHTML = '<span class="material-icons text-sm-14 leading-none">delete</span>';
+        btnDel.onclick = () => {
+          Components.confirm('Delete Record', `Are you sure you want to permanently delete record ${row[schema.pk]}?`, async () => {
+            try {
+              app.showLoader();
+              await api.delete(schema.table, schema.pk, row[schema.pk]);
+              app.toast('Data successfully deleted', 'success');
+              Components.renderGrid(schemaKey, containerId); // Refresh
+            } catch(e) {
+              app.toast(e.message, 'error');
+            } finally {
+              app.hideLoader();
+            }
+          });
+        };
+
+        tdActions.appendChild(btnView);
+        tdActions.appendChild(btnDel);
+        tr.appendChild(tdActions);
+        
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      document.getElementById(`grid-tbody-${schemaKey}`).innerHTML = `<tr><td colspan="${schema.fields.length + 2}" class="px-1 py-4 text-center text-red-500 font-bold"><span class="material-icons block text-xl mb-1">error_outline</span> ${err.message}</td></tr>`;
+    }
+  }
+};
+
+// Auto-init on DOM changes (simple mutation observer)
+const observer = new MutationObserver(() => Components.initDateInputs());
+document.addEventListener('DOMContentLoaded', () => {
+  observer.observe(document.body, { childList: true, subtree: true });
+});
+</script>

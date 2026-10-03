@@ -1,224 +1,468 @@
 <script>
-/**
- * Enterprise Database Schemas
- * Used for dynamic form generation, data grid rendering, and validation.
- */
-var AppSchemas = window.AppSchemas = {
-  // ==========================================
-  // SYSTEM MODULE
-  // ==========================================
-  users: {
-    title: 'System Users', table: 'users', pk: 'user_id', prefix: 'USR',
-    fields: [
-      { name: 'email', label: 'Email Address', type: 'email', required: true },
-      { name: 'role_name', label: 'Access Role', type: 'select', options: ['SUPER_ADMIN', 'HR', 'TQC', 'EMPLOYEE'], required: true },
-      { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Suspended'], required: true }
-    ]
-  },
+  /**
+   * ============================================================================
+   * SANDVIORA AVIOSOLUTION - Master Dynamic Schema & Form Metadata Engine
+   * ============================================================================
+   * File: Schemas.html
+   * Architectural Role: Declarative UI Metadata, Form Generation & Grid Schemas
+   * 
+   * Description:
+   * Defines declarative configuration schemas for every database entity and form.
+   * Directly drives:
+   * 1. Dynamic Form Rendering: Automatically generates input controls, dropdowns,
+   *    radio buttons, universal date fields, and upload boxes.
+   * 2. Cascading / Dependable Selects: Implements relational cascading dependencies
+   *    (e.g. selecting Location filters Stations; selecting Station filters Sections).
+   * 3. Structured Data Grid Rendering: Generates standardized table column headers,
+   *    sorting keys, and row cell mappings in View Forms mode.
+   * 4. Human-Readable Dropdowns: Displays descriptive names (e.g. Department Name)
+   *    to users while storing normalized codes/IDs (e.g. dep_code) in Google Sheets.
+   * ============================================================================
+   */
+  var AppSchemas = window.AppSchemas = {
+    // 1. Placements
+    placements: {
+      title: 'Employee Duty Placement & Shift Assignment Form',
+      shortTitle: 'Placements',
+      subtitle: 'Assign workplace, organizational unit, duty position, and operational shift to employee',
+      table: 'placements',
+      pk: 'placement_id',
+      prefix: 'PLC',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'location_id', label: 'Work Location / Workplace', type: 'select', source: 'work_locations', sourceKey: 'location_id', sourceDisplay: 'location_name', placeholder: 'Select Work Location', required: true },
+        { name: 'organization_unit_id', label: 'Organization Unit', type: 'select', source: 'organization_units', sourceKey: 'unit_id', sourceDisplay: 'unit_name', placeholder: 'Select Organization Unit', required: true },
+        { name: 'position_id', label: 'Position / Designation', type: 'select', source: 'pay_groups', sourceKey: 'designation_short', sourceDisplay: 'designation', placeholder: 'Select Position / Designation', required: true },
+        { name: 'shift_name', label: 'Shift Assignment', type: 'select', source: 'shifts', sourceKey: 'shift_name', sourceDisplay: 'shift_name', placeholder: 'Select shift (optional)', required: false },
+        { name: 'placement_date', label: 'Placement Date', type: 'universal_date', placeholder: 'DDMMYYYY', required: true }
+      ]
+    },
 
-  // ==========================================
-  // ORG MODULE
-  // ==========================================
-  directorates: {
-    title: 'Directorates', table: 'directorates', pk: 'dir_id', prefix: 'DIR',
-    fields: [
-      { name: 'dir_code', label: 'DIR Code', type: 'text', required: true },
-      { name: 'dir_letter_code', label: 'Letter Code', type: 'text', required: true },
-      { name: 'dir_name', label: 'Directorate Name', type: 'text', required: true }
-    ]
-  },
-  departments: {
-    title: 'Departments', table: 'departments', pk: 'dep_id', prefix: 'DEP',
-    fields: [
-      { name: 'dir_id', label: 'Directorate', type: 'select', source: 'directorates', sourceDisplay: 'dir_name', required: true },
-      { name: 'dep_code', label: 'DEP Code', type: 'text', required: true },
-      { name: 'dep_letter_code', label: 'Letter Code', type: 'text', required: true },
-      { name: 'dep_name', label: 'Department Name', type: 'text', required: true }
-    ]
-  },
-  stations: {
-    title: 'Stations', table: 'stations', pk: 'station_id', prefix: 'STN',
-    fields: [
-      { name: 'station_code', label: 'Station Code', type: 'text', required: true },
-      { name: 'station_name', label: 'Station Name', type: 'text', required: true },
-      { name: 'station_location', label: 'Location', type: 'text', required: true },
-      { name: 'station_type', label: 'Type', type: 'select', options: ['Hub', 'Spoke', 'Base'], required: true }
-    ]
-  },
-  sections: {
-    title: 'Sections', table: 'sections', pk: 'sec_id', prefix: 'SEC',
-    fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
-      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
-      { name: 'sec_code', label: 'SEC Code', type: 'text', required: true },
-      { name: 'sec_letter_code', label: 'Letter Code', type: 'text', required: true },
-      { name: 'sec_name', label: 'Section Name', type: 'text', required: true }
-    ]
-  },
-  shifts: {
-    title: 'Shifts', table: 'shifts', pk: 'shift_id', prefix: 'SHF',
-    fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
-      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
-      { name: 'shift_code', label: 'Shift Code', type: 'text', required: true },
-      { name: 'shift_name', label: 'Shift Name', type: 'text', required: true },
-      { name: 'shift_description', label: 'Description', type: 'text', required: false }
-    ]
-  },
-  pay_groups: {
-    title: 'Pay Groups', table: 'pay_groups', pk: 'pg_id', prefix: 'PG',
-    fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
-      { name: 'pay_group', label: 'Pay Group', type: 'text', required: true },
-      { name: 'rank_level', label: 'Rank Level (Higher = More Senior)', type: 'number', required: true },
-      { name: 'designation', label: 'Designation', type: 'text', required: true },
-      { name: 'designation_short', label: 'Short Designation', type: 'text', required: true }
-    ]
-  },
-  employee_types: {
-    title: 'Employee Types', table: 'employee_types', pk: 'emp_type_id', prefix: 'ETY',
-    fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
-      { name: 'emp_type_code', label: 'Type Code', type: 'text', required: true },
-      { name: 'emp_type', label: 'Employee Type', type: 'text', required: true },
-      { name: 'description', label: 'Description', type: 'text', required: false }
-    ]
-  },
-  workforce_setup: {
-    title: 'Set Up Form', table: 'workforce_setup', pk: 'setup_id', prefix: 'SET',
-    fields: [
-      { name: 'dir_id', label: 'Directorate Name', type: 'select', source: 'directorates', sourceDisplay: 'dir_name', required: true },
-      { name: 'dep_id', label: 'Department Name', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
-      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
-      { name: 'pay_group_id', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
-      { name: 'designation_id', label: 'Designation', type: 'select', source: 'pay_groups', sourceDisplay: 'designation_short', required: true },
-      { name: 'set_up', label: 'Set Up', type: 'number', required: true }
-    ]
-  },
+    // 2. Employee Types
+    employee_types: {
+      title: 'Employee Workforce Classification & Service Cadre Form',
+      shortTitle: 'Employee Types',
+      subtitle: 'Configure structural employment categories (Permanent, Contractual, Casual, and Trainee)',
+      table: 'employee_types',
+      pk: 'emp_type_id',
+      prefix: 'ETY',
+      fields: [
+        { name: 'emp_type_code', label: 'Type Code', type: 'text', placeholder: 'e.g. EMT-01, EMT-02', required: true },
+        { name: 'emp_type', label: 'Employee Type Name', type: 'text', placeholder: 'e.g. Permanent, Contractual, Casual', required: true },
+        { name: 'description', label: 'Description', type: 'text', placeholder: 'Brief description', required: false }
+      ]
+    },
 
-  // ==========================================
-  // HRM MODULE
-  // ==========================================
-  employees: {
-    title: 'Employees', table: 'employees', pk: 'emp_id', prefix: 'EMP',
-    fields: [
-      { name: 'staff_id', label: 'Staff ID', type: 'text', required: true },
-      { name: 'emp_name', label: 'Full Name', type: 'text', required: true },
-      { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Others'], required: true },
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
-      { name: 'emp_type_id', label: 'Emp Type', type: 'select', source: 'employee_types', sourceDisplay: 'emp_type', required: true },
-      { name: 'pg_id', label: 'Short Designation', type: 'select', source: 'pay_groups', sourceDisplay: 'designation_short', required: true },
-      { name: 'contact_primary', label: 'Contact 01', type: 'text', required: true },
-      { name: 'contact_secondary', label: 'Contact 02', type: 'text', required: false },
-      { name: 'contact_family', label: 'Contact (Family)', type: 'text', required: false },
-      { name: 'email', label: 'Email', type: 'email', required: true },
-      { name: 'dob', label: 'Date of Birth', type: 'date_custom', required: true },
-      { name: 'joining_date', label: 'Joining Date', type: 'date_custom', required: true },
-      { name: 'home_district', label: 'Home District', type: 'text', required: true },
-      { name: 'picture_url', label: 'Picture', type: 'image', required: false },
-      { name: 'remarks', label: 'Remarks', type: 'text', required: false }
-    ]
-  },
-  postings: {
-    title: 'Posting History', table: 'postings', pk: 'posting_id', prefix: 'PST',
-    fields: [
-      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
-      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
-      { name: 'posting_date', label: 'Posting Date', type: 'date_custom', required: true }
-      // End date omitted intentionally as per rule
-    ]
-  },
-  placements: {
-    title: 'Placement History', table: 'placements', pk: 'placement_id', prefix: 'PLC',
-    fields: [
-      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
-      { name: 'station_id', label: 'Station', type: 'select', source: 'stations', sourceDisplay: 'station_code', required: true },
-      { name: 'sec_id', label: 'Section', type: 'select', source: 'sections', sourceDisplay: 'sec_letter_code', required: true },
-      { name: 'shift_id', label: 'Shift', type: 'select', source: 'shifts', sourceDisplay: 'shift_name', required: true },
-      { name: 'placement_date', label: 'Placement Date', type: 'date_custom', required: true }
-    ]
-  },
-  promotions: {
-    title: 'Promotion History', table: 'promotions', pk: 'promotion_id', prefix: 'PRM',
-    fields: [
-      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
-      { name: 'sequence_no', label: 'Sequence No', type: 'number', required: true },
-      { name: 'present_pg_id', label: 'Present PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
-      { name: 'promoted_pg_id', label: 'Promoted PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
-      { name: 'promotion_date', label: 'Promotion Date', type: 'date_custom', required: true }
-    ]
-  },
-  extensions: {
-    title: 'Extension History', table: 'extensions', pk: 'extension_id', prefix: 'EXT',
-    fields: [
-      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
-      { name: 'extension_pg_id', label: 'Extension PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
-      { name: 'extension_from', label: 'From Date', type: 'date_custom', required: true },
-      { name: 'extension_to', label: 'To Date', type: 'date_custom', required: true }
-    ]
-  },
-  additional_charges: {
-    title: 'Additional Charge History', table: 'additional_charges', pk: 'charge_id', prefix: 'CHG',
-    fields: [
-      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
-      { name: 'charge_pg_id', label: 'Charge PG', type: 'select', source: 'pay_groups', sourceDisplay: 'pay_group', required: true },
-      { name: 'charge_from', label: 'From Date', type: 'date_custom', required: true },
-      { name: 'charge_to', label: 'To Date', type: 'date_custom', required: true }
-    ]
-  },
-  self_retirements: {
-    title: 'Self Retirement', table: 'self_retirements', pk: 'retirement_id', prefix: 'RET',
-    fields: [
-      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
-      { name: 'retirement_date', label: 'Retirement Date', type: 'date_custom', required: true },
-      { name: 'remarks', label: 'Remarks', type: 'text', required: false }
-    ]
-  },
-  employee_migrations: {
-    title: 'Employee Migration', table: 'employee_migrations', pk: 'migration_id', prefix: 'MIG',
-    fields: [
-      { name: 'old_staff_id', label: 'Old Staff ID', type: 'text', required: true },
-      { name: 'new_staff_id', label: 'New Staff ID', type: 'text', required: true },
-      { name: 'migration_type', label: 'Migration Type', type: 'select', options: ['Department Change', 'Employee Type Change'], required: true },
-      { name: 'migration_date', label: 'Migration Date', type: 'date_custom', required: true },
-      { name: 'remarks', label: 'Remarks', type: 'text', required: false }
-    ]
-  },
+    // 3. Employees
+    employees: {
+      title: 'Employee Master Profile & Bio-Data Registration Form',
+      shortTitle: 'Employees',
+      subtitle: 'Register authoritative personnel bio-data, home organization, official contacts, and employment details',
+      table: 'employees',
+      pk: 'emp_id',
+      prefix: 'EMP',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'emp_name', label: 'Full Name', type: 'text', placeholder: 'e.g. John Doe', required: true },
+        { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'], placeholder: 'Select gender', required: true },
+        { name: 'dob', label: 'Date of Birth', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'department_code', label: 'Home Organization', type: 'select', source: 'organization_units', sourceKey: 'unit_code', sourceDisplay: 'unit_name', placeholder: 'Select Home Organization (Directorate / Dept)', required: true },
+        { name: 'emp_type', label: 'Employee Type', type: 'select', source: 'employee_types', sourceKey: 'emp_type', sourceDisplay: 'emp_type', placeholder: 'Select type', required: true },
+        { name: 'pay_group', label: 'Pay Group / Designation', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Select pay group', required: true },
+        { name: 'joining_date', label: 'Joining Date', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'contact_primary', label: 'Primary Contact', type: 'text', placeholder: 'e.g. +8801711000000', required: true },
+        { name: 'contact_secondary', label: 'Alternate Contact', type: 'text', placeholder: 'Optional alternate phone', required: false },
+        { name: 'contact_family', label: 'Family Contact', type: 'text', placeholder: 'Emergency family contact', required: false },
+        { name: 'official_email', label: 'Official Email', type: 'email', placeholder: 'e.g. employee@airline.com', required: false },
+        { name: 'personal_email', label: 'Personal Email', type: 'email', placeholder: 'e.g. name@gmail.com', required: true },
+        { name: 'home_district', label: 'Home District', type: 'text', placeholder: 'e.g. Dhaka, Chittagong', required: false },
+        { name: 'picture_url', label: 'Employee Photo', type: 'image_upload', placeholder: 'Choose image file', required: false },
+        { name: 'remarks', label: 'Remarks', type: 'text', placeholder: 'Optional remarks', required: false }
+      ]
+    },
 
+    // 4. Postings
+    postings: {
+      title: 'Employee Station Posting & Workplace Transfer Order Form',
+      shortTitle: 'Postings',
+      subtitle: 'Record geographic station postings, corporate workplace deployments, and official transfers',
+      table: 'postings',
+      pk: 'posting_id',
+      prefix: 'PST',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'location_id', label: 'Work Location', type: 'select', source: 'work_locations', sourceKey: 'location_id', sourceDisplay: 'location_name', placeholder: 'Select work location', required: true },
+        { name: 'station_code', label: 'Station', type: 'dependable_select', parentField: 'location_id', source: 'stations', sourceKey: 'station_code', sourceDisplay: 'station_name', placeholder: 'Select station (if airport)', required: false },
+        { name: 'effective_from', label: 'Effective From', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'effective_to', label: 'Effective To', type: 'universal_date', placeholder: 'DDMMYYYY', required: false },
+        { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], placeholder: 'Select status', required: true }
+      ]
+    },
 
-  // ==========================================
-  // TQC MODULE
-  // ==========================================
-  courses: {
-    title: 'Courses', table: 'courses', pk: 'course_id', prefix: 'CRS',
-    fields: [
-      { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceDisplay: 'dep_name', required: true },
-      { name: 'course_code', label: 'Course Code', type: 'text', required: true },
-      { name: 'course_name', label: 'Course Name', type: 'text', required: true },
-      { name: 'course_type', label: 'Course Type', type: 'select', options: ['Mandatory', 'Optional', 'Refresher'], required: true },
-      { name: 'duration', label: 'Duration (Days)', type: 'number', required: true },
-      { name: 'validity_months', label: 'Validity (Months)', type: 'number', required: true }
-    ]
-  },
-  trainings: {
-    title: 'Training Records', table: 'trainings', pk: 'training_id', prefix: 'TRN',
-    fields: [
-      { name: 'emp_id', label: 'Employee Staff ID', type: 'text', required: true },
-      { name: 'course_id', label: 'Course', type: 'select', source: 'courses', sourceDisplay: 'course_code', required: true },
-      { name: 'start_date', label: 'Start Date', type: 'date_custom', required: true },
-      { name: 'end_date', label: 'End Date', type: 'date_custom', required: true },
-      { name: 'result', label: 'Result', type: 'select', options: ['Pass', 'Fail', 'Incomplete'], required: true },
-      { name: 'result_file', label: 'Result Document URL', type: 'text', required: false },
-      { name: 'certificate_file', label: 'Certificate URL', type: 'text', required: false }
-    ]
-  },
-  tickets: {
-    title: 'Tickets', table: 'tickets', pk: 'ticket_id', prefix: 'TCK',
-    fields: [
-      { name: 'ticket_type', label: 'Ticket Type', type: 'select', options: ['Training Issue', 'Certificate Issue', 'HR Issue', 'System Issue', 'General Query'], required: true },
-      { name: 'description', label: 'Description', type: 'text', required: true },
-      { name: 'status', label: 'Status', type: 'select', options: ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'], required: true }
-    ]
-  }
-};
+    // 5. Promotions
+    promotions: {
+      title: 'Employee Official Promotion & Pay Group Advancement Form',
+      shortTitle: 'Promotions',
+      subtitle: 'Record gazetted promotion orders, sequence seniority rankings, and pay grade advancements',
+      table: 'promotions',
+      pk: 'promotion_id',
+      prefix: 'PRM',
+      fields: [
+        { name: 'reference_no', label: 'Reference Number', type: 'text', placeholder: 'e.g. BG.HR.PROM.2026.08871', required: true },
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: false },
+        { name: 'sequence_no', label: 'Sequence No', type: 'number', placeholder: 'Auto-assigned', required: false, readonly: true },
+        { name: 'present_pg_id', label: 'Present Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Select present pay group', required: true },
+        { name: 'promoted_pg_id', label: 'Promoted Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Select promoted pay group', required: true },
+        { name: 'promotion_date', label: 'Promotion Date', type: 'universal_date', placeholder: 'DDMMYYYY', required: true }
+      ],
+      supportsBulk: true
+    },
+
+    // 6. Extensions
+    extensions: {
+      title: 'Employee Service Tenure Extension Form',
+      shortTitle: 'Extensions',
+      subtitle: 'Authorize and record statutory service tenure extensions beyond retirement age',
+      table: 'extensions',
+      pk: 'extension_id',
+      prefix: 'EXT',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'extension_from', label: 'Extension From', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'extension_pay_group', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Select pay group', required: true },
+        { name: 'extension_to', label: 'Extension To', type: 'universal_date', placeholder: 'DDMMYYYY', required: true }
+      ]
+    },
+
+    // 7. Additional Charges
+    additional_charges: {
+      title: 'Additional Charge & Ex-Officio Duty Assignment Form',
+      shortTitle: 'Addl. Charges',
+      subtitle: 'Assign concurrent extra responsibilities, temporary ex-officio roles, and dual administrative duties',
+      table: 'additional_charges',
+      pk: 'charge_id',
+      prefix: 'CHG',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'charge_from', label: 'Effective From', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'pay_group', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Select pay group', required: true },
+        { name: 'designation', label: 'Designation', type: 'select', source: 'pay_groups', sourceKey: 'designation_short', sourceDisplay: 'designation', placeholder: 'Select designation', required: true },
+        { name: 'charge_to', label: 'Effective To', type: 'universal_date', placeholder: 'Optional end date', required: false },
+        { name: 'default_continue', label: 'Default Continue', type: 'checkbox', default: true }
+      ]
+    },
+
+    // 8. Acting Assignments
+    acting_assignments: {
+      title: 'Acting Responsibility & In-Charge Duty Assignment Form',
+      shortTitle: 'Acting / In-charge',
+      subtitle: 'Assign temporary in-charge duties, supervisory responsibilities, and acting capacities',
+      table: 'acting_assignments',
+      pk: 'acting_id',
+      prefix: 'ACT',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'acting_from', label: 'Effective From', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'pay_group', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Select pay group', required: true },
+        { name: 'designation', label: 'Designation', type: 'select', source: 'pay_groups', sourceKey: 'designation_short', sourceDisplay: 'designation', placeholder: 'Select designation', required: true },
+        { name: 'acting_to', label: 'Effective To', type: 'universal_date', placeholder: 'Optional end date', required: false },
+        { name: 'default_continue', label: 'Default Continue', type: 'checkbox', default: true }
+      ]
+    },
+
+    // 9. Separation (Retirements, Resignations, Left Job)
+    self_retirements: {
+      title: 'Employee Service Separation & Retirement Record Form',
+      shortTitle: 'Separation',
+      subtitle: 'Record statutory retirements, voluntary self-retirements, formal resignations, and career separations',
+      table: 'self_retirements',
+      pk: 'retirement_id',
+      prefix: 'RET',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'retirement_date', label: 'Event Date', type: 'universal_date', placeholder: 'DD/MM/YYYY or DDMMYYYY', required: true },
+        { name: 'event_type', label: 'Event Type', type: 'select', options: ['Self Retirement', 'Resignation', 'Left Job'], placeholder: 'Select event type', required: true },
+        { name: 'remarks', label: 'Reason / Remarks', type: 'text', placeholder: 'Brief explanation', required: false }
+      ]
+    },
+
+    // 10. Emp Migrations
+    employee_migrations: {
+      title: 'Employee Cadre Migration & Service Status Transition Form',
+      shortTitle: 'Emp Migrations',
+      subtitle: 'Record employee status transitions between casual, contractual, and permanent service cadences',
+      table: 'employee_migrations',
+      pk: 'migration_id',
+      prefix: 'MIG',
+      fields: [
+        { name: 'reference_no', label: 'Reference Number', type: 'text', placeholder: 'e.g. BG.HR.MIG.2026.0123', required: true },
+        { name: 'old_staff_id', label: 'Previous Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'new_staff_id', label: 'Present Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'migration_type', label: 'Migration Type', type: 'select', source: 'employee_types', sourceKey: 'emp_type', sourceDisplay: 'emp_type', placeholder: 'Select type', required: true },
+        { name: 'migration_date', label: 'Migration Date', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'remarks', label: 'Official Notes', type: 'text', placeholder: 'Short Description', required: false }
+      ]
+    },
+
+    // 10.5 Employee Actions (Transfers, Downgrades, Redesignations)
+    employee_actions: {
+      title: 'Employee Administrative Career Action (Transfer, Downgrade & Redesignation) Form',
+      shortTitle: 'Employee Actions',
+      subtitle: 'Process administrative departmental transfers, disciplinary downgrades, and official title redesignations',
+      table: 'employee_actions',
+      pk: 'action_id',
+      prefix: 'EAC',
+      fields: [
+        { name: 'reference_no', label: 'Reference Number', type: 'text', placeholder: 'e.g. BG.HR.ACT.2026.0042', required: true },
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'action_type', label: 'Action Type', type: 'select', options: ['TRANSFER', 'DOWNGRADE', 'REDESIGNATION', 'OTHER'], placeholder: 'Select action type', required: true },
+        { name: 'from_org_unit_id', label: 'From Organization Unit', type: 'select', source: 'organization_units', sourceKey: 'unit_id', sourceDisplay: 'unit_name', placeholder: 'Current unit (auto-detected)', required: false },
+        { name: 'to_org_unit_id', label: 'To Organization Unit (Dept)', type: 'select', source: 'organization_units', sourceKey: 'unit_id', sourceDisplay: 'unit_name', placeholder: 'Select target unit (Directorate auto-resolved)', required: false },
+        { name: 'from_pay_group_id', label: 'From Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Current pay group (auto-detected)', required: false },
+        { name: 'to_pay_group_id', label: 'To Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'designation', placeholder: 'Target pay group (if downgrade/transfer)', required: false },
+        { name: 'from_designation', label: 'From Designation', type: 'text', placeholder: 'Current designation (auto-detected)', required: false },
+        { name: 'to_designation', label: 'To Designation', type: 'text', placeholder: 'New designation (if redesignated)', required: false },
+        { name: 'effective_date', label: 'Effective Date', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'disciplinary_case_id', label: 'Disciplinary Case Ref', type: 'select', source: 'disciplinary_cases', sourceKey: 'case_id', sourceDisplay: 'case_type', placeholder: 'Select disciplinary case (for downgrade)', required: false },
+        { name: 'remarks', label: 'Official Remarks / Notes', type: 'text', placeholder: 'Order summary / board resolution notes', required: false }
+      ]
+    },
+
+    // 11. Workforce Setup (ORG only)
+    workforce_setup: {
+      title: 'Sanctioned Workforce Establishment & Headcount Allocation Form',
+      shortTitle: 'Workforce Setup',
+      subtitle: 'Allocate approved organogram positions, sanctioned staff quotas, and department headcounts',
+      table: 'workforce_setup',
+      pk: 'setup_id',
+      prefix: 'SET',
+      fields: [
+        { name: 'station_code', label: 'Station', type: 'select', source: 'stations', sourceKey: 'station_code', sourceDisplay: 'station_name', placeholder: 'Select station', required: true },
+        { name: 'pay_group', label: 'Pay Group', type: 'select', source: 'pay_groups', sourceKey: 'pay_group', sourceDisplay: 'pay_group', placeholder: 'Select pay group', required: true },
+        { name: 'designation', label: 'Designation', type: 'select', source: 'pay_groups', sourceKey: 'designation_short', sourceDisplay: 'designation', placeholder: 'Select designation', required: true },
+        { name: 'staff_number', label: 'Sanctioned Staff Number', type: 'number', placeholder: 'e.g. 15', required: true }
+      ]
+    },
+
+    // 11.5 Organization Units (Complete Hierarchical Structure)
+    organization_units: {
+      title: 'Organization Administrative Unit & Hierarchy Structure Form',
+      shortTitle: 'ORG Units',
+      subtitle: 'Configure corporate directorates, divisions, departments, sections, wings, and organizational units',
+      table: 'organization_units',
+      pk: 'unit_id',
+      prefix: 'OU',
+      fields: [
+        { name: 'unit_code', label: 'Unit Code', type: 'text', placeholder: 'e.g. DEP-01, DIR-01', required: true },
+        { name: 'unit_name', label: 'Unit Name', type: 'text', placeholder: 'e.g. Directorate of Customer Service, Ground Services Department,', required: true },
+        { name: 'unit_type', label: 'Unit Type (Hierarchy Level)', type: 'select', options: ['HEAD OFFICE', 'DIRECTORATE', 'DEPARTMENT', 'WING', 'SECTION', 'UNIT'], placeholder: 'Select hierarchy type', required: true },
+        { name: 'parent_unit_id', label: 'Parent Unit (Immediate Superior)', type: 'select', source: 'organization_units', sourceKey: 'unit_id', sourceDisplay: 'unit_name', placeholder: 'None (Top-Level / Root)', required: false },
+        { name: 'location_id', label: 'Work Location / Workplace', type: 'select', source: 'work_locations', sourceKey: 'location_id', sourceDisplay: 'location_name', placeholder: 'Select work location (optional)', required: false },
+        { name: 'letter_code', label: 'Letter Code', type: 'text', placeholder: 'e.g. DEP-GS, SEC-AW', required: false },
+        { name: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'INACTIVE'], placeholder: 'Select status', required: true }
+      ]
+    },
+
+    // 12. Directorates (ORG)
+    directorates: {
+      title: 'Corporate Directorate Master Setup Form',
+      shortTitle: 'Directorates',
+      subtitle: 'Define executive corporate directorate entities and top-tier administrative divisions',
+      table: 'directorates',
+      pk: 'dir_id',
+      prefix: 'DIR',
+      fields: [
+        { name: 'dir_code', label: 'Directorate Code', type: 'text', placeholder: 'e.g. DIR-FLT', required: true },
+        { name: 'dir_letter_code', label: 'Letter Code', type: 'text', placeholder: 'e.g. FO', required: true },
+        { name: 'dir_name', label: 'Directorate Name', type: 'text', placeholder: 'e.g. Flight Operations', required: true }
+      ]
+    },
+
+    // 13. Departments (ORG)
+    departments: {
+      title: 'Corporate Department Master Record & Directorate Association Form',
+      shortTitle: 'Departments',
+      subtitle: 'Configure functional operating departments linked to parent corporate directorates',
+      table: 'departments',
+      pk: 'dep_id',
+      prefix: 'DEP',
+      fields: [
+        { name: 'dir_id', label: 'Parent Directorate', type: 'select', source: 'directorates', sourceKey: 'dir_id', sourceDisplay: 'dir_name', placeholder: 'Select parent directorate', required: false },
+        { name: 'dep_code', label: 'Department Code', type: 'text', placeholder: 'e.g. DEP-ENG', required: true },
+        { name: 'dep_letter_code', label: 'Letter Code', type: 'text', placeholder: 'e.g. ENG', required: true },
+        { name: 'dep_name', label: 'Department Name', type: 'text', placeholder: 'e.g. Engineering & Maintenance', required: true }
+      ]
+    },
+
+    // 14. Sections (ORG)
+    sections: {
+      title: 'Operational Section & Wing Master Setup Form',
+      shortTitle: 'Sections',
+      subtitle: 'Configure specialized operating sections, terminal wings, and functional duty units',
+      table: 'sections',
+      pk: 'sec_id',
+      prefix: 'SEC',
+      fields: [
+        { name: 'dep_id', label: 'Department', type: 'select', source: 'departments', sourceKey: 'dep_id', sourceDisplay: 'dep_name', placeholder: 'Select department', required: true },
+        { name: 'location_id', label: 'Work Location', type: 'select', source: 'work_locations', sourceKey: 'location_id', sourceDisplay: 'location_name', placeholder: 'Select work location (optional)', required: false },
+        { name: 'station_id', label: 'Station', type: 'dependable_select', parentField: 'location_id', source: 'stations', sourceKey: 'station_id', sourceDisplay: 'station_name', placeholder: 'Select station (if airport)', required: false },
+        { name: 'sec_code', label: 'Section Code', type: 'text', placeholder: 'e.g. SEC-LINE', required: true },
+        { name: 'sec_letter_code', label: 'Letter Code', type: 'text', placeholder: 'e.g. LM', required: true },
+        { name: 'sec_name', label: 'Section Name', type: 'text', placeholder: 'e.g. Line Maintenance', required: true }
+      ]
+    },
+
+    // 15. Shifts (ORG)
+    shifts: {
+      title: 'Operational Duty Shift & Work Roster Schedule Form',
+      shortTitle: 'Shifts',
+      subtitle: 'Configure operational airport duty shifts, rotational timing patterns, and departmental roster cycles',
+      table: 'shifts',
+      pk: 'shift_id',
+      prefix: 'SHF',
+      fields: [
+        { name: 'station_code', label: 'Station', type: 'select', source: 'stations', sourceKey: 'station_code', sourceDisplay: 'station_name', placeholder: 'Select station', required: true },
+        { name: 'shift_code', label: 'Shift Code', type: 'text', placeholder: 'e.g. A, B, C, D', required: true },
+        { name: 'shift_name', label: 'Shift Name', type: 'text', placeholder: 'e.g. Morning Shift', required: true },
+        { name: 'shift_description', label: 'Description', type: 'text', placeholder: 'Duty Pattern', required: false }
+      ]
+    },
+
+    // 16. Pay Groups (ORG)
+    pay_groups: {
+      title: 'Pay Group Scale, Rank Level & Designation Hierarchy Form',
+      shortTitle: 'Pay Groups',
+      subtitle: 'Define salary pay group tiers, statutory rank precedence levels, and official employment titles',
+      table: 'pay_groups',
+      pk: 'pg_id',
+      prefix: 'PGR',
+      fields: [
+        { name: 'pay_group', label: 'Pay Group', type: 'text', placeholder: 'e.g. PG-1, PG-5', required: true },
+        { name: 'rank_level', label: 'Rank Level', type: 'number', placeholder: 'e.g. 1, 2, 3...', required: true },
+        { name: 'designation', label: 'Full Designation', type: 'text', placeholder: 'e.g. Manager Ground Services', required: true },
+        { name: 'designation_short', label: 'Short Designation', type: 'text', placeholder: 'e.g. MGR GS', required: true },
+        { name: 'basic_pay', label: 'Basic Pay Scale', type: 'number', placeholder: 'e.g. 75000', required: false }
+      ]
+    },
+
+    // 17. Stations (ORG)
+    stations: {
+      title: 'Operational Flight Station & Airport Master Setup Form',
+      shortTitle: 'Stations',
+      subtitle: 'Maintain IATA and ICAO airport codes, flight operations bases, and domestic/international station credentials',
+      table: 'stations',
+      pk: 'station_id',
+      prefix: 'STN',
+      fields: [
+        { name: 'station_code', label: 'Station Code (IATA)', type: 'text', placeholder: 'e.g. DAC, CGP, ZYL', required: true },
+        { name: 'station_icao', label: 'Station Code (ICAO)', type: 'text', placeholder: 'e.g. VGHS, VGEG, VGSY', required: false },
+        { name: 'station_name', label: 'Station Name', type: 'text', placeholder: 'e.g. Hazrat Shahjalal International Airport', required: true },
+        { name: 'station_location', label: 'Station Location (City)', type: 'text', placeholder: 'e.g. Dhaka, Chattogram, Sylhet, London', required: true },
+        { name: 'stn_ops_type', label: 'Operational Type', type: 'select', options: ['DOM', 'INTL'], placeholder: 'Select type', required: true },
+        { name: 'location_type', label: 'Location Type', type: 'select', options: ['Base', 'Home', 'Foreign Station'], placeholder: 'Select location type', required: true },
+        { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], placeholder: 'Select status', required: true }
+      ]
+    },
+
+    // Work Locations (ORG)
+    work_locations: {
+      title: 'Physical Work Location, Facility & Premises Setup Form',
+      shortTitle: 'Work Locations',
+      subtitle: 'Register physical buildings, airport terminals, headquarters, sales offices, and corporate premises',
+      table: 'work_locations',
+      pk: 'location_id',
+      prefix: 'LOC',
+      fields: [
+        { name: 'station_id', label: 'Operating Station', type: 'select', source: 'stations', sourceKey: 'station_code', sourceDisplay: 'station_name', placeholder: 'Select station (e.g. DAC, CGP, ZYL)', required: true },
+        { name: 'location_code', label: 'Location Code', type: 'text', placeholder: 'e.g. DAC-HO, DAC-APT, DAC-SO, ZYL-APT', required: true },
+        { name: 'location_name', label: 'Work Location / Workplace Name', type: 'text', placeholder: 'e.g. Head Office, HSIA Airport, Admin Building, Sales Office', required: true },
+        { name: 'location_type', label: 'Location Type', type: 'select', options: ['Airport', 'Head Office', 'Admin Building', 'Sales Office', 'City Office', 'Cargo Terminal', 'Maintenance Hangar', 'Training Center'], placeholder: 'Select location type', required: true },
+        { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], placeholder: 'Select status', required: true }
+      ]
+    },
+
+    // 18. Courses (TQC)
+    courses: {
+      title: 'Aviation Training & Regulatory Course Master Form',
+      shortTitle: 'Courses',
+      subtitle: 'Define mandatory aviation safety, security, recurrent, and technical curriculum standards',
+      table: 'courses',
+      pk: 'course_id',
+      prefix: 'CRS',
+      fields: [
+        { name: 'course_code', label: 'Course Code', type: 'text', placeholder: 'e.g. AVSEC-01', required: true },
+        { name: 'course_name', label: 'Course Title', type: 'text', placeholder: 'e.g. Aviation Security Awareness', required: true },
+        { name: 'course_type', label: 'Course Type', type: 'select', options: ['Mandatory', 'Technical', 'Safety', 'Regulatory'], placeholder: 'Select type', required: true },
+        { name: 'duration', label: 'Duration (Days)', type: 'number', placeholder: 'e.g. 5', required: false },
+        { name: 'validity_months', label: 'Validity (Months)', type: 'number', placeholder: 'e.g. 24', required: false }
+      ]
+    },
+
+    // 19. Training Records (TQC)
+    trainings: {
+      title: 'Employee Training & Course Certification Record Form',
+      shortTitle: 'Training Records',
+      subtitle: 'Record employee course completions, assessment test results, and compliance certification dates',
+      table: 'trainings',
+      pk: 'training_id',
+      prefix: 'TRN',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'course_code', label: 'Course', type: 'select', source: 'courses', sourceKey: 'course_code', sourceDisplay: 'course_name', placeholder: 'Select course', required: true },
+        { name: 'start_date', label: 'Start Date', type: 'universal_date', placeholder: 'DD/MM/YYYY or DDMMYYYY', required: true },
+        { name: 'end_date', label: 'End Date', type: 'universal_date', placeholder: 'DD/MM/YYYY or DDMMYYYY', required: true },
+        { name: 'result', label: 'Result', type: 'select', options: ['Pass', 'Fail', 'In-Progress'], placeholder: 'Select result', required: true }
+      ]
+    },
+
+    // 20. Disciplinary Cases (HRM)
+    disciplinary_cases: {
+      title: 'Disciplinary Proceedings & Inquiry Case Record Form',
+      shortTitle: 'Disciplinary Cases',
+      subtitle: 'Document formal disciplinary inquiries, show-cause notices, board proceedings, and regulatory verdicts',
+      table: 'disciplinary_cases',
+      pk: 'case_id',
+      prefix: 'DIS',
+      fields: [
+        { name: 'staff_id', label: 'Staff ID', type: 'text', placeholder: '05 Digits ID', required: true },
+        { name: 'case_type', label: 'Case Type', type: 'text', placeholder: 'e.g. Warning, Show Cause, Inquiry', required: true },
+        { name: 'has_adverse_report', label: 'Adverse Observation', type: 'select', options: ['No', 'Yes'], placeholder: 'Has adverse report?', required: true },
+        { name: 'opened_date', label: 'Opened Date', type: 'universal_date', placeholder: 'DDMMYYYY', required: true },
+        { name: 'status', label: 'Case Status', type: 'select', options: ['Open', 'Under Review', 'Released', 'Discharged'], placeholder: 'Select status', required: true },
+        { name: 'remarks', label: 'Remarks / Outcome', type: 'text', placeholder: 'Inquiry details / outcome', required: false }
+      ]
+    }
+  };
+
+  // Form List Sequence for HRM Input Records and View Records (11 Core forms including Employee Actions)
+  var HRM_FORM_SEQUENCE = [
+    { key: 'placements', name: 'Placements', icon: 'room' },
+    { key: 'employees', name: 'Employees', icon: 'person_add' },
+    { key: 'postings', name: 'Postings', icon: 'flight_takeoff' },
+    { key: 'promotions', name: 'Promotions', icon: 'trending_up' },
+    { key: 'employee_actions', name: 'Employee Actions', icon: 'assignment_turned_in' },
+    { key: 'extensions', name: 'Extensions', icon: 'update' },
+    { key: 'additional_charges', name: 'Addl. Charges', icon: 'assignment' },
+    { key: 'acting_assignments', name: 'Acting', icon: 'supervisor_account' },
+    { key: 'self_retirements', name: 'Separation', icon: 'person_off' },
+    { key: 'employee_migrations', name: 'Emp Migrations', icon: 'swap_horiz' },
+    { key: 'disciplinary_cases', name: 'Disciplinary Cases', icon: 'gavel' }
+  ];
+
+  // Form List Sequence for ORG Module (Normalized 3NF Hierarchy Architecture - 7 Core Modules)
+  var ORG_FORM_SEQUENCE = [
+    { key: 'organization_units', name: 'ORG Units', icon: 'account_tree' },
+    { key: 'shifts', name: 'Shifts', icon: 'schedule' },
+    { key: 'pay_groups', name: 'Pay Groups', icon: 'payments' },
+    { key: 'employee_types', name: 'Employee Types', icon: 'category' },
+    { key: 'stations', name: 'Stations', icon: 'place' },
+    { key: 'work_locations', name: 'Work Locations', icon: 'business' },
+    { key: 'workforce_setup', name: 'Workforce Setup', icon: 'settings_suggest' }
+  ];
+
+  // Form List Sequence for TQC Module
+  var TQC_FORM_SEQUENCE = [
+    { key: 'courses', name: 'Courses', icon: 'library_books' },
+    { key: 'trainings', name: 'Training Records', icon: 'school' }
+  ];
 </script>

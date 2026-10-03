@@ -1,183 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
+<!--
+  ============================================================================
+  SANDVIORA AVIOSOLUTION - Master Single Page Application (SPA) Host
+  ============================================================================
+  File: Index.html
+  Architectural Role: Master HTML Shell, Component Includer & Top-Level Layout
+
+  Description:
+  This file serves as the primary evaluation target of doGet(e). It establishes:
+  1. Head imports: Google Fonts (Inter), Google Material Icons, and Styles.html.
+  2. Core JavaScript controllers: Api.html, Schemas.html, Components.html, App.html.
+  3. Master layout:
+     - Top Navigation Header: Brand logo, platform title, ORG/HRM/TQC module switcher.
+     - Collapsible Left Sidebar: Submenu navigation dynamically updated by App.html.
+     - Main Viewport Mount: Houses ViewHrm.html, ViewOrg.html, and ViewTqc.html.
+     - Notification Toast Container: Fixed overlay for transient user feedback.
+     - Footer Bar: System compliance, legal disclaimers, and copyright status.
+  ============================================================================
+-->
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SANDVIORA AVIOSOLUTION | Enterprise Aviation Platform</title>
-  <!-- Preconnect Fonts -->
+  <title>SANDVIORA AVIOSOLUTION | Enterprise HRM Platform</title>
+
+  <!-- Google Web Fonts: Modern Inter Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
-  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Google Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- Master Design System & Stylesheet Tokens -->
   <?!= include('Styles'); ?>
+
+  <!-- Core Client-Side Logic & Application Controllers (Loaded First) -->
+  <?!= include('Api'); ?>
+  <?!= include('Schemas'); ?>
+  <?!= include('Components'); ?>
+  <?!= include('App'); ?>
 </head>
 
-<body class="flex flex-col h-screen overflow-hidden bg-slate-50 font-sans text-gray-800">
+<body class="app-body">
 
-  <!-- Top Navigation Menu (12-Part Grid, Full Width, rgba(26, 188, 156, 1.0)) -->
-  <header class="h-12 md:h-14 custom-navbar text-white shadow-md z-30 px-2 md:px-4 shrink-0 relative flex items-center">
-    <div class="navbar-grid-12">
+  <!-- ======================================================================== -->
+  <!-- Top Navigation Header: Brand Identity & Module Switcher                 -->
+  <!-- ======================================================================== -->
+  <header class="app-header">
+    <div class="navbar-container">
 
-      <!-- Columns 1-2 (2 Parts Merged): [ Logo ] + Organization Name -->
-      <div class="navbar-logo-area">
-        <!-- Mobile Drawer Toggle -->
-        <button class="lg:hidden p-1 mr-2 text-white hover:bg-black/20 rounded flex items-center shrink-0"
-          onclick="app.toggleSidebar()" title="Toggle Menu">
-          <span class="material-icons text-xl">menu</span>
+      <!-- Brand Area: Mobile Menu Toggle, Aviation Logo, Platform Title & Subtitle -->
+      <div class="navbar-brand-area">
+        <button type="button" class="sidebar-mobile-toggle" onclick="app.toggleSidebar()" title="Toggle Sidebar">
+          <span class="material-icons">menu</span>
         </button>
 
-        <!-- Logo Slot & Org Name Container -->
-        <div class="flex items-center min-w-0 pr-2 md:pr-3 border-r border-white/20">
-          <div id="navbar-logo-slot"
-            class="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-black/15 border border-white/30 flex items-center justify-center shrink-0 mr-2 shadow-inner"
-            title="SANDVIORA AVIOSOLUTION">
-            <span class="material-icons text-yellow-300 text-xl md:text-2xl">flight_takeoff</span>
-          </div>
-          <div class="flex flex-col min-w-0 justify-center">
-            <h1
-              class="company-name-title font-extrabold tracking-wider uppercase whitespace-nowrap truncate text-white leading-tight">
-              SANDVIORA AVIOSOLUTION
-            </h1>
-            <span
-              class="text-[10px] md:text-xs text-teal-100 tracking-widest uppercase font-semibold hidden md:block leading-none mt-0.5">
-              Aviation Solutions
-            </span>
-          </div>
+        <div class="navbar-brand-logo" title="SANDVIORA AVIOSOLUTION">
+          <span class="material-icons">flight_takeoff</span>
+        </div>
+        <div>
+          <h1 class="navbar-brand-title">SANDVIORA AVIOSOLUTION</h1>
+          <span class="navbar-brand-subtitle">Aviation Solutions</span>
         </div>
       </div>
 
-      <!-- Columns 3-12 (10 Parts): All Menus On Same Line with Button Shape -->
+      <!-- Menu Area: Top-Level Module Navigation (ORG, HRM, TQC) & User Profile -->
       <div class="navbar-menu-area">
-
-        <!-- Left: Module Buttons with Button Shape -->
-        <div class="flex items-center space-x-1.5 md:space-x-2 overflow-x-auto no-scrollbar py-1">
-          <button class="nav-btn-pill top-nav-btn active" data-module="ORG" onclick="app.loadSidebar('ORG')"
-            title="Organization Management">
-            <span class="material-icons text-sm md:text-base">corporate_fare</span>
+        <div class="navbar-modules">
+          <!-- ORG: Organizational Structure & Master Tables -->
+          <button type="button" class="nav-pill-btn top-nav-btn active" data-module="ORG" onclick="app.loadSidebar('ORG')">
+            <span class="material-icons">corporate_fare</span>
             <span>ORG</span>
           </button>
-          <button class="nav-btn-pill top-nav-btn" data-module="HRM" onclick="app.loadSidebar('HRM')"
-            title="Human Resource Management">
-            <span class="material-icons text-sm md:text-base">people</span>
+
+          <!-- HRM: Human Resource Management & Operational Placements -->
+          <button type="button" class="nav-pill-btn top-nav-btn" data-module="HRM" onclick="app.loadSidebar('HRM')">
+            <span class="material-icons">people</span>
             <span>HRM</span>
           </button>
-          <button class="nav-btn-pill top-nav-btn" data-module="TQC" onclick="app.loadSidebar('TQC')"
-            title="Training & Quality Control">
-            <span class="material-icons text-sm md:text-base">school</span>
+
+          <!-- TQC: Training, Quality Control & Aviation Certifications -->
+          <button type="button" class="nav-pill-btn top-nav-btn" data-module="TQC" onclick="app.loadSidebar('TQC')">
+            <span class="material-icons">school</span>
             <span>TQC</span>
           </button>
         </div>
 
-        <!-- Right: Utility & User Actions on Same Line -->
-        <div class="flex items-center space-x-1.5 md:space-x-2 pl-2 shrink-0">
-          <button class="nav-util-btn hidden md:inline-flex"
-            onclick="app.toast('All core Sandviora services are online and operating normally.', 'success')"
-            title="Real-time System Status">
-            <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-            <span>System Live</span>
-          </button>
-          <button class="nav-btn-pill px-2.5 py-1 bg-white/10 hover:bg-white/20 border-white/30 text-white flex items-center shadow-xs cursor-pointer transition-all"
-            onclick="app.syncAllData()"
-            title="Sync Data: Evict cache and fetch fresh records from Google Sheets">
-            <span class="material-icons text-sm mr-1">sync</span>
-            <span class="text-xs font-semibold">Sync Data</span>
-          </button>
-          <button class="nav-btn-pill pl-1.5 pr-2.5 py-1 bg-black/20 hover:bg-black/30 border-white/30"
-            title="User Account: Administrator">
-            <div
-              class="w-6 h-6 rounded-full bg-yellow-300 text-teal-950 flex items-center justify-center font-bold text-xs shrink-0 mr-1.5">
-              SA</div>
-            <span class="text-xs font-semibold hidden lg:inline">Admin</span>
-            <span class="material-icons text-sm text-white/80 ml-0.5">expand_more</span>
-          </button>
+        <!-- Active User Badge -->
+        <div class="navbar-user-pill">
+          <div class="user-badge">HR</div>
+          <span>Admin</span>
         </div>
-
       </div>
-
     </div>
   </header>
 
-  <!-- Main Section: Located between Navigation Bar and Footer -->
-  <div class="app-main-layout flex-1 min-h-0 min-w-0 overflow-hidden relative">
+  <!-- ======================================================================== -->
+  <!-- Main Viewport Layout: Collapsible Sidebar + Dynamic View Mount           -->
+  <!-- ======================================================================== -->
+  <div class="app-viewport-wrapper">
 
-    <!-- Sidebar Mobile Overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-10 hidden lg:hidden" onclick="app.toggleSidebar()">
-    </div>
+    <!-- Mobile Backdrop Overlay for Sidebar -->
+    <div id="sidebar-overlay" class="custom-modal-overlay hidden" onclick="app.toggleSidebar()"></div>
 
-    <!-- Division 1 (Left-side): Navigation Panel with Strict Fixed & Consistent Width -->
-    <aside id="sidebar"
-      class="fixed-nav-panel bg-white border-r border-gray-200 h-full shadow-sm z-20 flex flex-col absolute lg:relative transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
-      <div class="p-3 border-b border-gray-100 bg-slate-50 flex justify-between items-center shrink-0">
-        <h2 id="sidebar-title" class="text-sm font-extrabold text-gray-700 uppercase tracking-wider truncate">Module
-          Menu</h2>
-        <button class="lg:hidden text-gray-500 hover:text-gray-800" onclick="app.toggleSidebar()" title="Close Sidebar">
-          <span class="material-icons text-sm">close</span>
-        </button>
+    <!-- Sidebar Navigation: Populated dynamically per module by App.html -->
+    <aside id="sidebar" class="app-sidebar-panel">
+      <div class="sidebar-header-box">
+        <div class="sidebar-title-badge">
+          <span class="material-icons" id="sidebar-title-icon">corporate_fare</span>
+          <span id="sidebar-title">ORG Submenus</span>
+        </div>
       </div>
-      <nav id="sidebar-nav" class="flex-1 overflow-y-auto py-1.5">
-        <!-- Submenus dynamically injected here with immutable width and non-wrapping text -->
+      <nav id="sidebar-nav" class="sidebar-nav-container">
+        <!-- Default Initial State: ORG Submenu Links -->
+        <button type="button" class="sidebar-nav-link active" data-view="org_dashboard" onclick="app.loadView('org_dashboard')">
+          <span class="material-icons">dashboard</span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Dashboard</span>
+        </button>
+        <button type="button" class="sidebar-nav-link" data-view="org_input" onclick="app.loadView('org_input')">
+          <span class="material-icons">edit_document</span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Input Records</span>
+        </button>
+        <button type="button" class="sidebar-nav-link" data-view="org_view" onclick="app.loadView('org_view')">
+          <span class="material-icons">table_view</span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">View Forms</span>
+        </button>
       </nav>
     </aside>
 
-    <!-- Division 2 (Right-side): Content Area -->
-    <main
-      class="app-content-area flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-2 md:p-3 bg-slate-50 relative flex flex-col">
-      <!-- Loading Overlay -->
-      <div id="loader"
-        class="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex items-center justify-center hidden">
-        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-700"></div>
+    <!-- Main Content Stage: Dynamic Module Viewports -->
+    <main class="app-content-stage">
+      <!-- Universal Loading Spinner Overlay -->
+      <div id="loader" class="custom-modal-overlay hidden">
+        <div style="width: 36px; height: 36px; border: 3px solid var(--brand-teal-light); border-top-color: var(--brand-teal); border-radius: 50%; animation: spin 0.7s linear infinite;">
+        </div>
       </div>
 
-      <!-- Toast Container -->
-      <div id="toast-container" class="fixed top-16 right-6 z-50 flex flex-col space-y-2"></div>
+      <!-- Global Floating Toast Notification Container -->
+      <div id="toast-container" style="position: fixed; top: 60px; right: 20px; z-index: 90; display: flex; flex-direction: column; gap: 0.5rem;">
+      </div>
 
-      <!-- Dynamic Views Container -->
-      <div id="view-container"
-        class="flex-1 min-h-0 min-w-0 flex flex-col transition-opacity duration-300 opacity-0 h-full">
-        <div class="welcome-splash flex flex-col items-center justify-center h-full text-gray-400 mt-20">
-          <span class="material-icons text-6xl mb-4 text-teal-600/40">flight</span>
-          <h2 class="text-2xl font-light text-gray-700">Welcome to SANDVIORA AVIOSOLUTION</h2>
-          <p class="text-sm mt-2 text-gray-500">Select a module from the top navigation to begin.</p>
-        </div>
+      <!-- View Container: Embeds HRM, ORG, and TQC HTML Fragment Controllers -->
+      <div id="view-container" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+        <?!= include('ViewHrm'); ?>
+        <?!= include('ViewOrg'); ?>
+        <?!= include('ViewTqc'); ?>
       </div>
     </main>
 
   </div>
 
-  <!-- Auto-Adjusting Centered Footer (rgba(0, 206, 201, 1.0)) -->
-  <footer class="custom-footer flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-    <span class="font-bold text-teal-950">SANDVIORA AVIOSOLUTION</span>
-    <span class="hidden sm:inline opacity-60">•</span>
+  <!-- ======================================================================== -->
+  <!-- Footer Bar: Platform Metadata & Legal Notice                             -->
+  <!-- ======================================================================== -->
+  <footer class="app-footer-bar">
+    <span>SANDVIORA AVIOSOLUTION</span>
+    <span>•</span>
     <span>
-      <a class="custom-footer-link"
-        onclick="app.toast('Privacy Policy: All personnel and aviation records are protected under enterprise data privacy regulations.', 'success')">Privacy
-        Policy</a>
-      <span class="opacity-60">|</span>
-      <a class="custom-footer-link"
-        onclick="app.toast('Terms of Service: Authorized enterprise use only under Sandviora Aviation Platform SLA.', 'success')">Terms
-        of Service</a>
-      <span class="opacity-60">|</span>
-      <a class="custom-footer-link"
-        onclick="app.toast('Compliance: ISO 9001:2015 & EASA Part-145 Certified.', 'success')">Legal & Compliance</a>
+      <a class="footer-link" onclick="app.toast('Enterprise Data Privacy: Direct Google Sheets Cloud Storage.', 'success')">Privacy Policy</a>
+      |
+      <a class="footer-link" onclick="app.toast('Terms of Service: Authorized Corporate Personnel Access Only.', 'success')">Terms of Service</a>
+      |
+      <a class="footer-link" onclick="app.toast('ISO 9001:2015 & ICAO Aviation Safety Compliant.', 'success')">Compliance</a>
     </span>
-    <span class="hidden sm:inline opacity-60">•</span>
-    <span class="opacity-80">&copy; 2026 All Rights Reserved.</span>
+    <span>•</span>
+    <span>&copy; 2026 All Rights Reserved.</span>
   </footer>
-
-  <!-- Included Scripts & Components -->
-  <?!= include('Api'); ?>
-  <?!= include('Schemas'); ?>
-  <?!= include('Components'); ?>
-  <?!= include('App'); ?>
-
-  <!-- Views (Wrapped in templates) -->
-  <?!= include('ViewOrg'); ?>
-  <?!= include('ViewHrm'); ?>
-  <?!= include('ViewTqc'); ?>
-
 
 </body>
 

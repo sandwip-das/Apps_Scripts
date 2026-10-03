@@ -1,0 +1,316 @@
+<script>
+/**
+ * Main Application Logic
+ */
+var app = window.app = {
+  
+  // Navigation Structure
+  modules: {
+    'ORG': [
+      { id: 'org_dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'org_input', label: 'Input Records', icon: 'edit_document' },
+      { id: 'org_view', label: 'View Forms', icon: 'table_view' }
+    ],
+    'HRM': [
+      { id: 'hrm_dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'hrm_input', label: 'Input Records', icon: 'person_add' },
+      { id: 'hrm_view', label: 'View Forms', icon: 'list_alt' },
+      { id: 'hrm_employees', label: 'Employees List', icon: 'groups' },
+      { id: 'hrm_workforce', label: 'Workforces', icon: 'groups_2' },
+      { id: 'hrm_service', label: 'Service History', icon: 'history' },
+      { id: 'hrm_promotion', label: 'Promotion', icon: 'trending_up' },
+      { id: 'hrm_allowance', label: 'Allowance Calc', icon: 'calculate' },
+      { id: 'hrm_reports', label: 'Reports', icon: 'assessment' }
+    ],
+    'TQC': [
+      { id: 'tqc_dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'tqc_ticket', label: 'Ticket', icon: 'confirmation_number' },
+      { id: 'tqc_input', label: 'Input Records', icon: 'post_add' },
+      { id: 'tqc_view', label: 'View Forms', icon: 'list_alt' },
+      { id: 'tqc_employees', label: 'Employees List', icon: 'groups' },
+      { id: 'tqc_service', label: 'Service History', icon: 'history' },
+      { id: 'tqc_record', label: 'Training Record', icon: 'library_books' },
+      { id: 'tqc_load', label: 'Load Control', icon: 'flight_class' },
+      { id: 'tqc_nomination', label: 'Training Nomination', icon: 'how_to_reg' },
+      { id: 'tqc_reports', label: 'Reports', icon: 'assessment' }
+    ]
+  },
+
+  // State
+  currentModule: null,
+  currentView: null,
+
+  init: function() {
+    // Background prefetch master data and HRM details concurrently for instant 0ms responses
+    Promise.all([
+      api.getMasterData().catch(e => console.warn('Background master data prefetch:', e)),
+      api.getHrmDetails().catch(e => console.warn('Background HRM details prefetch:', e))
+    ]);
+    // Default load ORG
+    this.loadSidebar('ORG');
+  },
+
+  showLoader: function() {
+    const el = document.getElementById('loader');
+    if (el) el.classList.remove('hidden');
+  },
+  hideLoader: function() {
+    const el = document.getElementById('loader');
+    if (el) el.classList.add('hidden');
+  },
+
+  toast: function(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    let icon, colorClass, borderClass;
+    if (type === 'error') {
+      icon = 'cancel'; colorClass = 'text-red-500'; borderClass = 'border-l-4 border-red-500';
+    } else if (type === 'warning') {
+      icon = 'warning'; colorClass = 'text-orange-500'; borderClass = 'border-l-4 border-orange-500';
+    } else {
+      icon = 'check_circle'; colorClass = 'text-green-500'; borderClass = 'border-l-4 border-green-500';
+    }
+
+    toast.className = `translate-x-full opacity-0 flex items-start p-3 mb-3 bg-white/95 backdrop-blur rounded shadow-lg ${borderClass} border border-gray-100 w-72 md:w-80 transition-all duration-300 ease-out relative`;
+    
+    toast.innerHTML = `
+      <span class="material-icons ${colorClass} mr-2 text-lg-18 leading-none mt-0.5">${icon}</span>
+      <div class="flex-1 pr-4">
+        <h4 class="text-2xs font-bold text-gray-800 uppercase tracking-widest mb-0.5">${type}</h4>
+        <p class="text-xs-11 text-gray-600 font-medium leading-tight">${message}</p>
+      </div>
+      <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 transition-colors" onclick="this.parentElement.style.opacity='0'; this.parentElement.style.transform='translateX(100%)'; setTimeout(() => this.parentElement.remove(), 300);">
+        <span class="material-icons text-sm-14">close</span>
+      </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Slide in
+    setTimeout(() => {
+      toast.classList.remove('translate-x-full', 'opacity-0');
+    }, 10);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 5000);
+  },
+
+  toggleSidebar: function() {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+  },
+
+  loadSidebar: function(moduleName) {
+    this.currentModule = moduleName;
+    const titleEl = document.getElementById('sidebar-title');
+    if (titleEl) titleEl.innerText = `${moduleName} Module`;
+    
+    // Highlight active state on top navigation buttons
+    document.querySelectorAll('.top-nav-btn').forEach(btn => {
+      if (btn.dataset.module === moduleName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    const nav = document.getElementById('sidebar-nav');
+    if (!nav) return;
+    nav.innerHTML = ''; // Clear
+
+    const items = this.modules[moduleName] || [];
+    items.forEach(item => {
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'sidebar-nav-item';
+      a.title = item.label;
+      a.innerHTML = `
+        <span class="material-icons shrink-0 transition-colors">${item.icon}</span>
+        <span class="sidebar-label">${item.label}</span>
+      `;
+      a.onclick = (e) => {
+        e.preventDefault();
+        // Highlight active sidebar item
+        Array.from(nav.children).forEach(child => {
+          child.classList.remove('active');
+        });
+        a.classList.add('active');
+        
+        this.loadView(item.id);
+        
+        // Mobile auto close
+        if (window.innerWidth < 1024) this.toggleSidebar();
+      };
+      nav.appendChild(a);
+    });
+
+    // Auto click first item if available
+    if (nav.children.length > 0) {
+      nav.children[0].click();
+    }
+  },
+
+  /**
+   * Loads view with DOM View Preservation:
+   * Keeps existing rendered views alive in DOM panels and toggles visibility,
+   * yielding instant 0ms transitions while preserving search filters and scroll states.
+   */
+  loadView: async function(viewId, forceRefresh = false) {
+    this.currentView = viewId;
+
+    let targetId = viewId;
+    if (viewId === 'tqc_employees') targetId = 'hrm_employees';
+    if (viewId === 'tqc_service') targetId = 'hrm_service';
+
+    const container = document.getElementById('view-container');
+    if (!container) return;
+
+    // Remove welcome splash if present
+    const splash = container.querySelector('.welcome-splash');
+    if (splash) splash.remove();
+
+    this.showLoader();
+    try {
+      container.innerHTML = '';
+
+      const template = document.getElementById('tmpl-' + targetId);
+      if (template) {
+        const panel = document.createElement('div');
+        panel.id = 'view-panel-' + targetId;
+        panel.className = 'view-panel h-full flex flex-col flex-1 min-h-0 min-w-0';
+        panel.innerHTML = template.innerHTML;
+        container.appendChild(panel);
+
+        // Init view specific scripts if they exist globally
+        if (typeof window[targetId + '_init'] === 'function') {
+          await window[targetId + '_init']();
+        }
+      } else {
+        const missingPanel = document.createElement('div');
+        missingPanel.id = 'view-panel-missing';
+        missingPanel.className = 'view-panel h-full flex flex-col flex-1 min-h-0 min-w-0';
+        missingPanel.innerHTML = `<div class="p-8 text-center text-gray-400"><span class="material-icons text-6xl mb-2">construction</span><br><h3>View '${viewId}' is under construction.</h3></div>`;
+        container.appendChild(missingPanel);
+      }
+      container.style.opacity = 1;
+    } catch (e) {
+      console.error(e);
+      this.toast(e.message, 'error');
+      container.innerHTML = `<div class="p-8 text-red-500 font-semibold text-center">Failed to load view: ${e.message}</div>`;
+      container.style.opacity = 1;
+    } finally {
+      this.hideLoader();
+    }
+  },
+
+  /**
+   * Complete Synchronize: Evicts client and server caches, clears rendered panels,
+   * and refreshes the current view directly from Google Sheets.
+   */
+  syncAllData: async function() {
+    try {
+      this.showLoader();
+      this.toast('Synchronizing all data with Google Sheets...', 'info');
+
+      // Clear DOM panels so views re-render fresh
+      const container = document.getElementById('view-container');
+      if (container) {
+        container.querySelectorAll('.view-panel').forEach(p => p.remove());
+      }
+
+      // Sync backend and client caches
+      await api.syncAllData();
+
+      this.toast('All data successfully synchronized!', 'success');
+
+      // Reload active view fresh
+      if (this.currentView) {
+        await this.loadView(this.currentView, true);
+      }
+    } catch (e) {
+      console.error('syncAllData error:', e);
+      this.toast('Sync failed: ' + e.message, 'error');
+    } finally {
+      this.hideLoader();
+    }
+  },
+
+  /**
+   * Horizontally scroll a wide table/spreadsheet smoothly
+   */
+  scrollTable: function(btnOrEl, direction) {
+    const parent = btnOrEl.closest('.data-view-container') || document.getElementById('view-container');
+    if (!parent) return;
+    const scroller = parent.querySelector('.data-table-scroll-wrapper') || 
+                     parent.querySelector('.overflow-auto') || 
+                     parent.querySelector('.overflow-x-auto');
+    if (scroller) {
+      const scrollAmount = direction === 'left' ? -350 : 350;
+      scroller.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  },
+
+  /**
+   * Expand any data view / report / spreadsheet into full-screen mode
+   */
+  toggleFullscreen: function(btnOrEl) {
+    const container = btnOrEl.closest('.data-view-container') || 
+                      btnOrEl.closest('[id^="tmpl-"]') || 
+                      document.querySelector('.data-view-container');
+    if (!container) return;
+
+    const isFs = container.classList.toggle('fullscreen-mode');
+    
+    // Update button icon and text if present
+    const fsBtn = container.querySelector('.btn-fullscreen');
+    if (fsBtn) {
+      const icon = fsBtn.querySelector('.material-icons');
+      const text = fsBtn.querySelector('.fs-btn-text');
+      if (icon) icon.innerText = isFs ? 'fullscreen_exit' : 'fullscreen';
+      if (text) text.innerText = isFs ? 'Exit Fullscreen' : 'Fullscreen';
+    }
+
+    // Toast feedback
+    if (isFs) {
+      this.toast('Full-Screen Mode Active. Press ESC or click Close to return.', 'success');
+    }
+  },
+
+  /**
+   * Close report or exit fullscreen
+   */
+  closeDataView: function(btnOrEl) {
+    const container = btnOrEl.closest('.data-view-container') || document.querySelector('.fullscreen-mode');
+    if (container && container.classList.contains('fullscreen-mode')) {
+      this.toggleFullscreen(container);
+      return;
+    }
+    
+    // If not in fullscreen mode, return to the module dashboard
+    const moduleName = (this.currentModule || 'ORG').toLowerCase();
+    this.loadView(`${moduleName}_dashboard`);
+  }
+};
+
+// Global escape key handler to exit fullscreen
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const fsContainer = document.querySelector('.fullscreen-mode');
+    if (fsContainer) {
+      app.toggleFullscreen(fsContainer);
+    }
+  }
+});
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => app.init());
+} else {
+  app.init();
+}
+</script>

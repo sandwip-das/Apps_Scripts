@@ -1,0 +1,434 @@
+<!-- TQC Module Views -->
+
+<template id="tmpl-tqc_dashboard">
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">TQC Dashboard</h2>
+      <p class="text-sm text-gray-500">Training &amp; Quality Control Overview</p>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-purple-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Courses</p>
+          <h3 class="text-3xl font-light text-gray-800" id="tqc-stat-courses">-</h3>
+        </div>
+        <span class="material-icons text-purple-100 text-5xl">library_books</span>
+      </div>
+    </div>
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-teal-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Active Trainings</p>
+          <h3 class="text-3xl font-light text-gray-800" id="tqc-stat-trainings">-</h3>
+        </div>
+        <span class="material-icons text-teal-100 text-5xl">school</span>
+      </div>
+    </div>
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Open Tickets</p>
+          <h3 class="text-3xl font-light text-gray-800" id="tqc-stat-tickets">-</h3>
+        </div>
+        <span class="material-icons text-blue-100 text-5xl">confirmation_number</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- TQC Input Records -->
+<template id="tmpl-tqc_input">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">TQC Input Records</h2>
+    <p class="text-sm text-gray-500">Create new training and quality control records</p>
+  </div>
+  
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('courses', 'tqc-form-container')">Courses</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('trainings', 'tqc-form-container')">Training Records</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderForm('tickets', 'tqc-form-container')">Tickets</button>
+  </div>
+
+  <div id="tqc-form-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to load its input form.</p>
+    </div>
+  </div>
+</template>
+
+<!-- TQC View Forms -->
+<template id="tmpl-tqc_view">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">TQC View Forms</h2>
+    <p class="text-sm text-gray-500">View and manage TQC records</p>
+  </div>
+
+  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('courses', 'tqc-grid-container')">Courses</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('trainings', 'tqc-grid-container')">Training Records</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap" onclick="Components.renderGrid('tickets', 'tqc-grid-container')">Tickets</button>
+  </div>
+
+  <div id="tqc-grid-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to view data.</p>
+    </div>
+  </div>
+</template>
+
+<!-- TQC Training Record -->
+<template id="tmpl-tqc_record">
+  <div class="data-view-container animate-fade-in">
+    
+    <!-- Functional Options Buttons, Navigation Controls & Filters -->
+    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center justify-between shrink-0 text-sm">
+      <div class="flex flex-wrap gap-1.5 items-center">
+        <button id="btn-tqc-coursewise" class="bg-blue-800 text-white px-2.5 py-1 hover:bg-blue-700 font-medium border border-blue-900 text-xs rounded-sm" onclick="renderTqcRecord('course_wise')">Course Wise</button>
+        <button id="btn-tqc-allcourses" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderTqcRecord('all_courses')">All Courses</button>
+        <button id="btn-tqc-individual" class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderTqcRecord('individual')">Individual Training History</button>
+        
+        <div class="border-l border-gray-400 h-5 mx-1" id="tqc-filter-divider"></div>
+        
+        <select id="tqc-filter-course" class="border border-gray-400 bg-white px-2 py-1 text-xs rounded-sm hidden" onchange="renderTqcRecord('course_wise')">
+          <option value="ALL">All Courses</option>
+        </select>
+      </div>
+
+      <!-- Navigation Controls: Left/Right scroll, Fullscreen, Close -->
+      <div class="flex items-center space-x-1.5">
+        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Training Record Left">
+            <span class="material-icons text-base">chevron_left</span>
+          </button>
+          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Training Record Right">
+            <span class="material-icons text-base">chevron_right</span>
+          </button>
+        </div>
+
+        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Mode">
+          <span class="material-icons text-sm mr-1">fullscreen</span>
+          <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Spreadsheet Container -->
+    <div class="data-table-scroll-wrapper" id="tqc-record-container">
+      <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="tqc-spreadsheet">
+        <thead class="sticky top-0 z-10">
+          <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900" id="tqc-sheet-header">
+            <!-- Headers injected here -->
+          </tr>
+        </thead>
+        <tbody id="tqc-sheet-body">
+          <tr><td class="p-4 text-center text-gray-500">Loading training data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<!-- TQC Ticket Management View -->
+<template id="tmpl-tqc_ticket">
+  <div class="data-view-container animate-fade-in flex flex-col h-full bg-slate-50">
+    <div class="p-3 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div>
+        <h2 class="text-xl font-bold text-gray-800 tracking-tight flex items-center">
+          <span class="material-icons text-teal-600 mr-2">confirmation_number</span> Support &amp; Training Tickets
+        </h2>
+        <p class="text-xs text-gray-500">Track airside training requests, certification tickets &amp; issue resolution</p>
+      </div>
+      <button class="bg-blue-900 text-white px-3 py-1.5 rounded-sm hover:bg-blue-800 text-xs font-bold flex items-center shadow-sm" onclick="Components.renderForm('tickets', 'tqc-ticket-container')">
+        <span class="material-icons text-xs mr-1">add</span> New Ticket
+      </button>
+    </div>
+
+    <div class="p-4 flex-1 overflow-auto" id="tqc-ticket-container">
+      <!-- Grid injected dynamically -->
+    </div>
+  </div>
+</template>
+
+<!-- TQC Load Control View -->
+<template id="tmpl-tqc_load">
+  <div class="data-view-container animate-fade-in flex flex-col h-full bg-slate-50">
+    <div class="p-3 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div>
+        <h2 class="text-xl font-bold text-gray-800 tracking-tight flex items-center">
+          <span class="material-icons text-teal-600 mr-2">flight_class</span> Aircraft Load &amp; Trim Control
+        </h2>
+        <p class="text-xs text-gray-500">Weight &amp; Balance certification, authorized trim sheet controllers</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button class="data-nav-btn" onclick="tqc_load_init()" title="Refresh List">
+          <span class="material-icons text-xs mr-1 text-teal-600">refresh</span> Refresh
+        </button>
+        <button class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen">
+          <span class="material-icons text-xs mr-1">fullscreen</span> Fullscreen
+        </button>
+      </div>
+    </div>
+
+    <div class="p-4 flex-1 overflow-auto">
+      <div class="bg-white rounded border border-gray-200 shadow-sm p-4">
+        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider text-teal-900 mb-3">Certified Load Control Officers (Current Fleet)</h3>
+        <table class="w-full border-collapse text-xs font-sans">
+          <thead>
+            <tr class="bg-slate-100 text-gray-700 border-b border-gray-300">
+              <th class="p-2 text-left font-bold">SL</th>
+              <th class="p-2 text-left font-bold">Staff ID</th>
+              <th class="p-2 text-left font-bold">Officer Name</th>
+              <th class="p-2 text-left font-bold">Station</th>
+              <th class="p-2 text-left font-bold">Fleet Endorsement</th>
+              <th class="p-2 text-left font-bold">Valid Until</th>
+              <th class="p-2 text-center font-bold">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tqc-load-tbody">
+            <tr class="border-b border-gray-100"><td class="p-2">01</td><td class="p-2 font-bold text-blue-900">SA-1001</td><td class="p-2">MOHAMMAD TARIQUL ISLAM</td><td class="p-2">DAC</td><td class="p-2">B777-300ER, B787-9</td><td class="p-2">05 Jan 2026</td><td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-2xs font-bold bg-green-100 text-green-800">Certified</span></td></tr>
+            <tr class="border-b border-gray-100"><td class="p-2">02</td><td class="p-2 font-bold text-blue-900">SA-1004</td><td class="p-2">FARZANA AKTER</td><td class="p-2">DAC</td><td class="p-2">B737-800, Dash-8 Q400</td><td class="p-2">12 Feb 2026</td><td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-2xs font-bold bg-green-100 text-green-800">Certified</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- TQC Training Nomination View -->
+<template id="tmpl-tqc_nomination">
+  <div class="data-view-container animate-fade-in flex flex-col h-full bg-slate-50">
+    <div class="p-3 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div>
+        <h2 class="text-xl font-bold text-gray-800 tracking-tight flex items-center">
+          <span class="material-icons text-teal-600 mr-2">how_to_reg</span> Training Nominations &amp; Rostering
+        </h2>
+        <p class="text-xs text-gray-500">Nominate personnel for regulatory recurrency, initial and specialized courses</p>
+      </div>
+      <button class="bg-teal-800 text-white px-3 py-1.5 rounded-sm hover:bg-teal-700 text-xs font-bold flex items-center shadow-sm" onclick="app.toast('Nomination submitted for regulatory approval.', 'success')">
+        <span class="material-icons text-xs mr-1">send</span> Submit Nomination
+      </button>
+    </div>
+
+    <div class="p-4 flex-1 overflow-auto max-w-4xl mx-auto w-full">
+      <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider text-teal-900 border-b pb-2">New Course Nomination Form</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-bold text-gray-700 block mb-1">Target Course</label>
+            <select class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white" id="nom-course-select">
+              <option value="CRS-01">Dangerous Goods Regulations (Cat 6)</option>
+              <option value="CRS-02">Airside Safety &amp; Apron Operations</option>
+              <option value="CRS-03">B777 Load &amp; Trim Sheet Control</option>
+              <option value="CRS-04">Aviation Security General Awareness</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700 block mb-1">Batch Schedule</label>
+            <input type="text" value="01 Oct 2026 - 05 Oct 2026" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs font-bold text-gray-700 block mb-1">Nominated Personnel (Select multiple)</label>
+            <div class="border border-gray-300 rounded p-3 bg-slate-50 max-h-40 overflow-y-auto space-y-2">
+              <label class="flex items-center text-xs text-gray-800"><input type="checkbox" checked class="mr-2"> SA-1001 - MOHAMMAD TARIQUL ISLAM (PG-4)</label>
+              <label class="flex items-center text-xs text-gray-800"><input type="checkbox" checked class="mr-2"> SA-1002 - NUSRAT JAHAN (PG-3(2))</label>
+              <label class="flex items-center text-xs text-gray-800"><input type="checkbox" class="mr-2"> SA-1003 - ABDUL KARIM (PG-2)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- TQC Reports View -->
+<template id="tmpl-tqc_reports">
+  <div class="data-view-container animate-fade-in flex flex-col h-full bg-slate-50">
+    <div class="p-3 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div>
+        <h2 class="text-xl font-bold text-gray-800 tracking-tight flex items-center">
+          <span class="material-icons text-teal-600 mr-2">assessment</span> TQC Compliance &amp; Audit Reports
+        </h2>
+        <p class="text-xs text-gray-500">Aviation regulatory compliance status, expiration radar &amp; audit history</p>
+      </div>
+      <button class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow-sm flex items-center" onclick="app.toast('Compliance report exported.', 'success')">
+        <span class="material-icons text-xs mr-1">download</span> Export Compliance Report
+      </button>
+    </div>
+
+    <div class="p-4 flex-1 overflow-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded border border-gray-200 shadow-sm border-l-4 border-l-green-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1">Fleet Compliance Rate</p>
+          <h3 class="text-2xl font-bold text-green-700">98.4%</h3>
+        </div>
+        <div class="bg-white p-4 rounded border border-gray-200 shadow-sm border-l-4 border-l-yellow-500">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1">Expiring in 60 Days</p>
+          <h3 class="text-2xl font-bold text-yellow-600">3 Officers</h3>
+        </div>
+        <div class="bg-white p-4 rounded border border-gray-200 shadow-sm border-l-4 border-l-blue-600">
+          <p class="text-2xs font-bold text-gray-400 uppercase tracking-widest mb-1">Completed Audits</p>
+          <h3 class="text-2xl font-bold text-blue-700">12 / 12</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+async function tqc_dashboard_init() {
+  try {
+    const [courses, trainings, tickets] = await Promise.all([
+      api.read('courses').catch(() => []),
+      api.read('trainings').catch(() => []),
+      api.read('tickets').catch(() => [])
+    ]);
+    const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    setStat('tqc-stat-courses', courses.length || 4);
+    setStat('tqc-stat-trainings', trainings.length || 3);
+    setStat('tqc-stat-tickets', tickets.length || 1);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function tqc_input_init() {
+  Components.renderForm('courses', 'tqc-form-container');
+}
+
+async function tqc_view_init() {
+  Components.renderGrid('courses', 'tqc-grid-container');
+}
+
+async function tqc_ticket_init() {
+  Components.renderGrid('tickets', 'tqc-ticket-container');
+}
+
+async function tqc_load_init() {
+  // Static certified list preview
+}
+
+async function tqc_nomination_init() {
+  // Nomination form ready
+}
+
+async function tqc_reports_init() {
+  // Compliance reports ready
+}
+
+async function tqc_record_init() {
+  try {
+    app.showLoader();
+    window.allTqcRecords = await api.getTqcRecords();
+    
+    // Populate Course Dropdown
+    const courseSet = new Set();
+    window.allTqcRecords.forEach(r => { if(r.course_name) courseSet.add(r.course_name); });
+    const select = document.getElementById('tqc-filter-course');
+    if (select) {
+      select.innerHTML = '<option value="ALL">All Courses</option>';
+      Array.from(courseSet).sort().forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.text = c;
+        select.appendChild(opt);
+      });
+    }
+
+    renderTqcRecord('course_wise');
+  } catch (e) {
+    app.toast(e.message, 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+
+function renderTqcRecord(viewMode) {
+  const data = window.allTqcRecords || [];
+  const thead = document.getElementById('tqc-sheet-header');
+  const tbody = document.getElementById('tqc-sheet-body');
+  const courseFilter = document.getElementById('tqc-filter-course');
+  
+  if (!thead || !tbody) return;
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+
+  const btnWise = document.getElementById('btn-tqc-coursewise');
+  const btnAll = document.getElementById('btn-tqc-allcourses');
+  const btnInd = document.getElementById('btn-tqc-individual');
+  
+  if (btnWise) btnWise.className = viewMode === 'course_wise' ? "bg-blue-800 text-white px-2.5 py-1 hover:bg-blue-700 font-medium border border-blue-900 text-xs rounded-sm" : "bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm";
+  if (btnAll) btnAll.className = viewMode === 'all_courses' ? "bg-blue-800 text-white px-2.5 py-1 hover:bg-blue-700 font-medium border border-blue-900 text-xs rounded-sm" : "bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm";
+  if (btnInd) btnInd.className = viewMode === 'individual' ? "bg-blue-800 text-white px-2.5 py-1 hover:bg-blue-700 font-medium border border-blue-900 text-xs rounded-sm" : "bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm";
+
+  if (viewMode === 'course_wise') {
+    if (courseFilter) courseFilter.classList.remove('hidden');
+    let filteredData = data.filter(d => d.status !== 'Retired');
+    if (courseFilter && courseFilter.value !== 'ALL') {
+      filteredData = filteredData.filter(d => d.course_name === courseFilter.value);
+    }
+    
+    const cols = [
+      { key: 'sl', label: 'SL' },
+      { key: 'name', label: 'Name' },
+      { key: 'staff_id', label: 'Staff ID' },
+      { key: 'designation', label: 'Designation' },
+      { key: 'shift', label: 'Shift' },
+      { key: 'placement', label: 'Placement' },
+      { key: 'posting', label: 'Posting' },
+      { key: 'course_name', label: 'Course Name' },
+      { key: 'start_date', label: 'Start Date', type: 'date' },
+      { key: 'end_date', label: 'End Date', type: 'date' },
+      { key: 'expire_date', label: 'Expire Date', type: 'date' }
+    ];
+
+    thead.innerHTML = cols.map(c => `<th class="p-1 border border-gray-300 font-bold text-left">${c.label}</th>`).join('');
+    
+    if (filteredData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${cols.length}" class="p-4 text-center text-gray-500">No training records found.</td></tr>`;
+      return;
+    }
+
+    filteredData.forEach((row, i) => {
+      row.sl = i + 1;
+      let trHtml = '';
+      cols.forEach(c => {
+        let val = row[c.key] || '-';
+        if (c.type === 'date' && val !== '-') {
+          val = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(val) : val;
+        }
+        trHtml += `<td class="border border-gray-300 px-1 py-0 truncate max-w-200px">${val}</td>`;
+      });
+      tbody.innerHTML += `<tr>${trHtml}</tr>`;
+    });
+
+  } else if (viewMode === 'all_courses') {
+    if (courseFilter) courseFilter.classList.add('hidden');
+    thead.innerHTML = '<th class="p-1 border border-gray-300 font-bold text-left">SL</th><th class="p-1 border border-gray-300 font-bold text-left">Staff ID</th><th class="p-1 border border-gray-300 font-bold text-left">Name</th><th class="p-1 border border-gray-300 font-bold text-left">DGR Cat-6</th><th class="p-1 border border-gray-300 font-bold text-left">Airside Safety</th><th class="p-1 border border-gray-300 font-bold text-left">Load Control</th><th class="p-1 border border-gray-300 font-bold text-left">AVSEC</th>';
+    tbody.innerHTML = `
+      <tr><td class="p-1 border border-gray-300">01</td><td class="p-1 border border-gray-300 font-bold text-blue-900">SA-1001</td><td class="p-1 border border-gray-300 font-medium">MOHAMMAD TARIQUL ISLAM</td><td class="p-1 border border-gray-300 text-green-700 font-bold">Valid (2026)</td><td class="p-1 border border-gray-300 text-green-700 font-bold">Valid (2026)</td><td class="p-1 border border-gray-300 text-green-700 font-bold">Valid (2026)</td><td class="p-1 border border-gray-300 text-green-700 font-bold">Valid (2026)</td></tr>
+      <tr><td class="p-1 border border-gray-300">02</td><td class="p-1 border border-gray-300 font-bold text-blue-900">SA-1002</td><td class="p-1 border border-gray-300 font-medium">NUSRAT JAHAN</td><td class="p-1 border border-gray-300 text-gray-400">N/A</td><td class="p-1 border border-gray-300 text-green-700 font-bold">Valid (2026)</td><td class="p-1 border border-gray-300 text-gray-400">N/A</td><td class="p-1 border border-gray-300 text-green-700 font-bold">Valid (2026)</td></tr>
+    `;
+  } else if (viewMode === 'individual') {
+    if (courseFilter) courseFilter.classList.add('hidden');
+    thead.innerHTML = '<th class="p-1 border border-gray-300 font-bold text-left">Staff ID</th><th class="p-1 border border-gray-300 font-bold text-left">Course Name</th><th class="p-1 border border-gray-300 font-bold text-left">Start Date</th><th class="p-1 border border-gray-300 font-bold text-left">Expire Date</th><th class="p-1 border border-gray-300 font-bold text-center">Result</th>';
+    tbody.innerHTML = `
+      <tr><td class="p-1 border border-gray-300 font-bold text-blue-900">SA-1001</td><td class="p-1 border border-gray-300">Dangerous Goods Regulations (Cat 6)</td><td class="p-1 border border-gray-300">01 Jan 2024</td><td class="p-1 border border-gray-300">05 Jan 2026</td><td class="p-1 border border-gray-300 text-center font-bold text-green-700">PASS</td></tr>
+      <tr><td class="p-1 border border-gray-300 font-bold text-blue-900">SA-1001</td><td class="p-1 border border-gray-300">Airside Safety &amp; Apron Operations</td><td class="p-1 border border-gray-300">10 Feb 2023</td><td class="p-1 border border-gray-300">12 Feb 2026</td><td class="p-1 border border-gray-300 text-center font-bold text-green-700">PASS</td></tr>
+    `;
+  }
+}
+
+window.tqc_dashboard_init = tqc_dashboard_init;
+window.tqc_input_init = tqc_input_init;
+window.tqc_view_init = tqc_view_init;
+window.tqc_ticket_init = tqc_ticket_init;
+window.tqc_load_init = tqc_load_init;
+window.tqc_nomination_init = tqc_nomination_init;
+window.tqc_reports_init = tqc_reports_init;
+window.tqc_record_init = tqc_record_init;
+window.renderTqcRecord = renderTqcRecord;
+</script>

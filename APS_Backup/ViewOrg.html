@@ -1,0 +1,234 @@
+<!-- ORG Module Views -->
+
+<template id="tmpl-org_dashboard">
+  <div class="mb-6 flex justify-between items-end border-b border-gray-200 pb-4">
+    <div>
+      <h2 class="text-2xl font-bold text-blue-900 tracking-tight">Organization Overview</h2>
+      <p class="text-sm text-gray-500 mt-1">Real-time metrics of corporate structure &amp; workforce setups</p>
+    </div>
+    <button class="bg-blue-900 text-white px-4 py-1.5 rounded-sm hover:bg-blue-800 text-sm font-medium flex items-center shadow-sm" onclick="app.loadView('org_input')">
+      <span class="material-icons text-sm mr-2">add</span> Quick Add
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-fade-in">
+    <!-- Stat Card 1: Directorates -->
+    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-blue-700 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-1">Directorates</p>
+          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-blue-700 transition-colors" id="stat-dir">-</h3>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+          <span class="material-icons text-xl">account_balance</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Stat Card 2: Departments -->
+    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-sky-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-1">Departments</p>
+          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-sky-500 transition-colors" id="stat-dep">-</h3>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons text-xl">domain</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 3: Sections -->
+    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-teal-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-1">Sections</p>
+          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-teal-500 transition-colors" id="stat-sec">-</h3>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons text-xl">lan</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 4: Shifts -->
+    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-rose-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-1">Shifts</p>
+          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-rose-500 transition-colors" id="stat-sh">-</h3>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons text-xl">schedule</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 5: Pay Groups -->
+    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-1">Pay Groups</p>
+          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-indigo-500 transition-colors" id="stat-pg">-</h3>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons text-xl">payments</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 6: Stations -->
+    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-1">Stations</p>
+          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-amber-500 transition-colors" id="stat-st">-</h3>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+          <span class="material-icons text-xl">place</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Card 7: Set Up Matrix -->
+    <div class="bg-white p-4 rounded shadow-sm border border-gray-200 border-l-4 border-l-purple-600 hover:shadow-md transition-shadow group cursor-default">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-2xs text-gray-400 font-bold uppercase tracking-widest mb-1">Workforce Setups</p>
+          <h3 class="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors" id="stat-setup">-</h3>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+          <span class="material-icons text-xl">settings_suggest</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-blue-50 border border-blue-100 rounded p-6 flex items-start">
+    <span class="material-icons text-blue-600 mr-3">info</span>
+    <div>
+      <h4 class="font-bold text-blue-900 text-sm mb-1">Master Data &amp; Workforce Setup Management</h4>
+      <p class="text-xs text-blue-800">The Organization module is the structural backbone of the Sandviora Aviation Platform. Create and manage Directorates, Departments, Sections, Shifts, Pay Groups, Stations, and authorized Workforce Setups here. Modules across HRM and TQC rely strictly on these master records to ensure operational integrity.</p>
+    </div>
+  </div>
+</template>
+
+<!-- ORG Input Records -->
+<template id="tmpl-org_input">
+  <div class="mb-4">
+    <h2 class="text-2xl font-bold text-gray-800">ORG Input Records</h2>
+    <p class="text-sm text-gray-500">Create new organization structure &amp; workforce setup records</p>
+  </div>
+  
+  <!-- Form Tabs in Ordered Sequence -->
+  <div id="org-input-buttons" class="flex space-x-2 mb-4 overflow-x-auto pb-2">
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'directorates')">Directorates Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'departments')">Departments Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'sections')">Sections Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'shifts')">Shifts Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'pay_groups')">Pay Group Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'stations')">Stations Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgInputForm(this, 'workforce_setup')">Set Up Form</button>
+  </div>
+
+  <div id="org-form-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a form above to create a record.</p>
+    </div>
+  </div>
+</template>
+
+<!-- ORG View Forms -->
+<template id="tmpl-org_view">
+  <div class="mb-4">
+    <h2 class="text-2xl font-bold text-gray-800">ORG View Forms</h2>
+    <p class="text-sm text-gray-500">View, search, edit, and export organization structure &amp; workforce setups</p>
+  </div>
+
+  <!-- Table View Tabs in Ordered Sequence -->
+  <div id="org-view-buttons" class="flex space-x-2 mb-4 overflow-x-auto pb-2">
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'directorates')">Directorates Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'departments')">Departments Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'sections')">Sections Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'shifts')">Shifts Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'pay_groups')">Pay Group Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'stations')">Stations Form</button>
+    <button class="px-3 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700 whitespace-nowrap font-medium transition-colors" onclick="switchOrgViewGrid(this, 'workforce_setup')">Set Up Form</button>
+  </div>
+
+  <div id="org-grid-container">
+    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+      <span class="material-icons text-4xl mb-2">touch_app</span>
+      <p>Select a table above to view data.</p>
+    </div>
+  </div>
+</template>
+
+<script>
+function switchOrgInputForm(btn, schemaKey) {
+  const container = document.getElementById('org-input-buttons');
+  if (container) {
+    container.querySelectorAll('button').forEach(b => {
+      b.classList.remove('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
+      b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+    });
+  }
+  if (btn) {
+    btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+    btn.classList.add('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
+  }
+  Components.renderForm(schemaKey, 'org-form-container');
+}
+
+function switchOrgViewGrid(btn, schemaKey) {
+  const container = document.getElementById('org-view-buttons');
+  if (container) {
+    container.querySelectorAll('button').forEach(b => {
+      b.classList.remove('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
+      b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+    });
+  }
+  if (btn) {
+    btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+    btn.classList.add('bg-blue-900', 'text-white', 'border-blue-950', 'shadow-md');
+  }
+  Components.renderGrid(schemaKey, 'org-grid-container');
+}
+
+async function org_input_init() {
+  const container = document.getElementById('org-input-buttons');
+  if (container && container.firstElementChild) {
+    container.firstElementChild.click();
+  }
+}
+
+async function org_view_init() {
+  const container = document.getElementById('org-view-buttons');
+  if (container && container.firstElementChild) {
+    container.firstElementChild.click();
+  }
+}
+
+async function org_dashboard_init() {
+  try {
+    app.showLoader();
+    const [masterData, setups] = await Promise.all([
+      api.getMasterData(),
+      api.read('workforce_setup').catch(() => [])
+    ]);
+    const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    setStat('stat-dir', (masterData.directorates || []).length);
+    setStat('stat-dep', (masterData.departments || []).length);
+    setStat('stat-sec', (masterData.sections || []).length);
+    setStat('stat-sh', (masterData.shifts || []).length);
+    setStat('stat-pg', (masterData.pay_groups || []).length);
+    setStat('stat-st', (masterData.stations || []).length);
+    setStat('stat-setup', (setups || []).length);
+  } catch (e) {
+    app.toast(e.message, 'error');
+  } finally {
+    app.hideLoader();
+  }
+}
+</script>

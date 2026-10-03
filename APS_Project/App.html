@@ -1,335 +1,241 @@
 <script>
 /**
- * Main Application Logic
+ * ============================================================================
+ * SANDVIORA AVIOSOLUTION - Master Application Orchestrator & State Controller
+ * ============================================================================
+ * File: App.html
+ * Architectural Role: Client-Side Single Page Application (SPA) Controller
+ * 
+ * Description:
+ * Manages the top-level lifecycle, module navigation, view routing, sidebar state,
+ * background prefetching, and global UI toast notifications.
+ * 
+ * Navigation Hierarchy:
+ * - Module Level: Top Navbar (ORG, HRM, TQC)
+ * - Submenu Level: Collapsible Left Sidebar (Dashboard, Input Records, View Forms, etc.)
+ * - Sub-view Level: Embedded in-page tabs and spreadsheets
+ * ============================================================================
  */
+
 var app = window.app = {
   
-  // Navigation Structure
+  /**
+   * Navigation registry defining available views and icons per top-level module.
+   */
   modules: {
+    'HRM': [
+      { id: 'hrm_dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'hrm_input', label: 'Input Records', icon: 'edit_document' },
+      { id: 'hrm_view', label: 'View Forms', icon: 'list_alt' },
+      { id: 'hrm_employees', label: 'Employees List', icon: 'groups' },
+      { id: 'hrm_service', label: 'Service History', icon: 'history' },
+      { id: 'hrm_promotion', label: 'Promotion', icon: 'trending_up' },
+      { id: 'hrm_workforce', label: 'Workforces', icon: 'groups_2' },
+      { id: 'hrm_allowance', label: 'Allowance Calculation', icon: 'calculate' },
+      { id: 'hrm_reports', label: 'Report', icon: 'assessment' }
+    ],
     'ORG': [
       { id: 'org_dashboard', label: 'Dashboard', icon: 'dashboard' },
       { id: 'org_input', label: 'Input Records', icon: 'edit_document' },
       { id: 'org_view', label: 'View Forms', icon: 'table_view' }
     ],
-    'HRM': [
-      { id: 'hrm_dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { id: 'hrm_input', label: 'Input Records', icon: 'person_add' },
-      { id: 'hrm_view', label: 'View Forms', icon: 'list_alt' },
-      { id: 'hrm_employees', label: 'Employees List', icon: 'groups' },
-      { id: 'hrm_workforce', label: 'Workforces', icon: 'groups_2' },
-      { id: 'hrm_service', label: 'Service History', icon: 'history' },
-      { id: 'hrm_promotion', label: 'Promotion', icon: 'trending_up' },
-      { id: 'hrm_allowance', label: 'Allowance Calc', icon: 'calculate' },
-      { id: 'hrm_reports', label: 'Reports', icon: 'assessment' }
-    ],
     'TQC': [
       { id: 'tqc_dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { id: 'tqc_ticket', label: 'Ticket', icon: 'confirmation_number' },
       { id: 'tqc_input', label: 'Input Records', icon: 'post_add' },
-      { id: 'tqc_view', label: 'View Forms', icon: 'list_alt' },
-      { id: 'tqc_employees', label: 'Employees List', icon: 'groups' },
-      { id: 'tqc_service', label: 'Service History', icon: 'history' },
-      { id: 'tqc_record', label: 'Training Record', icon: 'library_books' },
-      { id: 'tqc_load', label: 'Load Control', icon: 'flight_class' },
-      { id: 'tqc_nomination', label: 'Training Nomination', icon: 'how_to_reg' },
-      { id: 'tqc_reports', label: 'Reports', icon: 'assessment' }
+      { id: 'tqc_view', label: 'View Forms', icon: 'list_alt' }
     ]
   },
 
-  // State
+  /**
+   * Currently active top module ('ORG', 'HRM', or 'TQC').
+   */
   currentModule: null,
+
+  /**
+   * Currently active view identifier (e.g. 'hrm_employees', 'org_input').
+   */
   currentView: null,
 
+  /**
+   * Initializes the application.
+   * Kicks off background prefetching of master dropdown references and employee models.
+   * Loads the default module ('ORG').
+   */
   init: function() {
-    // Background prefetch master data and HRM details concurrently for instant 0ms responses
-    Promise.all([
-      api.getMasterData().catch(e => console.warn('Background master data prefetch:', e)),
-      api.getHrmDetails().catch(e => console.warn('Background HRM details prefetch:', e))
-    ]);
-    // Default load ORG
+    // Non-blocking background prefetch for 0ms transitions
+    api.getMasterData().catch(function() {});
+    api.getHrmDetails().catch(function() {});
+
+    // Default to first module (ORG)
     this.loadSidebar('ORG');
   },
 
-  showLoader: () => document.getElementById('loader').classList.remove('hidden'),
-  hideLoader: () => document.getElementById('loader').classList.add('hidden'),
+  /**
+   * Switches the active top-level module and dynamically populates the sidebar menu.
+   * 
+   * @param {string} moduleKey - Target module ('ORG', 'HRM', or 'TQC').
+   */
+  loadSidebar: function(moduleKey) {
+    this.currentModule = moduleKey;
 
-  toast: function(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    
-    let icon, colorClass, borderClass;
-    if (type === 'error') {
-      icon = 'cancel'; colorClass = 'text-red-500'; borderClass = 'border-l-4 border-red-500';
-    } else if (type === 'warning') {
-      icon = 'warning'; colorClass = 'text-orange-500'; borderClass = 'border-l-4 border-orange-500';
-    } else {
-      icon = 'check_circle'; colorClass = 'text-green-500'; borderClass = 'border-l-4 border-green-500';
+    var titleEl = document.getElementById('sidebar-title');
+    if (titleEl) {
+      titleEl.innerText = moduleKey + ' Submenus';
     }
 
-    toast.className = `translate-x-full opacity-0 flex items-start p-3 mb-3 bg-white/95 backdrop-blur rounded shadow-lg ${borderClass} border border-gray-100 w-72 md:w-80 transition-all duration-300 ease-out relative`;
-    
-    toast.innerHTML = `
-      <span class="material-icons ${colorClass} mr-2 text-[18px] leading-none mt-0.5">${icon}</span>
-      <div class="flex-1 pr-4">
-        <h4 class="text-[10px] font-bold text-gray-800 uppercase tracking-widest mb-0.5">${type}</h4>
-        <p class="text-[11px] text-gray-600 font-medium leading-tight">${message}</p>
-      </div>
-      <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 transition-colors" onclick="this.parentElement.style.opacity='0'; this.parentElement.style.transform='translateX(100%)'; setTimeout(() => this.parentElement.remove(), 300);">
-        <span class="material-icons text-[14px]">close</span>
-      </button>
-    `;
-    
-    container.appendChild(toast);
-    
-    // Slide in
-    setTimeout(() => {
-      toast.classList.remove('translate-x-full', 'opacity-0');
-    }, 10);
+    var iconEl = document.getElementById('sidebar-title-icon');
+    if (iconEl) {
+      var iconMap = { 'ORG': 'corporate_fare', 'HRM': 'people', 'TQC': 'school' };
+      iconEl.innerText = iconMap[moduleKey] || 'menu';
+    }
 
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-      if (toast.parentElement) {
-        toast.classList.add('translate-x-full', 'opacity-0');
-        setTimeout(() => toast.remove(), 300);
-      }
-    }, 5000);
-  },
-
-  toggleSidebar: function() {
-    document.getElementById('sidebar').classList.toggle('-translate-x-full');
-    document.getElementById('sidebar-overlay').classList.toggle('hidden');
-  },
-
-  loadSidebar: function(moduleName) {
-    this.currentModule = moduleName;
-    const titleEl = document.getElementById('sidebar-title');
-    if (titleEl) titleEl.innerText = `${moduleName} Module`;
-    
-    // Highlight active state on top navigation buttons
-    document.querySelectorAll('.top-nav-btn').forEach(btn => {
-      if (btn.dataset.module === moduleName) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
+    // Update top nav button active state
+    document.querySelectorAll('.top-nav-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.module === moduleKey);
     });
 
-    const nav = document.getElementById('sidebar-nav');
-    if (!nav) return;
-    nav.innerHTML = ''; // Clear
+    var navEl = document.getElementById('sidebar-nav');
+    if (!navEl) return;
 
-    const items = this.modules[moduleName] || [];
-    items.forEach(item => {
-      const a = document.createElement('a');
-      a.href = '#';
-      a.className = 'sidebar-nav-item';
-      a.title = item.label;
-      a.innerHTML = `
-        <span class="material-icons shrink-0 transition-colors">${item.icon}</span>
-        <span class="sidebar-label">${item.label}</span>
+    var items = this.modules[moduleKey] || [];
+    var html = '';
+    items.forEach(function(item) {
+      html += `
+        <button type="button" class="sidebar-nav-link" data-view="${item.id}" onclick="app.loadView('${item.id}')">
+          <span class="material-icons">${item.icon}</span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.label}</span>
+        </button>
       `;
-      a.onclick = (e) => {
-        e.preventDefault();
-        // Highlight active sidebar item
-        Array.from(nav.children).forEach(child => {
-          child.classList.remove('active');
-        });
-        a.classList.add('active');
-        
-        this.loadView(item.id);
-        
-        // Mobile auto close
-        if (window.innerWidth < 1024) this.toggleSidebar();
-      };
-      nav.appendChild(a);
     });
+    navEl.innerHTML = html;
 
-    // Auto click first item if available
-    if (nav.children.length > 0) {
-      nav.children[0].click();
+    // Automatically load the first submenu of the selected module
+    if (items.length > 0) {
+      this.loadView(items[0].id);
     }
   },
 
   /**
-   * Loads view with DOM View Preservation:
-   * Keeps existing rendered views alive in DOM panels and toggles visibility,
-   * yielding instant 0ms transitions while preserving search filters and scroll states.
+   * Loads and renders a specific sub-view within the active module.
+   * Coordinates module mount visibility and invokes domain view controllers.
+   * 
+   * @param {string} viewId - View identifier (e.g. 'hrm_employees', 'org_input').
    */
-  loadView: async function(viewId, forceRefresh = false) {
+  loadView: function(viewId) {
     this.currentView = viewId;
 
-    let targetId = viewId;
-    if (viewId === 'tqc_employees') targetId = 'hrm_employees';
-    if (viewId === 'tqc_service') targetId = 'hrm_service';
+    // Highlight active sidebar item
+    document.querySelectorAll('.sidebar-nav-link').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.view === viewId);
+    });
 
-    const container = document.getElementById('view-container');
-    if (!container) return;
+    // Close mobile drawer if open
+    this.closeSidebarOnMobile();
 
-    // Remove welcome splash if present
-    const splash = container.querySelector('.welcome-splash');
-    if (splash) splash.remove();
+    // Module container DOM elements
+    var hrmRoot = document.getElementById('hrm-module-root');
+    var orgRoot = document.getElementById('org-module-root');
+    var tqcRoot = document.getElementById('tqc-module-root');
 
-    let panel = document.getElementById('view-panel-' + targetId);
-
-    // INSTANT 0ms DOM VIEW PRESERVATION:
-    // If view panel was previously rendered and no hard refresh is requested,
-    // simply toggle visibility. This preserves user filters, search inputs, and scroll offsets!
-    if (panel && !forceRefresh) {
-      container.querySelectorAll('.view-panel').forEach(p => p.classList.add('hidden'));
-      panel.classList.remove('hidden');
-      container.style.opacity = 1;
-
-      // Optional resume hook if view needs to react to being un-hidden
-      if (typeof window[targetId + '_resume'] === 'function') {
-        window[targetId + '_resume']();
-      }
-      return;
-    }
-
-    this.showLoader();
     try {
-      if (panel && forceRefresh) {
-        panel.remove();
-        panel = null;
-      }
+      if (viewId.startsWith('hrm_')) {
+        if (hrmRoot) hrmRoot.style.display = 'flex';
+        if (orgRoot) orgRoot.style.display = 'none';
+        if (tqcRoot) tqcRoot.style.display = 'none';
 
-      // Hide all other panels
-      container.querySelectorAll('.view-panel').forEach(p => p.classList.add('hidden'));
-
-      const template = document.getElementById('tmpl-' + targetId);
-      if (template) {
-        panel = document.createElement('div');
-        panel.id = 'view-panel-' + targetId;
-        panel.className = 'view-panel h-full flex flex-col flex-1 min-h-0 min-w-0';
-        panel.innerHTML = template.innerHTML;
-        container.appendChild(panel);
-
-        // Init view specific scripts if they exist globally
-        if (typeof window[targetId + '_init'] === 'function') {
-          await window[targetId + '_init']();
+        if (typeof hrmViews !== 'undefined') {
+          if (viewId === 'hrm_dashboard') hrmViews.renderDashboard();
+          else if (viewId === 'hrm_input') hrmViews.renderInputRecords();
+          else if (viewId === 'hrm_view') hrmViews.renderViewForms();
+          else if (viewId === 'hrm_employees') hrmViews.renderEmployeesList();
+          else if (viewId === 'hrm_service') hrmViews.renderServiceHistory();
+          else if (viewId === 'hrm_promotion') hrmViews.renderPromotionModule();
+          else if (viewId === 'hrm_workforce') hrmViews.renderWorkforcesModule();
+          else if (viewId === 'hrm_allowance') hrmViews.renderAllowanceModule();
+          else if (viewId === 'hrm_reports') hrmViews.renderReportsHub();
         }
-      } else {
-        let missingPanel = document.getElementById('view-panel-missing');
-        if (!missingPanel) {
-          missingPanel = document.createElement('div');
-          missingPanel.id = 'view-panel-missing';
-          missingPanel.className = 'view-panel h-full flex flex-col flex-1 min-h-0 min-w-0';
-          container.appendChild(missingPanel);
+      } else if (viewId.startsWith('org_')) {
+        if (hrmRoot) hrmRoot.style.display = 'none';
+        if (orgRoot) orgRoot.style.display = 'flex';
+        if (tqcRoot) tqcRoot.style.display = 'none';
+
+        if (typeof orgViews !== 'undefined') {
+          if (viewId === 'org_dashboard') orgViews.renderDashboard();
+          else if (viewId === 'org_input') orgViews.renderInputRecords();
+          else if (viewId === 'org_view') orgViews.renderViewForms();
         }
-        missingPanel.classList.remove('hidden');
-        missingPanel.innerHTML = `<div class="p-8 text-center text-gray-400"><span class="material-icons text-6xl mb-2">construction</span><br><h3>View '${viewId}' is under construction.</h3></div>`;
-      }
-      container.style.opacity = 1;
-    } catch (e) {
-      console.error(e);
-      this.toast(e.message, 'error');
-      if (panel) {
-        panel.innerHTML = `<div class="p-8 text-red-500">Failed to load view: ${e.message}</div>`;
-      }
-      container.style.opacity = 1;
-    } finally {
-      this.hideLoader();
-    }
-  },
+      } else if (viewId.startsWith('tqc_')) {
+        if (hrmRoot) hrmRoot.style.display = 'none';
+        if (orgRoot) orgRoot.style.display = 'none';
+        if (tqcRoot) tqcRoot.style.display = 'flex';
 
-  /**
-   * Complete Synchronize: Evicts client and server caches, clears rendered panels,
-   * and refreshes the current view directly from Google Sheets.
-   */
-  syncAllData: async function() {
-    try {
-      this.showLoader();
-      this.toast('Synchronizing all data with Google Sheets...', 'info');
-
-      // Clear DOM panels so views re-render fresh
-      const container = document.getElementById('view-container');
-      if (container) {
-        container.querySelectorAll('.view-panel').forEach(p => p.remove());
-      }
-
-      // Sync backend and client caches
-      await api.syncAllData();
-
-      this.toast('All data successfully synchronized!', 'success');
-
-      // Reload active view fresh
-      if (this.currentView) {
-        await this.loadView(this.currentView, true);
+        if (typeof tqcViews !== 'undefined') {
+          if (viewId === 'tqc_dashboard') tqcViews.renderDashboard();
+          else if (viewId === 'tqc_input') tqcViews.renderInputRecords();
+          else if (viewId === 'tqc_view') tqcViews.renderViewForms();
+        }
       }
     } catch (e) {
-      console.error('syncAllData error:', e);
-      this.toast('Sync failed: ' + e.message, 'error');
-    } finally {
-      this.hideLoader();
+      console.error('Error rendering view ' + viewId + ':', e);
     }
   },
 
   /**
-   * Horizontally scroll a wide table/spreadsheet smoothly
+   * Toggles the collapsible sidebar drawer on mobile viewports.
    */
-  scrollTable: function(btnOrEl, direction) {
-    const parent = btnOrEl.closest('.data-view-container') || document.getElementById('view-container');
-    if (!parent) return;
-    const scroller = parent.querySelector('.data-table-scroll-wrapper') || 
-                     parent.querySelector('.overflow-auto') || 
-                     parent.querySelector('.overflow-x-auto');
-    if (scroller) {
-      const scrollAmount = direction === 'left' ? -350 : 350;
-      scroller.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
+  toggleSidebar: function() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar) return;
+    sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('hidden');
   },
 
   /**
-   * Expand any data view / report / spreadsheet into full-screen mode
+   * Automatically closes the mobile sidebar drawer upon item selection.
    */
-  toggleFullscreen: function(btnOrEl) {
-    const container = btnOrEl.closest('.data-view-container') || 
-                      btnOrEl.closest('[id^="tmpl-"]') || 
-                      document.querySelector('.data-view-container');
+  closeSidebarOnMobile: function() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && window.innerWidth < 640) {
+      sidebar.classList.remove('open');
+    }
+    if (overlay) overlay.classList.add('hidden');
+  },
+
+  /**
+   * Displays a temporary notification toast at the top-right of the screen.
+   * 
+   * @param {string} message - Text notification to display.
+   * @param {string} [type='success'] - 'success' or 'error'.
+   */
+  toast: function(message, type) {
+    var container = document.getElementById('toast-container');
     if (!container) return;
 
-    const isFs = container.classList.toggle('fullscreen-mode');
-    
-    // Update button icon and text if present
-    const fsBtn = container.querySelector('.btn-fullscreen');
-    if (fsBtn) {
-      const icon = fsBtn.querySelector('.material-icons');
-      const text = fsBtn.querySelector('.fs-btn-text');
-      if (icon) icon.innerText = isFs ? 'fullscreen_exit' : 'fullscreen';
-      if (text) text.innerText = isFs ? 'Exit Fullscreen' : 'Fullscreen';
-    }
+    var toast = document.createElement('div');
+    var isError = type === 'error';
+    var icon = isError ? 'error' : 'check_circle';
 
-    // Toast feedback
-    if (isFs) {
-      this.toast('Full-Screen Mode Active. Press ESC or click Close to return.', 'success');
-    }
-  },
+    toast.className = 'app-toast ' + (isError ? 'error' : 'success');
+    toast.innerHTML = `
+      <span class="material-icons">${icon}</span>
+      <span class="toast-message">${message}</span>
+    `;
 
-  /**
-   * Close report or exit fullscreen
-   */
-  closeDataView: function(btnOrEl) {
-    const container = btnOrEl.closest('.data-view-container') || document.querySelector('.fullscreen-mode');
-    if (container && container.classList.contains('fullscreen-mode')) {
-      this.toggleFullscreen(container);
-      return;
-    }
-    
-    // If not in fullscreen mode, return to the module dashboard
-    const moduleName = (this.currentModule || 'ORG').toLowerCase();
-    this.loadView(`${moduleName}_dashboard`);
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.remove();
+    }, 4000);
   }
 };
 
-// Global escape key handler to exit fullscreen
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    const fsContainer = document.querySelector('.fullscreen-mode');
-    if (fsContainer) {
-      app.toggleFullscreen(fsContainer);
-    }
-  }
-});
-
-document.addEventListener('DOMContentLoaded', () => app.init());
+// Bootstrap application on DOM ready
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', function() {
+    app.init();
+  });
+} else {
+  app.init();
+}
 </script>

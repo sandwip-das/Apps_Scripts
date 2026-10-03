@@ -1,206 +1,584 @@
-<!-- TQC Module Views -->
-
-<template id="tmpl-tqc_dashboard">
-  <div class="mb-6 flex justify-between items-center">
-    <div>
-      <h2 class="text-2xl font-bold text-gray-800">TQC Dashboard</h2>
-      <p class="text-sm text-gray-500">Training & Quality Control Overview</p>
-    </div>
-  </div>
-  
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Courses</p>
-          <h3 class="text-3xl font-light text-gray-800" id="tqc-stat-courses">-</h3>
-        </div>
-        <span class="material-icons text-purple-100 text-5xl">library_books</span>
-      </div>
-    </div>
-  </div>
-</template>
-
-<!-- TQC Input Records -->
-<template id="tmpl-tqc_input">
-  <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">TQC Input Records</h2>
-    <p class="text-sm text-gray-500">Create new training and quality control records</p>
-  </div>
-  
-  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('courses', 'tqc-form-container')">Courses</button>
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('trainings', 'tqc-form-container')">Training Records</button>
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderForm('tickets', 'tqc-form-container')">Tickets</button>
-  </div>
-
-  <div id="tqc-form-container">
-    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-      <span class="material-icons text-4xl mb-2">touch_app</span>
-      <p>Select a table above to load its input form.</p>
-    </div>
-  </div>
-</template>
-
-<!-- TQC View Forms -->
-<template id="tmpl-tqc_view">
-  <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">TQC View Forms</h2>
-    <p class="text-sm text-gray-500">View and manage TQC records</p>
-  </div>
-
-  <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('courses', 'tqc-grid-container')">Courses</button>
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('trainings', 'tqc-grid-container')">Training Records</button>
-    <button class="px-2 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm hover:bg-blue-50 text-gray-700" onclick="Components.renderGrid('tickets', 'tqc-grid-container')">Tickets</button>
-  </div>
-
-  <div id="tqc-grid-container">
-    <div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-      <span class="material-icons text-4xl mb-2">touch_app</span>
-      <p>Select a table above to view data.</p>
-    </div>
-  </div>
-</template>
-
-<!-- TQC Training Record -->
-<template id="tmpl-tqc_record">
-  <div class="data-view-container animate-fade-in">
-    
-    <!-- Functional Options Buttons, Navigation Controls & Filters -->
-    <div class="p-2 border-b border-gray-300 bg-gray-100 flex flex-wrap gap-2 items-center justify-between shrink-0 text-sm">
-      <div class="flex flex-wrap gap-1.5 items-center">
-        <button class="bg-blue-800 text-white px-2.5 py-1 hover:bg-blue-700 font-medium border border-blue-900 text-xs rounded-sm" onclick="renderTqcRecord('course_wise')">Course Wise</button>
-        <button class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderTqcRecord('all_courses')">All Courses</button>
-        <button class="bg-gray-200 text-gray-800 px-2.5 py-1 hover:bg-gray-300 font-medium border border-gray-400 text-xs rounded-sm" onclick="renderTqcRecord('individual')">Individual Training History</button>
-        
-        <div class="border-l border-gray-400 h-5 mx-1" id="tqc-filter-divider"></div>
-        
-        <select id="tqc-filter-course" class="border border-gray-400 bg-white px-2 py-1 text-xs rounded-sm hidden" onchange="renderTqcRecord('course_wise')">
-          <option value="ALL">All Courses</option>
-        </select>
-      </div>
-
-      <!-- Navigation Controls: Left/Right scroll, Fullscreen, Close -->
-      <div class="flex items-center space-x-1.5">
-        <div class="flex items-center border border-gray-300 rounded bg-white p-0.5 shadow-2xs">
-          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'left')" title="Scroll Training Record Left">
-            <span class="material-icons text-base">chevron_left</span>
-          </button>
-          <button type="button" class="p-0.5 hover:bg-gray-100 text-gray-700 rounded transition-colors" onclick="app.scrollTable(this, 'right')" title="Scroll Training Record Right">
-            <span class="material-icons text-base">chevron_right</span>
-          </button>
-        </div>
-
-        <button type="button" class="data-nav-btn btn-fullscreen" onclick="app.toggleFullscreen(this)" title="Toggle Fullscreen Mode">
-          <span class="material-icons text-sm mr-1">fullscreen</span>
-          <span class="fs-btn-text hidden sm:inline">Fullscreen</span>
-        </button>
-      </div>
-    </div>
-    
-    <!-- Spreadsheet Container -->
-    <div class="data-table-scroll-wrapper" id="tqc-record-container">
-      <table class="w-full border-collapse whitespace-nowrap text-xs font-sans" id="tqc-spreadsheet">
-        <thead class="sticky top-0 z-10">
-          <tr class="bg-yellow-200 text-blue-900 border-b-2 border-blue-900" id="tqc-sheet-header">
-            <!-- Headers injected here -->
-          </tr>
-        </thead>
-        <tbody id="tqc-sheet-body">
-          <tr><td class="p-4 text-center text-gray-500">Loading training data...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</template>
+<!-- Master TQC Module Views & Controller -->
+<div id="tqc-module-root" style="width: 100%; height: 100%; display: none; flex-direction: column;">
+  <div id="tqc-content-mount" class="app-content-stage"></div>
+</div>
 
 <script>
-async function tqc_dashboard_init() {
-  try {
-    const courses = await api.read('courses');
-    const el = document.getElementById('tqc-stat-courses');
-    if (el) el.innerText = courses.length;
-  } catch (e) {
-    console.error(e);
-  }
-}
+/**
+ * ============================================================================
+ * SANDVIORA AVIOSOLUTION - Training & Quality Control (TQC) View Controller
+ * ============================================================================
+ * File: ViewTqc.html
+ * Architectural Role: Client-Side Controller for Aviation Training & Compliance
+ * 
+ * Description:
+ * Manages aviation regulatory training programs, certification validity periods,
+ * and compliance tracking for airline operations personnel.
+ * 
+ * Submenus & Modes:
+ * 1. Dashboard (`renderDashboard`):
+ *    Displays active counts of certified personnel, courses, and upcoming expiries.
+ * 2. Input Records (`renderInputRecords`, `openInputForm`, `submitDynamicForm`):
+ *    Presents selectable list of TQC categories (Courses, Training Records) to open input forms.
+ * 3. View Forms (`renderViewForms`, `openViewGrid`, `confirmRecordDelete`):
+ *    Presents structured data tables with search, sorting, pagination, and deletion.
+ * ============================================================================
+ */
+var tqcViews = window.tqcViews = {
+  activeView: 'dashboard',
 
-async function tqc_record_init() {
-  try {
-    app.showLoader();
-    window.allTqcRecords = await api.getTqcRecords();
-    
-    // Populate Course Dropdown
-    const courseSet = new Set();
-    window.allTqcRecords.forEach(r => { if(r.course_name) courseSet.add(r.course_name); });
-    const select = document.getElementById('tqc-filter-course');
-    Array.from(courseSet).sort().forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c; opt.text = c;
-      select.appendChild(opt);
+  renderDashboard: function() {
+    this.activeView = 'dashboard';
+    var mount = document.getElementById('tqc-content-mount');
+    if (!mount) return;
+
+    mount.innerHTML = `
+      <div class="dashboard-shell animate-fade-in">
+        <div class="dashboard-header-row">
+          <div>
+            <h1 class="dashboard-title">TQC Quality & Compliance Dashboard</h1>
+            <p class="dashboard-subtitle">Aviation Safety, Technical Training & Compliance Records</p>
+          </div>
+          <button type="button" class="btn-cancel" onclick="tqcViews.renderDashboard()" style="font-weight: 700;">
+            <span class="material-icons" style="font-size: 16px; color: var(--brand-teal);">sync</span>
+            <span>Refresh Counts</span>
+          </button>
+        </div>
+
+        <div class="kpi-cards-grid">
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Aviation Courses</p>
+              <h3 class="kpi-value" id="tqc-stat-courses">-</h3>
+              <span class="kpi-subtext" style="color: var(--status-purple);">Mandatory & Technical</span>
+            </div>
+            <div class="kpi-icon-box purple">
+              <span class="material-icons">library_books</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Completed Trainings</p>
+              <h3 class="kpi-value" id="tqc-stat-trainings">-</h3>
+              <span class="kpi-subtext" style="color: var(--brand-teal);">Certified Personnel</span>
+            </div>
+            <div class="kpi-icon-box teal">
+              <span class="material-icons">school</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Active Certifications</p>
+              <h3 class="kpi-value" id="tqc-stat-valid">-</h3>
+              <span class="kpi-subtext" style="color: var(--status-success);">Passed & Valid</span>
+            </div>
+            <div class="kpi-icon-box green">
+              <span class="material-icons">verified</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-card" style="margin-top: 1rem;">
+          <div class="card-header-bar">
+            <h3 class="card-header-title">Regulatory Quality & Flight Safety Standards</h3>
+          </div>
+          <p style="font-size: 0.925rem; color: var(--text-secondary); line-height: 1.6;">
+            The TQC module tracks training certifications, recurrent course validities, and compliance status across all aviation personnel. 
+            Data maintained here directly impacts qualification status, regulatory compliance, and flight operations clearance.
+          </p>
+        </div>
+      </div>
+    `;
+
+    Promise.all([
+      api.read('courses').catch(function() { return []; }),
+      api.read('trainings').catch(function() { return []; })
+    ]).then(function(res) {
+      var setVal = function(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.innerText = val;
+      };
+      setVal('tqc-stat-courses', (res[0] || []).length);
+      var allTr = res[1] || [];
+      setVal('tqc-stat-trainings', allTr.length);
+      var passedCount = allTr.filter(function(t) {
+        var r = String(t.result || '').toLowerCase();
+        return r === 'pass' || r === 'passed' || r === 'distinction';
+      }).length;
+      setVal('tqc-stat-valid', passedCount);
+    });
+  },
+
+  currentInputFormKey: 'courses',
+  currentViewFormKey: 'courses',
+
+  renderInputRecords: function(formKey) {
+    this.activeView = 'input';
+    var mount = document.getElementById('tqc-content-mount');
+    if (!mount) return;
+
+    var selectedKey = formKey || this.currentInputFormKey || 'courses';
+    this.currentInputFormKey = selectedKey;
+
+    var html = `
+      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+        <div class="form-tabs-bar" id="tqc-input-tabs-bar">
+    `;
+
+    TQC_FORM_SEQUENCE.forEach(function(item) {
+      var isActive = item.key === selectedKey ? 'active' : '';
+      html += `
+        <button type="button" class="form-tab-btn ${isActive}" data-form="${item.key}" onclick="tqcViews.switchInputForm('${item.key}')">
+          <span class="material-icons">${item.icon || 'post_add'}</span>
+          <span>${item.name}</span>
+        </button>
+      `;
     });
 
-    renderTqcRecord('course_wise');
-  } catch (e) {
-    app.toast(e.message, 'error');
-  } finally {
-    app.hideLoader();
-  }
-}
+    html += `
+        </div>
+        <div id="tqc-input-mount" style="flex: 1;"></div>
+      </div>
+    `;
 
-function renderTqcRecord(viewMode) {
-  const data = window.allTqcRecords || [];
-  const thead = document.getElementById('tqc-sheet-header');
-  const tbody = document.getElementById('tqc-sheet-body');
-  const courseFilter = document.getElementById('tqc-filter-course');
-  
-  thead.innerHTML = '';
-  tbody.innerHTML = '';
+    mount.innerHTML = html;
+    this.openInputForm(selectedKey);
+  },
 
-  if (viewMode === 'course_wise') {
-    courseFilter.classList.remove('hidden');
-    let filteredData = data.filter(d => d.status !== 'Retired');
-    if (courseFilter.value !== 'ALL') {
-      filteredData = filteredData.filter(d => d.course_name === courseFilter.value);
-    }
-    
-    const cols = [
-      { key: 'sl', label: 'SL' },
-      { key: 'name', label: 'Name' },
-      { key: 'staff_id', label: 'Staff ID' },
-      { key: 'designation', label: 'Designation' },
-      { key: 'shift', label: 'Shift' },
-      { key: 'placement', label: 'Placement' },
-      { key: 'posting', label: 'Posting' },
-      { key: 'course_name', label: 'Course Name' },
-      { key: 'start_date', label: 'Start Date', type: 'date' },
-      { key: 'end_date', label: 'End Date', type: 'date' },
-      { key: 'expire_date', label: 'Expire Date', type: 'date' }
-    ];
+  switchInputForm: function(formKey) {
+    this.currentInputFormKey = formKey;
+    document.querySelectorAll('#tqc-input-tabs-bar .form-tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.form === formKey);
+    });
+    this.openInputForm(formKey);
+  },
 
-    thead.innerHTML = cols.map(c => `<th class="p-1 border border-gray-300 font-bold text-left">${c.label}</th>`).join('');
-    
-    filteredData.forEach((row, i) => {
-      row.sl = i + 1;
-      let trHtml = '';
-      cols.forEach(c => {
-        let val = row[c.key] || '-';
-        if (c.type === 'date' && val !== '-') {
-          val = window.formatToDDMmmYYYY ? window.formatToDDMmmYYYY(val) : val;
+  renderViewForms: function(formKey) {
+    this.activeView = 'view';
+    var mount = document.getElementById('tqc-content-mount');
+    if (!mount) return;
+
+    var selectedKey = formKey || this.currentViewFormKey || 'courses';
+    this.currentViewFormKey = selectedKey;
+
+    var html = `
+      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+        <div class="form-tabs-bar" id="tqc-view-tabs-bar">
+    `;
+
+    TQC_FORM_SEQUENCE.forEach(function(item) {
+      var isActive = item.key === selectedKey ? 'active' : '';
+      html += `
+        <button type="button" class="form-tab-btn ${isActive}" data-form="${item.key}" onclick="tqcViews.switchViewGrid('${item.key}')">
+          <span class="material-icons">${item.icon || 'list_alt'}</span>
+          <span>${item.name}</span>
+        </button>
+      `;
+    });
+
+    html += `
+        </div>
+        <div id="tqc-view-mount" style="flex: 1; min-height: 0; display: flex; flex-direction: column;"></div>
+      </div>
+    `;
+
+    mount.innerHTML = html;
+    this.openViewGrid(selectedKey);
+  },
+
+  switchViewGrid: function(formKey) {
+    this.currentViewFormKey = formKey;
+    document.querySelectorAll('#tqc-view-tabs-bar .form-tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.form === formKey);
+    });
+    this.openViewGrid(formKey);
+  },
+
+  openInputForm: function(formKey) {
+    var schema = AppSchemas[formKey];
+    if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
+
+    var mount = document.getElementById('tqc-input-mount');
+    if (!mount) return;
+
+    var html = `
+      <div class="form-shell-container animate-scale-up">
+        <div class="form-shell-header">
+          <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
+            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: rgba(45, 212, 191, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span class="material-icons" style="color: var(--brand-teal-light); font-size: 1.2rem;">edit_note</span>
+            </div>
+            <div style="min-width: 0;">
+              <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">${schema.title}</h3>
+              ${schema.subtitle ? `<p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">${schema.subtitle}</p>` : ''}
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
+            <span style="background: rgba(45, 212, 191, 0.12); color: var(--brand-teal-light); border: 1px solid rgba(45, 212, 191, 0.3); font-size: 0.65rem; font-weight: 800; padding: 0.18rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--brand-teal-light); display: inline-block;"></span> DATA INPUT FORM
+            </span>
+          </div>
+        </div>
+
+        <form id="tqc-dynamic-form" style="padding: 0.75rem; display: flex; flex-direction: column; gap: 0.65rem;" onsubmit="tqcViews.handleFormSubmit(event, '${formKey}')">
+          <div class="form-two-column-grid">
+    `;
+
+    schema.fields.forEach(function(field) {
+      var req = field.required ? '<span style="color: var(--status-danger);">*</span>' : '';
+      html += `
+        <div class="form-group ${field.type === 'textarea' ? 'full-width' : ''}">
+          <label>${field.label} ${req}</label>
+      `;
+
+      if (field.type === 'select') {
+        html += `<select name="${field.name}" id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}>`;
+        html += `<option value="">-- ${field.placeholder || 'Select ' + field.label} --</option>`;
+        if (field.options) {
+          field.options.forEach(function(opt) {
+            html += `<option value="${opt}">${opt}</option>`;
+          });
         }
-        trHtml += `<td class="border border-gray-300 px-1 py-0 truncate max-w-[200px]">${val}</td>`;
-      });
-      tbody.innerHTML += `<tr>${trHtml}</tr>`;
+        html += `</select>`;
+      } else if (field.type === 'universal_date') {
+        html += `<input type="text" name="${field.name}" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || 'DDMMYYYY'}" ${field.required ? 'required' : ''} />`;
+      } else {
+        html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} />`;
+      }
+
+      html += `</div>`;
     });
 
-  } else if (viewMode === 'all_courses') {
-    courseFilter.classList.add('hidden');
-    // Cross tabulation logic goes here (Placeholder for now)
-    tbody.innerHTML = `<tr><td class="p-4 text-center">All Courses Cross-tabulation loading...</td></tr>`;
-  } else if (viewMode === 'individual') {
-    courseFilter.classList.add('hidden');
-    tbody.innerHTML = `<tr><td class="p-4 text-center">Individual Training History Search loading...</td></tr>`;
+    html += `
+          </div>
+
+          <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+            <button type="button" class="btn-cancel" onclick="document.getElementById('tqc-dynamic-form').reset()">Reset</button>
+            <button type="submit" class="btn-primary-action" id="btn-tqc-save">
+              <span class="material-icons" style="font-size: 16px;">save</span>
+              <span>Save Record</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    mount.innerHTML = html;
+    this.populateFormSelects(schema);
+
+    // Attach universal date mask to any universal_date fields
+    schema.fields.forEach(function(field) {
+      if (field.type === 'universal_date') {
+        var inp = document.getElementById('field-' + field.name);
+        if (inp) Components.attachUniversalDateMask(inp);
+      }
+    });
+  },
+
+  populateFormSelects: async function(schema) {
+    for (var i = 0; i < schema.fields.length; i++) {
+      var f = schema.fields[i];
+      if (f.type === 'select' && f.source) {
+        var sel = document.getElementById('field-' + f.name);
+        if (!sel) continue;
+        try {
+          var list = await api.read(f.source);
+          if (list && list.length > 0) {
+            sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
+            var seen = {};
+            list.forEach(function(item) {
+              var val = item[f.sourceKey] || item.id || item.code || item[Object.keys(item)[0]];
+              var disp = item[f.sourceDisplay] || item.name || val;
+              if (val && !seen[val]) {
+                seen[val] = true;
+                var opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = disp || val;
+                sel.appendChild(opt);
+              }
+            });
+          }
+        } catch(err) {
+          console.warn('Error populating select for ' + f.source, err);
+        }
+      }
+    }
+  },
+
+  handleFormSubmit: function(e, formKey) {
+    e.preventDefault();
+    var schema = AppSchemas[formKey];
+    if (!schema) return;
+
+    var form = document.getElementById('tqc-dynamic-form');
+    if (!form) return;
+
+    var saveBtn = document.getElementById('btn-tqc-save');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="material-icons animate-spin" style="font-size: 16px;">sync</span> Saving...';
+    }
+
+    var formData = new FormData(form);
+    var payload = {};
+    formData.forEach(function(val, key) {
+      payload[key] = val;
+    });
+
+    api.create(schema.table, payload, schema.prefix, schema.pk)
+      .then(function() {
+        app.toast('Record successfully saved in ' + schema.title, 'success');
+        form.reset();
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
+        }
+        if (typeof tqcViews.openViewGrid === 'function' && tqcViews.activeView === 'view') {
+          tqcViews.openViewGrid(formKey, true);
+        }
+      })
+      .catch(function(err) {
+        if (err.isDuplicate || (err.message && (err.message.indexOf('already exists') !== -1 || err.message.indexOf('Duplicate') !== -1))) {
+          Components.showDuplicateModal(err.message, 'Form: ' + schema.title);
+        } else {
+          app.toast('Save failed: ' + err.message, 'error');
+        }
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
+        }
+      });
+  },
+
+  openViewGrid: function(formKey) {
+    var schema = AppSchemas[formKey];
+    if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
+
+    var mount = document.getElementById('tqc-view-mount');
+    if (!mount) return;
+
+    var html = `
+      <div class="data-grid-shell animate-fade-in" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <div class="grid-header-toolbar">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="material-icons" style="color: var(--brand-teal-light); font-size: 18px;">table_chart</span>
+            <h3 style="font-size: 0.8125rem; font-weight: 800; text-transform: uppercase;">${(schema.title || '').replace(/ Form$/i, '')} - Records View</h3>
+          </div>
+          <button type="button" class="btn-cancel" style="padding: 0.35rem 0.45rem; color: var(--text-white); background: var(--surface-dark-elevated); border-color: var(--border-dark);" onclick="tqcViews.loadGridData('${formKey}', true)">
+            <span class="material-icons" style="font-size: 14px;">sync</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="table-container" style="flex: 1; overflow: auto; min-height: 280px; max-height: calc(100vh - 220px);">
+          <table class="standard-data-table" id="tqc-data-table" style="min-width: 100%; border-collapse: separate; border-spacing: 0;">
+            <thead>
+              <tr id="tqc-grid-header"></tr>
+            </thead>
+            <tbody id="tqc-grid-body">
+              <tr><td colspan="${schema.fields.length + 3}" style="text-align: center; padding: 2rem; color: var(--text-muted);"><span class="material-icons animate-spin" style="font-size: 18px; vertical-align: middle; margin-right: 0.4rem;">sync</span>Loading records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    mount.innerHTML = html;
+    this.loadGridData(formKey);
+  },
+
+  loadGridData: function(formKey, forceRefresh) {
+    var schema = AppSchemas[formKey];
+    if (!schema) return;
+
+    var headerRow = document.getElementById('tqc-grid-header');
+    var tbody = document.getElementById('tqc-grid-body');
+    if (!headerRow || !tbody) return;
+
+    var thHtml = `<th style="width: 50px; text-align: center; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">SL</th>`;
+    thHtml += `<th style="width: 110px; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">Record ID</th>`;
+    schema.fields.forEach(function(f) {
+      thHtml += `<th style="position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light); white-space: nowrap;">${f.label}</th>`;
+    });
+    thHtml += `<th style="width: 150px; text-align: right; padding-right: 1.25rem; position: sticky; top: 0; right: 0; background-color: var(--surface-alt); z-index: 15; border-bottom: 2px solid var(--border-light); box-shadow: -2px 0 4px rgba(0,0,0,0.05);">Action</th>`;
+    headerRow.innerHTML = thHtml;
+
+    api.read(schema.table, !!forceRefresh).then(function(records) {
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${schema.fields.length + 3}" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No records found.</td></tr>`;
+        return;
+      }
+
+      var bHtml = '';
+      records.forEach(function(r, idx) {
+        var pkVal = r[schema.pk] || r.id || ('#' + (idx + 1));
+        bHtml += `<tr>`;
+        bHtml += `<td style="text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>`;
+        bHtml += `<td style="font-weight: 700; color: var(--brand-teal); font-family: monospace;">${pkVal}</td>`;
+        schema.fields.forEach(function(f) {
+          var val = r[f.name];
+          bHtml += `<td style="white-space: nowrap;">${val !== undefined && val !== null && val !== '' ? val : '-'}</td>`;
+        });
+        bHtml += `
+          <td style="text-align: right; padding-right: 1.25rem; white-space: nowrap; position: sticky; right: 0; background-color: var(--surface-card); box-shadow: -2px 0 4px rgba(0,0,0,0.05);">
+            <button type="button" class="btn-table-edit" onclick="tqcViews.openRecordEditView('${formKey}', '${pkVal}')" title="Edit this record">
+              <span class="material-icons" style="font-size: 13px;">edit</span>
+              <span>Edit</span>
+            </button>
+            <button type="button" class="btn-table-delete" style="margin-left: 0.3rem;" onclick="tqcViews.deleteRecord('${formKey}', '${pkVal}')" title="Delete this record">
+              <span class="material-icons" style="font-size: 13px;">delete</span>
+              <span>Delete</span>
+            </button>
+          </td>
+        `;
+        bHtml += `</tr>`;
+      });
+      tbody.innerHTML = bHtml;
+    }).catch(function(err) {
+      tbody.innerHTML = `<tr><td colspan="${schema.fields.length + 3}" style="text-align: center; padding: 2rem; color: var(--status-danger);">Failed to load: ${err.message}</td></tr>`;
+    });
+  },
+
+  openRecordEditView: function(formKey, pkVal) {
+    var schema = AppSchemas[formKey];
+    var self = this;
+    api.read(schema.table).then(function(records) {
+      var row = (records || []).find(function(r) { return (r[schema.pk] || r.id) === pkVal; });
+      if (!row) return app.toast('Record not found', 'error');
+
+      var mount = document.getElementById('tqc-view-mount');
+      if (!mount) return;
+
+      var html = `
+        <div class="form-shell-container animate-scale-up">
+          <div class="form-shell-header">
+            <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: rgba(45, 212, 191, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-icons" style="color: var(--brand-teal-light); font-size: 1.15rem;">edit</span>
+              </div>
+              <div style="min-width: 0;">
+                <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">Edit ${(schema.title || '').replace(/ Form$/i, '')}</h3>
+                <p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">Modifying Active Record ID: <span style="color: var(--brand-teal-light); font-weight: 700;">${pkVal}</span></p>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+              <span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.65rem; font-weight: 800; padding: 0.18rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #fbbf24; display: inline-block;"></span> EDIT RECORD
+              </span>
+              <button type="button" onclick="tqcViews.openViewGrid('${formKey}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center;">
+                <span class="material-icons" style="font-size: 1.25rem;">close</span>
+              </button>
+            </div>
+          </div>
+
+          <form id="tqc-edit-form" style="padding: 0.75rem; display: flex; flex-direction: column; gap: 0.65rem;" onsubmit="tqcViews.handleEditSubmit(event, '${formKey}', '${pkVal}')">
+            <div class="form-two-column-grid">
+      `;
+
+      schema.fields.forEach(function(field) {
+        var val = row[field.name] !== undefined ? row[field.name] : '';
+        html += `
+          <div class="form-group ${field.type === 'textarea' ? 'full-width' : ''}">
+            <label>${field.label}</label>
+        `;
+        if (field.type === 'select') {
+          html += `<select name="${field.name}" id="field-${field.name}" class="form-input" data-selected-val="${val}">`;
+          html += `<option value="">-- ${field.placeholder || 'Select Option'} --</option>`;
+          if (field.options) {
+            field.options.forEach(function(opt) {
+              var isSel = (String(opt) === String(val)) ? 'selected' : '';
+              html += `<option value="${opt}" ${isSel}>${opt}</option>`;
+            });
+          }
+          html += `</select>`;
+        } else {
+          html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" value="${val}" class="form-input" />`;
+        }
+        html += `</div>`;
+      });
+
+      html += `
+            </div>
+            <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+              <button type="button" class="btn-cancel" onclick="tqcViews.openViewGrid('${formKey}')">Cancel</button>
+              <button type="submit" class="btn-primary-action">
+                <span class="material-icons" style="font-size: 16px;">save</span>
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+
+      mount.innerHTML = html;
+      tqcViews.populateEditSelects(schema, row);
+    }).catch(function(e) {
+      app.toast('Failed to load record for edit: ' + e.message, 'error');
+    });
+  },
+
+  populateEditSelects: async function(schema, row) {
+    for (var i = 0; i < schema.fields.length; i++) {
+      var f = schema.fields[i];
+      if (f.type === 'select' && f.source) {
+        var sel = document.getElementById('field-' + f.name);
+        if (!sel) continue;
+        var currentVal = String(row[f.name] || '');
+        try {
+          var list = await api.read(f.source);
+          if (list && list.length > 0) {
+            sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
+            var seen = {};
+            list.forEach(function(item) {
+              var val = item[f.sourceKey] || item.id || item.code || item[Object.keys(item)[0]];
+              var disp = item[f.sourceDisplay] || item.name || val;
+              if (val && !seen[val]) {
+                seen[val] = true;
+                var opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = disp || val;
+                if (String(val) === currentVal) opt.selected = true;
+                sel.appendChild(opt);
+              }
+            });
+          }
+        } catch(err) {}
+      }
+    }
+  },
+
+  handleEditSubmit: function(e, formKey, pkVal) {
+    e.preventDefault();
+    var schema = AppSchemas[formKey];
+    var form = document.getElementById('tqc-edit-form');
+    var formData = new FormData(form);
+    var payload = {};
+    formData.forEach(function(val, key) { payload[key] = val; });
+
+    api.update(schema.table, schema.pk, pkVal, payload).then(function() {
+      app.toast('Record successfully updated', 'success');
+      tqcViews.openViewGrid(formKey);
+    }).catch(function(err) {
+      app.toast('Update failed: ' + err.message, 'error');
+    });
+  },
+
+  deleteRecord: function(formKey, pkVal) {
+    var schema = AppSchemas[formKey];
+    if (!schema || !pkVal) return;
+
+    Components.showConfirmModal({
+      title: 'Delete ' + schema.title + ' Record',
+      message: 'Are you sure you want to permanently delete record ' + pkVal + '?',
+      onConfirm: function() {
+        api.delete(schema.table, schema.pk, pkVal).then(function() {
+          app.toast('Record deleted successfully', 'success');
+          tqcViews.loadGridData(formKey, true);
+        }).catch(function(err) {
+          app.toast('Delete failed: ' + err.message, 'error');
+        });
+      }
+    });
   }
-}
+};
 </script>
