@@ -30,12 +30,71 @@
  * @param {string} tableName - Name of the target table (e.g. 'employees', 'stations').
  * @returns {Object} JSON payload: { status: 'success', data: Array<Object> } or { status: 'error', message: string }
  */
-function api_read(tableName) {
+function api_read(tableName, forceRefresh) {
   try {
     if (!tableName || typeof tableName !== 'string') {
       return { status: 'error', message: 'tableName is required and must be a string' };
     }
-    var records = Database.getAll(tableName);
+    var records = Database.getAll(tableName, forceRefresh);
+    // If organization_units is requested but raw sheet is empty, synthesize from legacy directorates, departments, sections
+    if (tableName === 'organization_units' && (!records || records.length === 0)) {
+      var rawDirs = Database.getAll('directorates') || [];
+      var rawDepts = Database.getAll('departments') || [];
+      var rawSecs = Database.getAll('sections') || [];
+      if (rawDirs.length > 0 || rawDepts.length > 0 || rawSecs.length > 0) {
+        var synthList = [];
+        rawDirs.forEach(function(d) {
+          synthList.push({
+            unit_id: d.dir_id,
+            unit_code: d.dir_code || d.dir_letter_code || d.dir_id,
+            unit_name: d.dir_name,
+            unit_type: 'DIRECTORATE',
+            parent_unit_id: '',
+            letter_code: d.dir_letter_code || '',
+            status: 'ACTIVE'
+          });
+        });
+        rawDepts.forEach(function(dp) {
+          synthList.push({
+            unit_id: dp.dep_id,
+            unit_code: dp.dep_code || dp.dep_letter_code || dp.dep_id,
+            unit_name: dp.dep_name,
+            unit_type: 'DEPARTMENT',
+            parent_unit_id: dp.dir_id || '',
+            letter_code: dp.dep_letter_code || '',
+            status: 'ACTIVE'
+          });
+        });
+        rawSecs.forEach(function(sc) {
+          synthList.push({
+            unit_id: sc.sec_id,
+            unit_code: sc.sec_code || sc.sec_letter_code || sc.sec_id,
+            unit_name: sc.sec_name,
+            unit_type: 'SECTION',
+            parent_unit_id: sc.dep_id || '',
+            location_id: sc.location_id || '',
+            station_id: sc.station_id || '',
+            letter_code: sc.sec_letter_code || '',
+            status: 'ACTIVE'
+          });
+        });
+        records = synthList;
+      }
+    }
+    // If work_locations is requested but raw sheet is empty, synthesize standard base locations
+    if (tableName === 'work_locations' && (!records || records.length === 0)) {
+      records = [
+        { location_id: 'LOC-0001', location_code: '101', location_name: 'Head Office (Balaka Bhaban)', location_type: 'Head Office', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0002', location_code: '102', location_name: 'Airport Terminal 1 (HSIA)', location_type: 'Airport Terminal', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0003', location_code: '103', location_name: 'Airport Terminal 2 (HSIA)', location_type: 'Airport Terminal', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0004', location_code: '104', location_name: 'Hangar Complex (HSIA)', location_type: 'Hangar / Maintenance Base', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0005', location_code: '105', location_name: 'Cargo Terminal (HSIA)', location_type: 'Cargo Terminal', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0006', location_code: '106', location_name: 'Biman Training Center (BATC)', location_type: 'Training Center', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0007', location_code: '107', location_name: 'Motijheel District Sales Office', location_type: 'City Office', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0008', location_code: '201', location_name: 'Shah Amanat Int\'l Airport Terminal', location_type: 'Airport Terminal', city: 'Chittagong', region: 'Home', country: 'Bangladesh', station_id: 'CGP', status: 'Active' },
+        { location_id: 'LOC-0009', location_code: '301', location_name: 'Osmani Int\'l Airport Terminal', location_type: 'Airport Terminal', city: 'Sylhet', region: 'Home', country: 'Bangladesh', station_id: 'ZYL', status: 'Active' }
+      ];
+    }
     return JSON.parse(JSON.stringify({ status: 'success', data: records }));
   } catch (e) {
     return { status: 'error', message: e.message };
@@ -116,11 +175,14 @@ function api_update(tableName, pkColumn, id, data) {
       }
     }
 
-    // Special routing for employee profile updates
-    if (tableName === 'employees') {
-      data[pkColumn] = id;
-      var empUpResult = HrmService.saveEmployee(data);
-      return JSON.parse(JSON.stringify({ status: 'success', data: empUpResult }));
+    // Auto-calculate retirement date for employees if DOB is updated
+    if (tableName === 'employees' && data.dob && !data.retirement_date) {
+      try {
+        var calcRet = Utils.calculateStatutoryRetirementDate(data.dob);
+        if (calcRet) {
+          data.retirement_date = typeof calcRet === 'string' ? calcRet : Utils.formatDateToISO(calcRet);
+        }
+      } catch (eDob) {}
     }
 
     // Generic update via Database DAO
@@ -385,17 +447,55 @@ function api_get_master_data(forceRefresh) {
     var finalDepartments = synthDepartments.length > 0 ? synthDepartments : rawDepartments;
     var finalSections = synthSections.length > 0 ? synthSections : rawSections;
 
+    var finalOrgUnits = (rawOrgUnits && rawOrgUnits.length > 0) ? rawOrgUnits : [];
+    if (finalOrgUnits.length === 0) {
+      if (synthDirectorates.length > 0 || synthDepartments.length > 0 || synthSections.length > 0) {
+        finalOrgUnits = synthDirectorates.concat(synthDepartments).concat(synthSections);
+      } else if (rawDirectorates.length > 0 || rawDepartments.length > 0 || rawSections.length > 0) {
+        var legacySynth = [];
+        rawDirectorates.forEach(function(d) {
+          legacySynth.push({ unit_id: d.dir_id, unit_code: d.dir_code || d.dir_letter_code || d.dir_id, unit_name: d.dir_name, unit_type: 'DIRECTORATE', parent_unit_id: '', letter_code: d.dir_letter_code || '', status: 'ACTIVE' });
+        });
+        rawDepartments.forEach(function(dp) {
+          legacySynth.push({ unit_id: dp.dep_id, unit_code: dp.dep_code || dp.dep_letter_code || dp.dep_id, unit_name: dp.dep_name, unit_type: 'DEPARTMENT', parent_unit_id: dp.dir_id || '', letter_code: dp.dep_letter_code || '', status: 'ACTIVE' });
+        });
+        rawSections.forEach(function(sc) {
+          legacySynth.push({ unit_id: sc.sec_id, unit_code: sc.sec_code || sc.sec_letter_code || sc.sec_id, unit_name: sc.sec_name, unit_type: 'SECTION', parent_unit_id: sc.dep_id || '', location_id: sc.location_id || '', station_id: sc.station_id || '', letter_code: sc.sec_letter_code || '', status: 'ACTIVE' });
+        });
+        finalOrgUnits = legacySynth;
+      }
+    }
+
+    var rawWorkLocations = Database.getAll('work_locations', forceRefresh) || [];
+    if (rawWorkLocations.length === 0) {
+      rawWorkLocations = [
+        { location_id: 'LOC-0001', location_code: '101', location_name: 'Head Office (Balaka Bhaban)', location_type: 'Head Office', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0002', location_code: '102', location_name: 'Airport Terminal 1 (HSIA)', location_type: 'Airport Terminal', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0003', location_code: '103', location_name: 'Airport Terminal 2 (HSIA)', location_type: 'Airport Terminal', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0004', location_code: '104', location_name: 'Hangar Complex (HSIA)', location_type: 'Hangar / Maintenance Base', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0005', location_code: '105', location_name: 'Cargo Terminal (HSIA)', location_type: 'Cargo Terminal', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0006', location_code: '106', location_name: 'Biman Training Center (BATC)', location_type: 'Training Center', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0007', location_code: '107', location_name: 'Motijheel District Sales Office', location_type: 'City Office', city: 'Dhaka', region: 'Home', country: 'Bangladesh', station_id: 'DAC', status: 'Active' },
+        { location_id: 'LOC-0008', location_code: '201', location_name: 'Shah Amanat Int\'l Airport Terminal', location_type: 'Airport Terminal', city: 'Chittagong', region: 'Home', country: 'Bangladesh', station_id: 'CGP', status: 'Active' },
+        { location_id: 'LOC-0009', location_code: '301', location_name: 'Osmani Int\'l Airport Terminal', location_type: 'Airport Terminal', city: 'Sylhet', region: 'Home', country: 'Bangladesh', station_id: 'ZYL', status: 'Active' }
+      ];
+    }
+
     var masterData = {
       directorates: finalDirectorates,
       departments: finalDepartments,
       sections: finalSections,
-      organization_units: rawOrgUnits,
+      organization_units: finalOrgUnits,
+      positions: Database.getAll('positions', forceRefresh),
       stations: Database.getAll('stations', forceRefresh),
-      work_locations: Database.getAll('work_locations', forceRefresh),
+      work_locations: rawWorkLocations,
       shifts: Database.getAll('shifts', forceRefresh),
       pay_groups: Database.getAll('pay_groups', forceRefresh),
+      designations: Database.getAll('designations', forceRefresh),
       employee_types: Database.getAll('employee_types', forceRefresh),
-      workforce_setup: Database.getAll('workforce_setup', forceRefresh)
+      workforce_setup: Database.getAll('workforce_setup', forceRefresh),
+      employee_separations: Database.getAll('employee_separations', forceRefresh),
+      self_retirements: Database.getAll('employee_separations', forceRefresh)
     };
 
     return JSON.parse(JSON.stringify({ status: 'success', data: masterData }));
@@ -428,6 +528,19 @@ function api_sync_tables_and_audit() {
   try {
     var res = Database.ensureAllTablesAndAuditColumns();
     return { status: 'success', data: res };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+/**
+ * Removes obsolete columns (dep_id, station_id, station_code) from the shifts worksheet.
+ * @returns {Object} JSON payload: { status: 'success', data: boolean }
+ */
+function api_clean_obsolete_shift_columns() {
+  try {
+    var res = Database.cleanObsoleteShiftColumns();
+    return JSON.parse(JSON.stringify({ status: 'success', data: res }));
   } catch (e) {
     return { status: 'error', message: e.message };
   }

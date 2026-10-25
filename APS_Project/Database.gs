@@ -20,7 +20,7 @@
  *    - Invalidation Engine (`invalidateCache`): Purges memory and ScriptCache upon mutations.
  * 3. Schema & Audit Standardization:
  *    Every worksheet automatically implements the 5 standard enterprise audit columns:
- *    ['created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'].
+ *    ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'].
  * 4. Soft-Delete Architecture:
  *    Deletion operations mark `is_deleted = true` instead of physically dropping rows,
  *    preserving regulatory compliance and complete historical auditability.
@@ -58,17 +58,52 @@ var Database = (function() {
    */
   /**
    * Enterprise-grade Cache Manager for Google Apps Script.
-   * Cross-execution persistent caching of database rows has been disabled to ensure
-   * the live Google Sheet database is always the single source of truth.
+   * High-speed atomic cache with automatic chunking and instant invalidation on write.
    */
   var ServerCache = {
     get: function(key) {
-      // Disabled: Always fetch live from actual Google Sheet to eliminate phantom data
+      if (typeof CacheService === 'undefined') return null;
+      try {
+        var cache = CacheService.getScriptCache();
+        var countStr = cache.get(key + '_chunk_count');
+        if (countStr) {
+          var count = parseInt(countStr, 10);
+          var chunks = [];
+          for (var c = 0; c < count; c++) {
+            var chunk = cache.get(key + '_chunk_' + c);
+            if (chunk === null) return null; // partial chunk missing, fall back to DB
+            chunks.push(chunk);
+          }
+          return JSON.parse(chunks.join(''));
+        }
+        var single = cache.get(key);
+        if (single) {
+          return JSON.parse(single);
+        }
+      } catch (e) {}
       return null;
     },
 
     put: function(key, data, ttlSeconds) {
-      // No-op: Data is stored and fetched directly from Google Sheets
+      if (typeof CacheService === 'undefined' || !data) return;
+      try {
+        var cache = CacheService.getScriptCache();
+        var ttl = Math.min(ttlSeconds || 3600, 21600);
+        var jsonStr = JSON.stringify(data);
+        var chunkSize = 90000;
+        if (jsonStr.length <= chunkSize) {
+          cache.put(key, jsonStr, ttl);
+          cache.remove(key + '_chunk_count');
+        } else {
+          var count = Math.ceil(jsonStr.length / chunkSize);
+          cache.put(key + '_chunk_count', String(count), ttl);
+          for (var c = 0; c < count; c++) {
+            var chunk = jsonStr.substring(c * chunkSize, (c + 1) * chunkSize);
+            cache.put(key + '_chunk_' + c, chunk, ttl);
+          }
+          cache.remove(key);
+        }
+      } catch (e) {}
     },
 
     remove: function(key) {
@@ -76,7 +111,14 @@ var Database = (function() {
       try {
         var cache = CacheService.getScriptCache();
         cache.remove(key);
-        cache.remove(key + '_chunk_count');
+        var countStr = cache.get(key + '_chunk_count');
+        if (countStr) {
+          var count = parseInt(countStr, 10);
+          for (var c = 0; c < count; c++) {
+            cache.remove(key + '_chunk_' + c);
+          }
+          cache.remove(key + '_chunk_count');
+        }
       } catch (e) {}
     },
 
@@ -134,37 +176,45 @@ var Database = (function() {
   // ==========================================================================
   // Canonical Table Definitions (Schemas)
   // All tables enforce the 5 standard audit & soft-delete fields:
-  // created_at, updated_at, created_by, updated_by, is_deleted
+  // created_at, created_by, updated_at, updated_by, is_deleted
   // ==========================================================================
   var TABLE_DEFINITIONS = {
-    'organization_units': ['unit_id', 'unit_code', 'unit_name', 'unit_type', 'parent_unit_id', 'location_id', 'station_id', 'letter_code', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'stations': ['station_id', 'station_code', 'station_icao', 'station_name', 'station_location', 'station_type', 'stn_ops_type', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'shifts': ['shift_id', 'dep_id', 'station_id', 'station_code', 'sec_letter_code', 'shift_code', 'shift_name', 'shift_description', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'pay_groups': ['pg_id', 'pay_group', 'rank_level', 'designation', 'designation_short', 'basic_pay', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'employee_types': ['emp_type_id', 'emp_type_code', 'emp_type', 'description', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'workforce_setup': ['setup_id', 'dir_id', 'dep_id', 'station_id', 'station_code', 'pay_group', 'designation', 'set_up', 'staff_number', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'employees': ['emp_id', 'staff_id', 'emp_name', 'gender', 'dep_id', 'department_code', 'emp_type', 'emp_type_id', 'pay_group', 'contact_primary', 'contact_secondary', 'contact_family', 'official_email', 'personal_email', 'email', 'dob', 'joining_date', 'retirement_date', 'home_district', 'picture_url', 'remarks', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'placements': ['placement_id', 'staff_id', 'location_id', 'organization_unit_id', 'position_id', 'station_code', 'sec_letterCode', 'shift_name', 'placement_date', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'postings': ['posting_id', 'staff_id', 'location_id', 'location_city', 'station_code', 'effective_from', 'effective_to', 'status', 'posting_date', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'work_locations': ['location_id', 'station_id', 'location_code', 'location_name', 'location_type', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'promotion_references': ['ref_id', 'reference_number', 'publication_date', 'remarks', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'promotions': ['promotion_id', 'ref_id', 'staff_id', 'sequence_no', 'present_pg_id', 'promoted_pg_id', 'promotion_date', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'extensions': ['extension_id', 'staff_id', 'extension_from', 'extension_pay_group', 'extension_to', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'additional_charges': ['charge_id', 'staff_id', 'charge_from', 'pay_group', 'designation', 'charge_to', 'default_continue', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'acting_assignments': ['acting_id', 'staff_id', 'acting_from', 'pay_group', 'designation', 'acting_to', 'default_continue', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'self_retirements': ['retirement_id', 'staff_id', 'retirement_date', 'event_type', 'remarks', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'employee_migrations': ['migration_id', 'reference_no', 'old_staff_id', 'new_staff_id', 'migration_type', 'migration_date', 'remarks', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'employee_actions': ['action_id', 'reference_no', 'staff_id', 'action_type', 'from_org_unit_id', 'to_org_unit_id', 'from_pay_group_id', 'to_pay_group_id', 'from_designation', 'to_designation', 'effective_date', 'disciplinary_case_id', 'remarks', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'disciplinary_cases': ['case_id', 'staff_id', 'case_type', 'status', 'has_adverse_report', 'opened_date', 'closed_date', 'remarks', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'courses': ['course_id', 'dep_id', 'course_code', 'course_name', 'course_type', 'duration', 'validity_months', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'trainings': ['training_id', 'staff_id', 'course_code', 'start_date', 'end_date', 'result', 'result_file', 'certificate_file', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
-    'payroll_calculations': ['payroll_id', 'staff_id', 'employee_name', 'pay_group', 'period', 'basic_pay', 'attendance_days', 'meal_allowance', 'overtime_hours', 'overtime_amount', 'gross_salary', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'],
+    'organization_units': ['unit_id', 'unit_code', 'unit_name', 'unit_type', 'parent_unit_id', 'location_id', 'station_id', 'letter_code', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'positions': ['position_id', 'position_title', 'position_code', 'position_category', 'min_pg_id', 'max_pg_id', 'description', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'stations': ['station_id', 'station_code', 'station_icao', 'station_name', 'station_type', 'stn_ops_type', 'city', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'shifts': ['shift_id', 'unit_id', 'sec_letter_code', 'duty_pattern', 'shift_code', 'shift_name', 'shift_description', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'pay_groups': ['pg_id', 'pg_category', 'pay_group', 'rank_level', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'designations': ['deg_id', 'unit_id', 'pg_category', 'pay_group', 'designation', 'designation_short', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'employee_types': ['emp_type_id', 'emp_type_code', 'emp_type', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'workforce_setup': ['setup_id', 'unit_id', 'station_id', 'station_code', 'position_id', 'pay_group', 'designation', 'sanctioned_posts', 'staff_number', 'set_up', 'duty_pattern', 'shift_type', 'remarks', 'dir_id', 'dep_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'employees': ['emp_id', 'staff_id', 'emp_name', 'gender', 'dep_id', 'department_code', 'emp_type', 'emp_type_id', 'pay_group', 'designation', 'contact_primary', 'contact_secondary', 'contact_family', 'official_email', 'personal_email', 'email', 'dob', 'joining_date', 'retirement_date', 'home_district', 'picture_url', 'remarks', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'placements': ['placement_id', 'staff_id', 'location_id', 'organization_unit_id', 'position_id', 'station_code', 'sec_letterCode', 'shift_name', 'placement_date', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'postings': ['posting_id', 'staff_id', 'location_id', 'location_city', 'station_code', 'effective_from', 'effective_to', 'status', 'posting_date', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'work_locations': ['location_id', 'location_code', 'location_name', 'location_type', 'city', 'region', 'country', 'station_id', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'promotion_references': ['ref_id', 'reference_number', 'publication_date', 'remarks', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'promotions': ['promotion_id', 'ref_id', 'reference_no', 'staff_id', 'sequence_no', 'present_pg_id', 'promoted_pg_id', 'promotion_date', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'extensions': ['extension_id', 'staff_id', 'extension_from', 'extension_pay_group', 'extension_to', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'additional_charges': ['charge_id', 'staff_id', 'charge_from', 'pay_group', 'designation', 'charge_to', 'default_continue', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'employee_separations': ['separation_id', 'staff_id', 'separation_date', 'event_type', 'remarks', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'self_retirements': ['separation_id', 'retirement_id', 'staff_id', 'separation_date', 'retirement_date', 'event_type', 'remarks', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'employee_migrations': ['migration_id', 'reference_no', 'old_staff_id', 'new_staff_id', 'migration_type', 'migration_date', 'remarks', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'employee_actions': ['action_id', 'reference_no', 'staff_id', 'action_type', 'from_org_unit_id', 'to_org_unit_id', 'from_pay_group_id', 'to_pay_group_id', 'from_designation', 'to_designation', 'effective_date', 'disciplinary_case_id', 'remarks', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'disciplinary_cases': ['case_id', 'staff_id', 'case_type', 'status', 'has_adverse_report', 'opened_date', 'closed_date', 'remarks', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'courses': ['course_id', 'dep_id', 'course_code', 'course_name', 'course_type', 'duration', 'validity_months', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'trainings': ['training_id', 'staff_id', 'course_code', 'start_date', 'end_date', 'result', 'result_file', 'certificate_file', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
+    'payroll_calculations': ['payroll_id', 'staff_id', 'employee_name', 'pay_group', 'period', 'basic_pay', 'attendance_days', 'meal_allowance', 'overtime_hours', 'overtime_amount', 'gross_salary', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'],
     'audit_logs': ['log_id', 'user_id', 'action', 'table_name', 'record_id', 'old_value', 'new_value', 'timestamp'],
-    'users': ['user_id', 'email', 'role_name', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted']
+    'users': ['user_id', 'email', 'role_name', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted']
   };
 
   // Aliases for tolerance
   var TABLE_ALIASES = {
+    'position': 'positions',
+    'positions': 'positions',
+    'duty_position': 'positions',
+    'duty_positions': 'positions',
+    'functional_position': 'positions',
+    'functional_positions': 'positions',
     'promotion': 'promotions',
     'employee': 'employees',
     'placement': 'placements',
@@ -177,8 +227,12 @@ var Database = (function() {
     'locations': 'work_locations',
     'extension': 'extensions',
     'additional_charge': 'additional_charges',
-    'acting': 'acting_assignments',
-    'self_retirement': 'self_retirements',
+    'self_retirement': 'employee_separations',
+    'self_retirements': 'employee_separations',
+    'separation': 'employee_separations',
+    'separations': 'employee_separations',
+    'employee_separation': 'employee_separations',
+    'employee_separations': 'employee_separations',
     'migration': 'employee_migrations',
     'employee_action': 'employee_actions',
     'employee_actions': 'employee_actions',
@@ -193,6 +247,7 @@ var Database = (function() {
     'sections': 'organization_units',
     'shift': 'shifts',
     'pay_group': 'pay_groups',
+    'designation': 'designations',
     'employee_type': 'employee_types',
     'setup': 'workforce_setup',
     'setups': 'workforce_setup',
@@ -264,7 +319,7 @@ var Database = (function() {
 
     if (!sheet && (autoCreate !== false)) {
       sheet = activeSS.insertSheet(resolved);
-      var defHeaders = TABLE_DEFINITIONS[resolved] || ['id', 'name', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'];
+      var defHeaders = TABLE_DEFINITIONS[resolved] || ['id', 'name', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
       sheet.appendRow(defHeaders);
       sheet.setFrozenRows(1);
       try {
@@ -320,7 +375,7 @@ var Database = (function() {
     var name = sheet.getName().toLowerCase();
     if (name === 'audit_logs') return cleanHeaders;
 
-    var auditCols = ['created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'];
+    var auditCols = ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
     var missing = [];
     for (var i = 0; i < auditCols.length; i++) {
       if (cleanHeaders.indexOf(auditCols[i]) === -1) {
@@ -350,7 +405,7 @@ var Database = (function() {
 
     // If the sheet has no columns or no rows at all (empty sheet tab)
     if (lastCol < 1 || lastRow < 1) {
-      var initialHeaders = expectedHeaders ? expectedHeaders.slice() : ['id', 'name', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'];
+      var initialHeaders = expectedHeaders ? expectedHeaders.slice() : ['id', 'name', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
       sheet.appendRow(initialHeaders);
       sheet.setFrozenRows(1);
       try {
@@ -375,7 +430,7 @@ var Database = (function() {
 
     // If all headers in row 1 were empty or blank
     if (cleanHeaders.length === 0 || cleanHeaders.filter(Boolean).length === 0) {
-      var initialHeaders = expectedHeaders ? expectedHeaders.slice() : ['id', 'name', 'status', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'];
+      var initialHeaders = expectedHeaders ? expectedHeaders.slice() : ['id', 'name', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
       sheet.getRange(1, 1, 1, initialHeaders.length).setValues([initialHeaders]);
       sheet.setFrozenRows(1);
       try {
@@ -402,9 +457,8 @@ var Database = (function() {
         sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
         cleanHeaders = cleanHeaders.concat(missing);
       }
-    } else {
-      cleanHeaders = ensureAuditHeaders(sheet, cleanHeaders);
     }
+    cleanHeaders = ensureAuditHeaders(sheet, cleanHeaders);
 
     headersCache[name] = cleanHeaders;
     return cleanHeaders;
@@ -460,7 +514,7 @@ var Database = (function() {
    * Universal and Table-Specific Duplicate Validation Engine
    * Prevents duplicate data entry across all system tables.
    */
-  function checkDuplicate(tableName, data, existingRecords, excludePkVal, pkColName) {
+  function checkDuplicate(tableName, data, existingRecords, excludePkVal, pkColName, excludeRowNumber) {
     if (!data || typeof data !== 'object') return null;
     var resolved = resolveTableName(tableName);
     var records = existingRecords || getAll(resolved);
@@ -474,9 +528,22 @@ var Database = (function() {
     }
 
     function isCurrent(r) {
+      if (excludeRowNumber && r._rowNumber && String(r._rowNumber) === String(excludeRowNumber)) {
+        return true;
+      }
       if (!excludePkVal) return false;
-      var rPk = r[pkCol] || r.id || r._rowNumber;
-      return String(rPk).trim().toUpperCase() === String(excludePkVal).trim().toUpperCase();
+      var strEx = String(excludePkVal).trim().toUpperCase();
+      var rPk = findDataValue(r, pkCol) || r[pkCol] || (pkCol ? r[pkCol.toLowerCase()] : null) || r.id || r._rowNumber;
+      if (rPk && String(rPk).trim().toUpperCase() === strEx) {
+        return true;
+      }
+      if (r.id && String(r.id).trim().toUpperCase() === strEx) {
+        return true;
+      }
+      if (r._rowNumber && String(r._rowNumber).trim() === strEx) {
+        return true;
+      }
+      return false;
     }
 
     // 1. Table-specific unique business rules
@@ -529,34 +596,59 @@ var Database = (function() {
         });
         if (dupLoc) return "A work location with Code '" + (data.location_code || lCode) + "' already exists.";
       }
-      if (lName && lStn) {
+      if (lName) {
         var dupLocN = records.find(function(r) {
-          return !isCurrent(r) &&
-                 String(r.location_name || '').trim().toUpperCase() === lName &&
-                 String(r.station_id || '').trim().toUpperCase() === lStn;
+          if (isCurrent(r)) return false;
+          var sameName = String(r.location_name || '').trim().toUpperCase() === lName;
+          if (!sameName) return false;
+          if (lStn) {
+            return String(r.station_id || '').trim().toUpperCase() === lStn;
+          }
+          return !r.station_id;
         });
-        if (dupLocN) return "A work location named '" + (data.location_name || lName) + "' already exists for Station '" + (data.station_id || lStn) + "'.";
+        if (dupLocN) return "A work location named '" + (data.location_name || lName) + "' already exists" + (lStn ? " for Station '" + (data.station_id || lStn) + "'." : ".");
       }
     } else if (resolved === 'shifts') {
       var shName = val('shift_name');
-      var shStn = val('station_code') || val('station_id');
+      var shCode = val('shift_code');
+      var shUnit = val('unit_id') || val('dep_id');
       var shSec = val('sec_letter_code');
-      if (shName && shStn) {
+      if (shName) {
         var dupShift = records.find(function(r) {
-          return !isCurrent(r) &&
-                 String(r.shift_name || '').trim().toUpperCase() === shName &&
-                 (String(r.station_code || r.station_id || '').trim().toUpperCase() === shStn) &&
-                 (!shSec || String(r.sec_letter_code || '').trim().toUpperCase() === shSec);
+          if (isCurrent(r)) return false;
+          var rName = String(r.shift_name || '').trim().toUpperCase();
+          var rCode = String(r.shift_code || '').trim().toUpperCase();
+          var rUnit = String(r.unit_id || r.dep_id || '').trim().toUpperCase();
+          var rSec = String(r.sec_letter_code || '').trim().toUpperCase();
+          var matchName = (rName === shName) || (shCode && rCode === shCode);
+          var matchUnit = (!shUnit && !rUnit) || (shUnit && rUnit === shUnit);
+          var matchSec = (!shSec && !rSec) || (shSec && rSec === shSec);
+          return matchName && matchUnit && matchSec;
         });
-        if (dupShift) return "Shift '" + (data.shift_name || shName) + "' is already registered for this station/section.";
+        if (dupShift) return "Shift '" + (data.shift_name || shName) + "' is already registered for this department / unit.";
       }
     } else if (resolved === 'pay_groups') {
       var pg = val('pay_group');
-      if (pg) {
-        var dupPg = records.find(function(r) {
-          return !isCurrent(r) && String(r.pay_group || '').trim().toUpperCase() === pg;
-        });
-        if (dupPg) return "Pay Group '" + (data.pay_group || pg) + "' already exists.";
+      var category = val('pg_category');
+      if (pg && records.some(function(r) { return !isCurrent(r) && String(r.pay_group || '').trim().toUpperCase() === pg; })) return "Pay Group '" + pg + "' already exists.";
+      if (category && records.some(function(r) { return !isCurrent(r) && String(r.pg_category || '').trim().toUpperCase() === category; })) return "Pay Group category '" + category + "' already exists.";
+    } else if (resolved === 'designations') {
+      var dName = val('designation') || val('designation_name') || val('name');
+      var dCat = val('pg_category');
+      var dPg = val('pay_group');
+      var dUnit = val('unit_id');
+      if (dName && records.some(function(r) {
+        if (isCurrent(r)) return false;
+        var rName = String(r.designation || r.designation_name || '').trim().toUpperCase();
+        var rCat = String(r.pg_category || '').trim().toUpperCase();
+        var rPg = String(r.pay_group || '').trim().toUpperCase();
+        var rUnit = String(r.unit_id || '').trim().toUpperCase();
+        var sameUnit = (!dUnit && !rUnit) || (dUnit && rUnit === dUnit);
+        var sameCat = (!dCat && !rCat) || (dCat && rCat === dCat);
+        var samePg = (!dPg && !rPg) || (dPg && rPg === dPg);
+        return rName === dName && sameUnit && sameCat && samePg;
+      })) {
+        return "Designation '" + (data.designation || dName) + "' already exists for this department, category and pay group.";
       }
     } else if (resolved === 'employee_types') {
       var etCode = val('emp_type_code');
@@ -651,13 +743,13 @@ var Database = (function() {
         });
         if (dupAct) return "An acting assignment for Staff ID '" + (data.staff_id || actStaff) + "' on date '" + actFrom + "' already exists.";
       }
-    } else if (resolved === 'self_retirements') {
+    } else if (resolved === 'employee_separations' || resolved === 'self_retirements') {
       var retStaff = val('staff_id');
       if (retStaff) {
         var dupRet = records.find(function(r) {
           return !isCurrent(r) && String(r.staff_id || '').trim().toUpperCase() === retStaff;
         });
-        if (dupRet) return "A retirement/resignation record for Staff ID '" + (data.staff_id || retStaff) + "' already exists.";
+        if (dupRet) return "A separation record for Staff ID '" + (data.staff_id || retStaff) + "' already exists.";
       }
     } else if (resolved === 'employee_migrations') {
       var mNew = val('new_staff_id');
@@ -685,20 +777,30 @@ var Database = (function() {
         });
         if (dupAct) return "An action of type '" + (data.action_type || actType) + "' for Staff ID '" + (data.staff_id || actStaff) + "' already exists with same reference/date.";
       }
-    } else if (resolved === 'workforce_setup') {
-      var wsDep = val('dep_id') || val('department_code');
-      var wsStn = val('station_id') || val('station_code');
-      var wsPg = val('pay_group');
-      var wsDesig = val('designation');
-      if (wsDep && wsStn && wsPg) {
-        var dupWs = records.find(function(r) {
-          return !isCurrent(r) &&
-                 (String(r.dep_id || r.department_code || '').trim().toUpperCase() === wsDep) &&
-                 (String(r.station_id || r.station_code || '').trim().toUpperCase() === wsStn) &&
-                 (String(r.pay_group || '').trim().toUpperCase() === wsPg) &&
-                 (!wsDesig || String(r.designation || '').trim().toUpperCase() === wsDesig);
+    } else if (resolved === 'positions') {
+      var pTitle = val('position_title') || val('title');
+      if (pTitle) {
+        var dupP = records.find(function(r) {
+          return !isCurrent(r) && String(r.position_title || '').trim().toUpperCase() === pTitle;
         });
-        if (dupWs) return "A workforce setup post already exists for this department, station and pay group.";
+        if (dupP) return "A position with Title '" + (data.position_title || pTitle) + "' already exists.";
+      }
+
+    } else if (resolved === 'workforce_setup') {
+      var wsUnit = val('unit_id') || val('dep_id') || val('department_code');
+      var wsStn = val('station_id') || val('station_code');
+      var wsPos = val('position_id') || val('designation');
+      var wsPg = val('pay_group');
+      if (wsStn && wsPg && (wsUnit || wsPos)) {
+        var dupWs = records.find(function(r) {
+          if (isCurrent(r)) return false;
+          var rUnit = String(r.unit_id || r.dep_id || r.department_code || '').trim().toUpperCase();
+          var rStn = String(r.station_id || r.station_code || '').trim().toUpperCase();
+          var rPos = String(r.position_id || r.designation || '').trim().toUpperCase();
+          var rPg = String(r.pay_group || '').trim().toUpperCase();
+          return rStn === wsStn && rPg === wsPg && (!wsUnit || rUnit === wsUnit) && (!wsPos || rPos === wsPos);
+        });
+        if (dupWs) return "A workforce setup quota already exists for this station, unit, position and pay group.";
       }
     } else if (resolved === 'courses') {
       var cCode = val('course_code');
@@ -737,7 +839,7 @@ var Database = (function() {
     }
 
     // 2. Universal Identical Values Check across all tables:
-    var ignoreKeys = [pkCol.toLowerCase(), 'id', '_rownumber', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'];
+    var ignoreKeys = [pkCol.toLowerCase(), 'id', '_rownumber', 'created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
     var inputKeys = Object.keys(data).filter(function(k) {
       var lk = k.toLowerCase().replace(/[^a-z0-9]/g, '');
       return ignoreKeys.indexOf(lk) === -1 && data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== '';
@@ -772,8 +874,15 @@ var Database = (function() {
    */
   function getAll(tableName, forceRefresh) {
     var resolved = resolveTableName(tableName);
-    if (!forceRefresh && memoryCache[resolved]) {
-      return memoryCache[resolved];
+    if (!forceRefresh) {
+      if (memoryCache[resolved]) {
+        return memoryCache[resolved];
+      }
+      var cached = ServerCache.get('tbl_' + resolved);
+      if (cached && Array.isArray(cached) && cached.length > 0) {
+        memoryCache[resolved] = cached;
+        return cached;
+      }
     }
 
     var sheet = getSheet(resolved, true);
@@ -783,6 +892,7 @@ var Database = (function() {
     var rawValues = dataRange.getValues();
     if (!rawValues || rawValues.length <= 1) {
       memoryCache[resolved] = [];
+      ServerCache.put('tbl_' + resolved, [], 3600);
       return [];
     }
 
@@ -793,6 +903,14 @@ var Database = (function() {
       headers.pop();
     }
     headersCache[sheet.getName()] = headers;
+
+    if (resolved === 'shifts' && (headers.indexOf('station_code') !== -1 || headers.indexOf('station_id') !== -1 || headers.indexOf('dep_id') !== -1)) {
+      try {
+        cleanObsoleteShiftColumns();
+      } catch (e) {
+        console.warn('Auto-clean obsolete shift columns:', e);
+      }
+    }
 
     var records = [];
     for (var r = 1; r < rawValues.length; r++) {
@@ -830,18 +948,82 @@ var Database = (function() {
 
       if (hasData && !isDeleted) {
         if (resolved === 'workforce_setup') {
-          var staffCount = obj.staff_number !== undefined && obj.staff_number !== '' ? obj.staff_number : (obj.set_up !== undefined && obj.set_up !== '' ? obj.set_up : obj.sanctioned_posts);
+          var staffCount = obj.sanctioned_posts !== undefined && obj.sanctioned_posts !== '' ? obj.sanctioned_posts : (obj.staff_number !== undefined && obj.staff_number !== '' ? obj.staff_number : obj.set_up);
           if (staffCount !== undefined && staffCount !== null) {
+            obj.sanctioned_posts = staffCount;
             obj.staff_number = staffCount;
             obj.set_up = staffCount;
           }
+          if (!obj.position_id && obj.designation) {
+            obj.position_id = obj.designation;
+          }
+          if (!obj.duty_pattern && obj.shift_type) obj.duty_pattern = obj.shift_type;
+          if (!obj.shift_type && obj.duty_pattern) obj.shift_type = obj.duty_pattern;
+        }
+        if (resolved === 'shifts') {
+          delete obj.station_code;
+          delete obj.station_id;
+          delete obj.dep_id;
         }
         records.push(obj);
       }
     }
 
     memoryCache[resolved] = records;
+    ServerCache.put('tbl_' + resolved, records, 3600);
     return records;
+  }
+
+  /**
+   * Resolves ancestral Directorate (dir_id) and Department (dep_id) for a given unit identifier.
+   * Traverses organization_units upwards to eliminate blank hierarchy fields in Google Sheets.
+   */
+  function resolveUnitAncestry(unitIdentifier) {
+    if (!unitIdentifier) return { dir_id: '', dep_id: '' };
+    try {
+      var orgUnits = getAll('organization_units');
+      if (!orgUnits || !orgUnits.length) return { dir_id: '', dep_id: '' };
+      var uMap = {};
+      orgUnits.forEach(function(u) {
+        if (u.unit_id) uMap[String(u.unit_id).trim().toUpperCase()] = u;
+        if (u.unit_code) uMap[String(u.unit_code).trim().toUpperCase()] = u;
+      });
+      var cleanKey = String(unitIdentifier).trim().toUpperCase();
+      var current = uMap[cleanKey];
+      if (!current) return { dir_id: '', dep_id: '' };
+
+      var curr = current;
+      var visited = {};
+      var rootDir = null;
+      var parentDep = null;
+      var ancestry = [];
+
+      while (curr && !visited[curr.unit_id]) {
+        visited[curr.unit_id] = true;
+        ancestry.unshift(curr);
+        var type = String(curr.unit_type || '').toUpperCase();
+        if (type === 'DIRECTORATE' || type === 'HEADQUARTER' || !curr.parent_unit_id) {
+          if (!rootDir) rootDir = curr;
+        } else if (type === 'DEPARTMENT' || type === 'DIVISION') {
+          if (!parentDep) parentDep = curr;
+        }
+        if (curr.parent_unit_id) {
+          curr = uMap[String(curr.parent_unit_id).trim().toUpperCase()];
+        } else {
+          break;
+        }
+      }
+
+      if (!rootDir && ancestry.length > 0) rootDir = ancestry[0];
+      if (!parentDep && ancestry.length > 1) parentDep = ancestry[1];
+
+      return {
+        dir_id: rootDir ? (rootDir.unit_code || rootDir.unit_id || rootDir.unit_name || '') : '',
+        dep_id: parentDep ? (parentDep.unit_code || parentDep.unit_id || parentDep.unit_name || '') : (rootDir ? (rootDir.unit_code || rootDir.unit_id || '') : '')
+      };
+    } catch (e) {
+      return { dir_id: '', dep_id: '' };
+    }
   }
 
   /**
@@ -851,15 +1033,16 @@ var Database = (function() {
   function insert(tableName, data, pkPrefix, pkColName) {
     var lock = LockService.getScriptLock();
     try {
-      lock.waitLock(12000);
+      lock.waitLock(25000);
       var resolved = resolveTableName(tableName);
       var sheet = getSheet(resolved, true);
       var headers = getHeaders(sheet);
 
-      // Handle workforce_setup field synonyms (staff_number, set_up, sanctioned_posts)
+      // Handle workforce_setup field synonyms (sanctioned_posts, staff_number, set_up, position_id, designation)
       if (resolved === 'workforce_setup') {
-        var staffVal = findDataValue(data, 'staff_number') || findDataValue(data, 'set_up') || findDataValue(data, 'sanctioned_posts');
+        var staffVal = findDataValue(data, 'sanctioned_posts') || findDataValue(data, 'staff_number') || findDataValue(data, 'set_up');
         if (staffVal !== undefined && staffVal !== null && staffVal !== '') {
+          data['sanctioned_posts'] = staffVal;
           data['staff_number'] = staffVal;
           data['set_up'] = staffVal;
         }
@@ -868,6 +1051,36 @@ var Database = (function() {
           if (!data['station_code']) data['station_code'] = stnVal;
           if (!data['station_id']) data['station_id'] = stnVal;
         }
+        var posVal = findDataValue(data, 'position_id') || findDataValue(data, 'designation');
+        if (posVal) {
+          if (!data['position_id']) data['position_id'] = posVal;
+          if (!data['designation']) data['designation'] = posVal;
+        }
+        var dpVal = findDataValue(data, 'duty_pattern') || findDataValue(data, 'shift_type');
+        if (dpVal) {
+          data['duty_pattern'] = dpVal;
+          data['shift_type'] = dpVal;
+        }
+        // Auto-resolve dir_id & dep_id from unit_id so Google Sheet columns are never blank
+        var uId = findDataValue(data, 'unit_id');
+        if (uId && (!findDataValue(data, 'dir_id') || !findDataValue(data, 'dep_id'))) {
+          var resolvedHier = resolveUnitAncestry(uId);
+          if (!findDataValue(data, 'dir_id') && resolvedHier.dir_id) {
+            data['dir_id'] = resolvedHier.dir_id;
+          }
+          if (!findDataValue(data, 'dep_id') && resolvedHier.dep_id) {
+            data['dep_id'] = resolvedHier.dep_id;
+          }
+        }
+      }
+
+      // Handle shifts field normalization (store canonical unique ID: unit_id)
+      if (resolved === 'shifts') {
+        var shUnit = findDataValue(data, 'unit_id') || findDataValue(data, 'dep_id');
+        if (shUnit) data['unit_id'] = shUnit;
+        delete data['station_code'];
+        delete data['station_id'];
+        delete data['dep_id'];
       }
 
       var pkCol = pkColName || (headers.length > 0 ? headers[0] : 'id');
@@ -887,7 +1100,7 @@ var Database = (function() {
         var inferred = defH ? defH.slice() : Object.keys(data).filter(function(k) { return k && k.trim(); });
         var pk = pkColName || (inferred.length > 0 ? inferred[0] : 'id');
         if (inferred.indexOf(pk) === -1) inferred.unshift(pk);
-        var auditCols = ['created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'];
+        var auditCols = ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
         for (var a = 0; a < auditCols.length; a++) {
           if (inferred.indexOf(auditCols[a]) === -1) inferred.push(auditCols[a]);
         }
@@ -938,11 +1151,11 @@ var Database = (function() {
       if (headers.indexOf('created_at') !== -1 && !findDataValue(data, 'created_at')) {
         data['created_at'] = nowIso;
       }
-      if (headers.indexOf('updated_at') !== -1 && !findDataValue(data, 'updated_at')) {
-        data['updated_at'] = nowIso;
-      }
       if (headers.indexOf('created_by') !== -1 && !findDataValue(data, 'created_by')) {
         data['created_by'] = currentUser;
+      }
+      if (headers.indexOf('updated_at') !== -1 && !findDataValue(data, 'updated_at')) {
+        data['updated_at'] = nowIso;
       }
       if (headers.indexOf('updated_by') !== -1 && !findDataValue(data, 'updated_by')) {
         data['updated_by'] = currentUser;
@@ -980,13 +1193,29 @@ var Database = (function() {
       ServerCache.remove('cache_hrm_details');
       ServerCache.remove('cache_airline_analytics');
 
+      // Release lock as early as possible before external audit logging
+      try {
+        lock.releaseLock();
+        lock = null;
+      } catch (eLock) {
+        lock = null;
+      }
+
       if (typeof AuditService !== 'undefined' && AuditService.log) {
-        AuditService.log('INSERT', resolved, String(findDataValue(data, pkCol) || ''), '', JSON.stringify(data));
+        try {
+          AuditService.log('INSERT', resolved, String(findDataValue(data, pkCol) || ''), '', JSON.stringify(data));
+        } catch (eAudit) {
+          console.warn('AuditService log warning:', eAudit);
+        }
       }
 
       return data;
     } finally {
-      lock.releaseLock();
+      if (lock) {
+        try {
+          lock.releaseLock();
+        } catch (eRelease) {}
+      }
     }
   }
 
@@ -1008,7 +1237,7 @@ var Database = (function() {
         var inferred = defH ? defH.slice() : Object.keys(firstRec).filter(function(k) { return k && k.trim(); });
         var pk = pkColName || (inferred.length > 0 ? inferred[0] : 'id');
         if (inferred.indexOf(pk) === -1) inferred.unshift(pk);
-        var auditCols = ['created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted'];
+        var auditCols = ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
         for (var a = 0; a < auditCols.length; a++) {
           if (inferred.indexOf(auditCols[a]) === -1) inferred.push(auditCols[a]);
         }
@@ -1033,6 +1262,7 @@ var Database = (function() {
         if (resolved === 'workforce_setup') {
           var staffVal = findDataValue(data, 'staff_number') || findDataValue(data, 'set_up') || findDataValue(data, 'sanctioned_posts');
           if (staffVal !== undefined && staffVal !== null && staffVal !== '') {
+            data['sanctioned_posts'] = staffVal;
             data['staff_number'] = staffVal;
             data['set_up'] = staffVal;
           }
@@ -1041,6 +1271,34 @@ var Database = (function() {
             if (!data['station_code']) data['station_code'] = stnVal;
             if (!data['station_id']) data['station_id'] = stnVal;
           }
+          var posVal = findDataValue(data, 'position_id') || findDataValue(data, 'designation');
+          if (posVal) {
+            if (!data['position_id']) data['position_id'] = posVal;
+            if (!data['designation']) data['designation'] = posVal;
+          }
+          var dpValBatch = findDataValue(data, 'duty_pattern') || findDataValue(data, 'shift_type');
+          if (dpValBatch) {
+            data['duty_pattern'] = dpValBatch;
+            data['shift_type'] = dpValBatch;
+          }
+          var uId = findDataValue(data, 'unit_id');
+          if (uId && (!findDataValue(data, 'dir_id') || !findDataValue(data, 'dep_id'))) {
+            var resolvedHier = resolveUnitAncestry(uId);
+            if (!findDataValue(data, 'dir_id') && resolvedHier.dir_id) {
+              data['dir_id'] = resolvedHier.dir_id;
+            }
+            if (!findDataValue(data, 'dep_id') && resolvedHier.dep_id) {
+              data['dep_id'] = resolvedHier.dep_id;
+            }
+          }
+        }
+
+        if (resolved === 'shifts') {
+          var shUnit = findDataValue(data, 'unit_id') || findDataValue(data, 'dep_id');
+          if (shUnit) data['unit_id'] = shUnit;
+          delete data['station_code'];
+          delete data['station_id'];
+          delete data['dep_id'];
         }
 
         if (!findDataValue(data, pkCol)) {
@@ -1050,11 +1308,11 @@ var Database = (function() {
         if (headers.indexOf('created_at') !== -1 && !findDataValue(data, 'created_at')) {
           data['created_at'] = nowIso;
         }
-        if (headers.indexOf('updated_at') !== -1 && !findDataValue(data, 'updated_at')) {
-          data['updated_at'] = nowIso;
-        }
         if (headers.indexOf('created_by') !== -1 && !findDataValue(data, 'created_by')) {
           data['created_by'] = currentUser;
+        }
+        if (headers.indexOf('updated_at') !== -1 && !findDataValue(data, 'updated_at')) {
+          data['updated_at'] = nowIso;
         }
         if (headers.indexOf('updated_by') !== -1 && !findDataValue(data, 'updated_by')) {
           data['updated_by'] = currentUser;
@@ -1122,6 +1380,7 @@ var Database = (function() {
       if (resolved === 'workforce_setup') {
         var staffVal = findDataValue(data, 'staff_number') || findDataValue(data, 'set_up') || findDataValue(data, 'sanctioned_posts');
         if (staffVal !== undefined && staffVal !== null && staffVal !== '') {
+          data['sanctioned_posts'] = staffVal;
           data['staff_number'] = staffVal;
           data['set_up'] = staffVal;
         }
@@ -1130,6 +1389,34 @@ var Database = (function() {
           if (!data['station_code']) data['station_code'] = stnVal;
           if (!data['station_id']) data['station_id'] = stnVal;
         }
+        var posVal = findDataValue(data, 'position_id') || findDataValue(data, 'designation');
+        if (posVal) {
+          if (!data['position_id']) data['position_id'] = posVal;
+          if (!data['designation']) data['designation'] = posVal;
+        }
+        var dpValUpd = findDataValue(data, 'duty_pattern') || findDataValue(data, 'shift_type');
+        if (dpValUpd) {
+          data['duty_pattern'] = dpValUpd;
+          data['shift_type'] = dpValUpd;
+        }
+        var uId = findDataValue(data, 'unit_id');
+        if (uId && (!findDataValue(data, 'dir_id') || !findDataValue(data, 'dep_id'))) {
+          var resolvedHier = resolveUnitAncestry(uId);
+          if (!findDataValue(data, 'dir_id') && resolvedHier.dir_id) {
+            data['dir_id'] = resolvedHier.dir_id;
+          }
+          if (!findDataValue(data, 'dep_id') && resolvedHier.dep_id) {
+            data['dep_id'] = resolvedHier.dep_id;
+          }
+        }
+      }
+
+      if (resolved === 'shifts') {
+        var shUnit = findDataValue(data, 'unit_id') || findDataValue(data, 'dep_id');
+        if (shUnit) data['unit_id'] = shUnit;
+        delete data['station_code'];
+        delete data['station_id'];
+        delete data['dep_id'];
       }
 
       if (resolved === 'employees') {
@@ -1140,24 +1427,60 @@ var Database = (function() {
         }
       }
 
-      var pkIndex = headers.indexOf(pkColumn.toLowerCase());
+      var pkIndex = -1;
+      var pkNorm = pkColumn ? String(pkColumn).toLowerCase().trim() : '';
+      for (var hi = 0; hi < headers.length; hi++) {
+        var hNorm = String(headers[hi]).toLowerCase().trim();
+        if (hNorm === pkNorm || hNorm === pkNorm.replace(/[^a-z0-9]/g, '')) {
+          pkIndex = hi;
+          break;
+        }
+      }
       if (pkIndex === -1) {
-        throw new Error("Primary key column '" + pkColumn + "' not found in table '" + resolved + "'.");
+        pkIndex = headers.indexOf('id');
+      }
+      if (pkIndex === -1 && headers.length > 0) {
+        pkIndex = 0;
       }
 
       var lastRow = sheet.getLastRow();
       if (lastRow <= 1) {
-        throw new Error("Record with ID '" + id + "' not found in table '" + resolved + "'.");
+        throw new Error("Table '" + resolved + "' has no data rows to update.");
       }
 
-      var pkValues = sheet.getRange(2, pkIndex + 1, lastRow - 1, 1).getValues();
       var targetRow = -1;
       var strId = String(id).trim().toLowerCase();
+      var cleanNumId = strId.replace(/^#/, '');
 
-      for (var r = 0; r < pkValues.length; r++) {
-        if (String(pkValues[r][0]).trim().toLowerCase() === strId) {
-          targetRow = r + 2;
-          break;
+      // Scan primary key column
+      if (pkIndex !== -1) {
+        var pkValues = sheet.getRange(2, pkIndex + 1, lastRow - 1, 1).getValues();
+        for (var r = 0; r < pkValues.length; r++) {
+          var cellVal = String(pkValues[r][0]).trim().toLowerCase();
+          if (cellVal === strId || cellVal === cleanNumId) {
+            targetRow = r + 2;
+            break;
+          }
+        }
+      }
+
+      // Fallback 1: Scan column 1 (first column) if pkIndex wasn't 0
+      if (targetRow === -1 && pkIndex !== 0) {
+        var col0Values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (var r0 = 0; r0 < col0Values.length; r0++) {
+          var c0Val = String(col0Values[r0][0]).trim().toLowerCase();
+          if (c0Val === strId || c0Val === cleanNumId) {
+            targetRow = r0 + 2;
+            break;
+          }
+        }
+      }
+
+      // Fallback 2: Check if id is an explicit sheet row number
+      if (targetRow === -1) {
+        var rowNum = parseInt(cleanNumId, 10);
+        if (!isNaN(rowNum) && rowNum >= 2 && rowNum <= lastRow) {
+          targetRow = rowNum;
         }
       }
 
@@ -1165,7 +1488,7 @@ var Database = (function() {
         throw new Error("Record with ID '" + id + "' not found in table '" + resolved + "'.");
       }
 
-      var dupError = checkDuplicate(resolved, data, null, id, pkColumn);
+      var dupError = checkDuplicate(resolved, data, null, id, pkColumn, targetRow);
       if (dupError) {
         var err = new Error(dupError);
         err.isDuplicate = true;
@@ -1207,13 +1530,29 @@ var Database = (function() {
       ServerCache.remove('cache_hrm_details');
       ServerCache.remove('cache_airline_analytics');
 
+      // Release lock early before audit logging
+      try {
+        lock.releaseLock();
+        lock = null;
+      } catch (eLock) {
+        lock = null;
+      }
+
       if (typeof AuditService !== 'undefined' && AuditService.log) {
-        AuditService.log('UPDATE', resolved, String(id), JSON.stringify(oldRow), JSON.stringify(newRow));
+        try {
+          AuditService.log('UPDATE', resolved, String(id), JSON.stringify(oldRow), JSON.stringify(newRow));
+        } catch (eAudit) {
+          console.warn('AuditService log warning:', eAudit);
+        }
       }
 
       return data;
     } finally {
-      lock.releaseLock();
+      if (lock) {
+        try {
+          lock.releaseLock();
+        } catch (eRelease) {}
+      }
     }
   }
 
@@ -1227,29 +1566,70 @@ var Database = (function() {
       var resolved = resolveTableName(tableName);
       var sheet = getSheet(resolved, true);
       var headers = getHeaders(sheet);
-      var pkIndex = headers.indexOf(pkColumn.toLowerCase());
+      var pkIndex = -1;
+      var pkNorm = pkColumn ? String(pkColumn).toLowerCase().trim() : '';
+      for (var hi = 0; hi < headers.length; hi++) {
+        var hNorm = String(headers[hi]).toLowerCase().trim();
+        if (hNorm === pkNorm || hNorm === pkNorm.replace(/[^a-z0-9]/g, '')) {
+          pkIndex = hi;
+          break;
+        }
+      }
       if (pkIndex === -1) {
-        throw new Error("Primary key column '" + pkColumn + "' not found in table '" + resolved + "'.");
+        pkIndex = headers.indexOf('id');
+      }
+      if (pkIndex === -1 && headers.length > 0) {
+        pkIndex = 0;
       }
 
       var lastRow = sheet.getLastRow();
       if (lastRow <= 1) {
-        throw new Error("Record with ID '" + id + "' not found in table '" + resolved + "'.");
+        invalidateCache(resolved);
+        delete memoryCache[resolved];
+        ServerCache.remove('tbl_' + resolved);
+        ServerCache.remove('cache_master_data');
+        return { deleted: true, success: true, message: "Table '" + resolved + "' has no data rows. Cache synchronized." };
       }
 
-      var pkValues = sheet.getRange(2, pkIndex + 1, lastRow - 1, 1).getValues();
       var targetRow = -1;
       var strId = String(id).trim().toLowerCase();
+      var cleanNumId = strId.replace(/^#/, '');
 
-      for (var r = 0; r < pkValues.length; r++) {
-        if (String(pkValues[r][0]).trim().toLowerCase() === strId) {
-          targetRow = r + 2;
-          break;
+      if (pkIndex !== -1) {
+        var pkValues = sheet.getRange(2, pkIndex + 1, lastRow - 1, 1).getValues();
+        for (var r = 0; r < pkValues.length; r++) {
+          var cellVal = String(pkValues[r][0]).trim().toLowerCase();
+          if (cellVal === strId || cellVal === cleanNumId) {
+            targetRow = r + 2;
+            break;
+          }
+        }
+      }
+
+      if (targetRow === -1 && pkIndex !== 0) {
+        var col0Values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (var r0 = 0; r0 < col0Values.length; r0++) {
+          var c0Val = String(col0Values[r0][0]).trim().toLowerCase();
+          if (c0Val === strId || c0Val === cleanNumId) {
+            targetRow = r0 + 2;
+            break;
+          }
         }
       }
 
       if (targetRow === -1) {
-        throw new Error("Record with ID '" + id + "' not found in table '" + resolved + "'.");
+        var rowNum = parseInt(cleanNumId, 10);
+        if (!isNaN(rowNum) && rowNum >= 2 && rowNum <= lastRow) {
+          targetRow = rowNum;
+        }
+      }
+
+      if (targetRow === -1) {
+        invalidateCache(resolved);
+        delete memoryCache[resolved];
+        ServerCache.remove('tbl_' + resolved);
+        ServerCache.remove('cache_master_data');
+        return { deleted: true, success: true, message: "Record with ID '" + id + "' is already absent from table '" + resolved + "'. Cache synchronized." };
       }
 
       var isDeletedIdx = headers.indexOf('is_deleted');
@@ -1285,13 +1665,29 @@ var Database = (function() {
       ServerCache.remove('cache_hrm_details');
       ServerCache.remove('cache_airline_analytics');
 
+      // Release lock early before audit logging
+      try {
+        lock.releaseLock();
+        lock = null;
+      } catch (eLock) {
+        lock = null;
+      }
+
       if (typeof AuditService !== 'undefined' && AuditService.log) {
-        AuditService.log('DELETE', resolved, String(id), '', 'Marked deleted');
+        try {
+          AuditService.log('DELETE', resolved, String(id), '', 'Marked deleted');
+        } catch (eAudit) {
+          console.warn('AuditService log warning:', eAudit);
+        }
       }
 
       return { success: true, deletedId: id };
     } finally {
-      lock.releaseLock();
+      if (lock) {
+        try {
+          lock.releaseLock();
+        } catch (eRelease) {}
+      }
     }
   }
 
@@ -1395,8 +1791,99 @@ var Database = (function() {
       }
     }
 
+    try {
+      cleanObsoleteShiftColumns();
+    } catch (eClean) {
+      console.warn('cleanObsoleteShiftColumns note:', eClean);
+    }
+
     invalidateCache();
     return results;
+  }
+
+  /**
+   * Solution A Schema Normalization:
+   * Migrates any legacy dep_id and station_id values into unit_id and station_code,
+   * then deletes the obsolete columns dep_id and station_id from the shifts worksheet.
+   */
+  function cleanObsoleteShiftColumns() {
+    var lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(25000);
+      var sheet = getSheet('shifts', false);
+      if (!sheet) return false;
+      var lastRow = sheet.getLastRow();
+      var lastCol = sheet.getLastColumn();
+      if (lastRow > 1 && lastCol >= 1) {
+        var headers = getHeaders(sheet);
+        var unitIdx = headers.indexOf('unit_id');
+        var depIdx = headers.indexOf('dep_id');
+        var stnCodeIdx = headers.indexOf('station_code');
+        var stnIdIdx = headers.indexOf('station_id');
+
+        var range = sheet.getRange(2, 1, lastRow - 1, lastCol);
+        var values = range.getValues();
+        var modified = false;
+
+        for (var r = 0; r < values.length; r++) {
+          var row = values[r];
+          // Migrate station_id into station_code if station_code is blank
+          if (stnIdIdx !== -1 && stnCodeIdx !== -1) {
+            var stnId = String(row[stnIdIdx] || '').trim();
+            var stnCode = String(row[stnCodeIdx] || '').trim();
+            if (!stnCode && stnId) {
+              row[stnCodeIdx] = stnId;
+              modified = true;
+            }
+          }
+          // Migrate dep_id into unit_id if unit_id is blank
+          if (depIdx !== -1 && unitIdx !== -1) {
+            var depVal = String(row[depIdx] || '').trim();
+            var unitVal = String(row[unitIdx] || '').trim();
+            if (!unitVal && depVal) {
+              row[unitIdx] = depVal;
+              modified = true;
+            }
+          }
+        }
+        if (modified) {
+          range.setValues(values);
+        }
+      }
+
+      // Safely delete obsolete columns dep_id, station_id, and station_code
+      removeObsoleteColumn('shifts', 'dep_id');
+      removeObsoleteColumn('shifts', 'station_id');
+      removeObsoleteColumn('shifts', 'station_code');
+
+      invalidateCache('shifts');
+      return true;
+    } finally {
+      lock.releaseLock();
+    }
+  }
+
+  /**
+   * Safely deletes an obsolete column from a worksheet if it exists.
+   * Clears header cache and table cache.
+   */
+  function removeObsoleteColumn(tableName, columnName) {
+    var sheet = getSheet(tableName, false);
+    if (!sheet) return false;
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < 1) return false;
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var normTarget = String(columnName || '').trim().toLowerCase().replace(/[\s\-\.]+/g, '_');
+    for (var i = 0; i < headers.length; i++) {
+      var normH = String(headers[i] || '').trim().toLowerCase().replace(/[\s\-\.]+/g, '_');
+      if (normH === normTarget) {
+        sheet.deleteColumn(i + 1);
+        delete headersCache[sheet.getName()];
+        invalidateCache(tableName);
+        return true;
+      }
+    }
+    return false;
   }
 
   return {
@@ -1412,6 +1899,8 @@ var Database = (function() {
     deleteRow: deleteRow,
     softDelete: softDelete,
     invalidateCache: invalidateCache,
-    ensureAllTablesAndAuditColumns: ensureAllTablesAndAuditColumns
+    ensureAllTablesAndAuditColumns: ensureAllTablesAndAuditColumns,
+    cleanObsoleteShiftColumns: cleanObsoleteShiftColumns,
+    removeObsoleteColumn: removeObsoleteColumn
   };
 })();

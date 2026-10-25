@@ -135,7 +135,7 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--text-white);
-    line-height: 1.0;
+    line-height: 1.3;
     margin: 0;
     padding: 0;
     white-space: nowrap;
@@ -350,10 +350,11 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     background-color: var(--surface-bg);
     position: relative;
+    padding: 0;
+    margin: 0;
   }
 
   /* Footer */
@@ -658,40 +659,59 @@
   /* --- Dynamic Form Shell & Inputs --- */
   .form-shell-container {
     width: 100%;
-    max-width: 860px;
-    margin: 0.4rem auto;
+    min-width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
     background: var(--surface-card);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
+    min-height: 100%;
+    flex: 1;
   }
 
   .form-shell-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.6rem 0.95rem;
+    padding: 0.65rem 1.25rem;
     background-color: var(--surface-dark);
     color: var(--text-white);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    flex-shrink: 0;
+  }
+
+  .form-shell-header p {
+    color: var(--text-white);
   }
 
   .form-shell-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.45rem 0.85rem;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem !important;
     border-top: 1px solid var(--border-light);
     background-color: var(--surface-card);
+    border-radius: 0;
+    margin-top: auto;
+    position: static !important;
+    box-shadow: none !important;
+    flex-shrink: 0;
+  }
+
+  .form-shell-footer > :only-child {
+    margin-left: auto;
   }
 
   .form-two-column-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem 0.65rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem 1.25rem;
   }
 
   @media (max-width: 640px) {
@@ -752,6 +772,18 @@
     color: #000000 !important;
   }
 
+  /* Hide number input spin buttons / up-down arrows across all browsers */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
   select.form-input {
     color: #000000 !important;
     font-weight: 500;
@@ -805,13 +837,16 @@
   /* --- Structured Data Grid (View Forms) --- */
   .data-grid-shell {
     width: 100%;
+    min-width: 100%;
     background: var(--surface-card);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-sm);
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   .grid-header-toolbar {
@@ -859,34 +894,82 @@
     border-color: var(--brand-teal);
   }
 
+  /* Universal Compact Spreadsheet Grid for all View Forms (ORG, HRM, TQC) */
   .standard-data-table {
-    width: 100%;
+    width: max-content !important;
+    table-layout: auto !important;
     text-align: left;
-    font-size: 0.725rem;
-    border-collapse: collapse;
+    font-size: 11px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background-color: #ffffff;
   }
 
   .standard-data-table thead {
-    background-color: var(--surface-alt);
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-light);
+    background-color: #f1f5f9;
+    color: #1e293b;
     position: sticky;
     top: 0;
     z-index: 10;
   }
 
   .standard-data-table th {
-    padding: 0.45rem 0.6rem;
-    font-weight: 700;
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    background-color: #f1f5f9;
+    border-bottom: 2px solid #cbd5e1 !important;
+    border-right: 1px solid #cbd5e1 !important;
+    border-top: 1px solid #cbd5e1 !important;
+    border-left: none !important;
+    white-space: nowrap !important;
+    width: auto !important;
+    max-width: none !important;
+    line-height: 1.3 !important;
+    height: 24px;
+    box-sizing: border-box;
+  }
+
+  .standard-data-table th:first-child {
+    border-left: 1px solid #cbd5e1 !important;
   }
 
   .standard-data-table td {
-    padding: 0.45rem 0.6rem;
-    border-bottom: 1px solid #f8fafc;
+    padding: 2px 5px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-right: 1px solid #e2e8f0 !important;
+    border-top: none !important;
+    border-left: none !important;
+    white-space: nowrap !important;
+    width: auto !important;
+    max-width: none !important;
+    color: #0f172a !important;
+    background-color: #ffffff;
+    height: 22px;
+    box-sizing: border-box;
   }
 
-  .standard-data-table tr:hover {
-    background-color: var(--surface-alt);
+  .standard-data-table td:first-child {
+    border-left: 1px solid #e2e8f0 !important;
+  }
+
+  .standard-data-table tr:hover td {
+    background-color: #f0fdf4 !important;
+  }
+
+  .btn-table-edit,
+  .btn-table-delete {
+    padding: 1px 5px !important;
+    font-size: 10.5px !important;
+    border-radius: 3px !important;
+    line-height: 1.2 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    height: 20px !important;
   }
 
   .grid-pagination-bar {
@@ -1168,9 +1251,11 @@
     gap: 0.5rem;
     overflow-x: auto;
     white-space: nowrap;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
+    padding: 0.45rem 0.85rem;
+    margin: 0;
     flex-shrink: 0;
+    background: var(--surface-bg);
+    border-bottom: 1px solid var(--border-light);
   }
 
   .form-tab-btn {

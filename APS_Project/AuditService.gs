@@ -22,6 +22,8 @@
 
 var AuditService = (function() {
   
+  var _cachedAuditSheet = null;
+
   /**
    * Retrieves or automatically initializes the 'audit_logs' spreadsheet tab.
    * Ensures the header row matches standard schema definition:
@@ -32,6 +34,15 @@ var AuditService = (function() {
    * @throws {Error} If the underlying Google Spreadsheet cannot be accessed.
    */
   function getAuditSheet() {
+    if (_cachedAuditSheet) {
+      try {
+        _cachedAuditSheet.getName();
+        return _cachedAuditSheet;
+      } catch (eCache) {
+        _cachedAuditSheet = null;
+      }
+    }
+
     var ss = null;
 
     // Strategy 1: Attempt to retrieve spreadsheet instance through Database DAO
@@ -59,6 +70,7 @@ var AuditService = (function() {
       // Append standard column headers
       sheet.appendRow(['log_id', 'user_id', 'action', 'table_name', 'record_id', 'old_value', 'new_value', 'timestamp']);
     }
+    _cachedAuditSheet = sheet;
     return sheet;
   }
 

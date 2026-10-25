@@ -121,7 +121,7 @@ var tqcViews = window.tqcViews = {
     this.currentInputFormKey = selectedKey;
 
     var html = `
-      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+      <div style="width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; padding: 0; margin: 0;">
         <div class="form-tabs-bar" id="tqc-input-tabs-bar">
     `;
 
@@ -137,7 +137,8 @@ var tqcViews = window.tqcViews = {
 
     html += `
         </div>
-        <div id="tqc-input-mount" style="flex: 1;"></div>
+        <!-- Active Form Mount Stage (Zero padding, full width & height, dynamic scroll) -->
+        <div id="tqc-input-mount" style="flex: 1; min-height: 0; width: 100%; overflow: auto; padding: 0; margin: 0; display: flex; flex-direction: column;"></div>
       </div>
     `;
 
@@ -162,7 +163,7 @@ var tqcViews = window.tqcViews = {
     this.currentViewFormKey = selectedKey;
 
     var html = `
-      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+      <div style="width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; padding: 0; margin: 0;">
         <div class="form-tabs-bar" id="tqc-view-tabs-bar">
     `;
 
@@ -178,7 +179,8 @@ var tqcViews = window.tqcViews = {
 
     html += `
         </div>
-        <div id="tqc-view-mount" style="flex: 1; min-height: 0; display: flex; flex-direction: column;"></div>
+        <!-- Active View Mount Stage (Zero padding, full width & height, dynamic scroll) -->
+        <div id="tqc-view-mount" style="flex: 1; min-height: 0; width: 100%; overflow: auto; padding: 0; margin: 0; display: flex; flex-direction: column;"></div>
       </div>
     `;
 
@@ -210,13 +212,8 @@ var tqcViews = window.tqcViews = {
             </div>
             <div style="min-width: 0;">
               <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">${schema.title}</h3>
-              ${schema.subtitle ? `<p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">${schema.subtitle}</p>` : ''}
+              ${schema.subtitle ? `<p style="font-size: 0.75rem; color: #ffffff; margin: 2px 0 0 0; line-height: 1.25;">${schema.subtitle}</p>` : ''}
             </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
-            <span style="background: rgba(45, 212, 191, 0.12); color: var(--brand-teal-light); border: 1px solid rgba(45, 212, 191, 0.3); font-size: 0.65rem; font-weight: 800; padding: 0.18rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
-              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--brand-teal-light); display: inline-block;"></span> DATA INPUT FORM
-            </span>
           </div>
         </div>
 
@@ -252,7 +249,7 @@ var tqcViews = window.tqcViews = {
     html += `
           </div>
 
-          <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+          <div class="form-shell-footer">
             <button type="button" class="btn-cancel" onclick="document.getElementById('tqc-dynamic-form').reset()">Reset</button>
             <button type="submit" class="btn-primary-action" id="btn-tqc-save">
               <span class="material-icons" style="font-size: 16px;">save</span>
@@ -370,8 +367,8 @@ var tqcViews = window.tqcViews = {
           </button>
         </div>
 
-        <div class="table-container" style="flex: 1; overflow: auto; min-height: 280px; max-height: calc(100vh - 220px);">
-          <table class="standard-data-table" id="tqc-data-table" style="min-width: 100%; border-collapse: separate; border-spacing: 0;">
+        <div class="table-container" style="flex: 1; min-height: 0; overflow: auto; background-color: #ffffff; border: none;">
+          <table class="standard-data-table" id="tqc-data-table" style="width: max-content; table-layout: auto; border-collapse: separate; border-spacing: 0;">
             <thead>
               <tr id="tqc-grid-header"></tr>
             </thead>
@@ -395,12 +392,12 @@ var tqcViews = window.tqcViews = {
     var tbody = document.getElementById('tqc-grid-body');
     if (!headerRow || !tbody) return;
 
-    var thHtml = `<th style="width: 50px; text-align: center; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">SL</th>`;
-    thHtml += `<th style="width: 110px; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">Record ID</th>`;
+    var thHtml = `<th style="text-align: center; position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">SL</th>`;
+    thHtml += `<th style="position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">Record ID</th>`;
     schema.fields.forEach(function(f) {
-      thHtml += `<th style="position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light); white-space: nowrap;">${f.label}</th>`;
+      thHtml += `<th style="position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">${f.label}</th>`;
     });
-    thHtml += `<th style="width: 150px; text-align: right; padding-right: 1.25rem; position: sticky; top: 0; right: 0; background-color: var(--surface-alt); z-index: 15; border-bottom: 2px solid var(--border-light); box-shadow: -2px 0 4px rgba(0,0,0,0.05);">Action</th>`;
+    thHtml += `<th style="text-align: right; padding-right: 0.5rem; position: sticky; top: 0; right: 0; background-color: #f1f5f9; z-index: 15; border-bottom: 2px solid #cbd5e1; box-shadow: -2px 0 4px rgba(0,0,0,0.05); white-space: nowrap;">Action</th>`;
     headerRow.innerHTML = thHtml;
 
     api.read(schema.table, !!forceRefresh).then(function(records) {
@@ -448,6 +445,7 @@ var tqcViews = window.tqcViews = {
 
       var mount = document.getElementById('tqc-view-mount');
       if (!mount) return;
+      mount.scrollTop = 0;
 
       var html = `
         <div class="form-shell-container animate-scale-up">
@@ -458,7 +456,7 @@ var tqcViews = window.tqcViews = {
               </div>
               <div style="min-width: 0;">
                 <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">Edit ${(schema.title || '').replace(/ Form$/i, '')}</h3>
-                <p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">Modifying Active Record ID: <span style="color: var(--brand-teal-light); font-weight: 700;">${pkVal}</span></p>
+                <p style="font-size: 0.75rem; color: #ffffff; margin: 2px 0 0 0; line-height: 1.25;">Modifying Active Record ID: <span style="color: var(--brand-teal-light); font-weight: 700;">${pkVal}</span></p>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
@@ -499,7 +497,7 @@ var tqcViews = window.tqcViews = {
 
       html += `
             </div>
-            <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+            <div class="form-shell-footer">
               <button type="button" class="btn-cancel" onclick="tqcViews.openViewGrid('${formKey}')">Cancel</button>
               <button type="submit" class="btn-primary-action">
                 <span class="material-icons" style="font-size: 16px;">save</span>

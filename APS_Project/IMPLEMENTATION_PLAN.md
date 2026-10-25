@@ -4,9 +4,51 @@
 
 ---
 
+## 📌 Last Modification & Architectural Fixes Log (Active System Status)
+
+### 1. Universal Record Edit & Update Fix across All View Forms & Tables
+- **Root Cause Identified**: 
+  1. Record editing was failing due to self-duplicate collisions in `Database.checkDuplicate()`. When an existing row was edited, `isCurrent(r)` failed to recognize the record being edited because `excludeRowNumber` was not passed, causing the system to falsely flag the record as an identical duplicate of itself.
+  2. `Database.update()` strictly expected `headers.indexOf(pkColumn.toLowerCase())` to be an exact match. If casing, aliases, or column naming differed (e.g. `setup_id` vs `id` vs `#1`), an unhandled exception `"Primary key column ... not found"` or `"Record with ID ... not found"` was thrown.
+  3. `Router.api_update` routed employee updates through `HrmService.saveEmployee()`, which strictly required `staff_id` and `emp_name` and wiped all non-provided columns with empty strings, causing partial edits or view-form edits to crash.
+- **Architectural Fixes Implemented**:
+  - **Self-Duplicate Bypass via Row Number (`targetRow`)**: `Database.update` now passes the verified `targetRow` as `excludeRowNumber` to `checkDuplicate()`. In-memory verification instantly identifies the active record being modified and ignores it during collision checks while still validating against all other table rows.
+  - **Multi-Strategy Primary Key & Row Locator**: `Database.update()` and `Database.deleteRow()` now employ a 3-tier resolution strategy:
+    1. Case- and punctuation-insensitive match on `pkColumn` and common aliases (`id`, `tableName_id`).
+    2. Primary key column scan followed by Column 1 scan fallback.
+    3. Explicit sheet row number fallback (`#rowNumber` and integer parsing).
+  - **Universal Partial Update for Employees**: `api_update` now utilizes `Database.update()` directly for `employees`, preserving all existing profile fields, auto-calculating statutory retirement date when `dob` is modified, and eliminating the brittle `saveEmployee` crash.
+  - **Flexible Client-Side Edit Record Resolution**: Both `ViewOrg.html` and `ViewHrm.html` now locate records in client cache flexibly using type-coerced case-insensitive matching across `schema.pk`, `id`, and `_rowNumber`.
+  - **Duplicate Modal Interception on Edit**: If an edit truly collides with another distinct record, the user receives the rich `Components.showDuplicateModal` alert instead of a silent failure.
+
+### 2. Duty Pattern (`duty_pattern`) vs. Operational Shift (`shift_name`) Separation & Shifts Station Decoupling
+- **Architectural Shift & Domain Distinction**:
+  1. **Workforce Setup (`workforce_setup`) — Macro Budgeting Domain**:
+     - Manages approved establishment posts per Department / Section and Pay Group.
+     - Shift requirement is now formally captured as **`duty_pattern`** (`General (Office Timing)`, `4-Shift (24/7 Roster)`, `3-Shift (Day/Evening/Night)`, `2-Shift (Day/Night)`, `Roster / Variable`).
+     - Decoupled from concrete operational shift teams (`Shift-A`, `Shift-B`) so that a single sanctioned row (e.g. 4 Deputy Managers for 4 shifts) cleanly represents the post's operational schedule pattern without duplicate row inflation.
+     - Backward compatibility guaranteed via automatic syncing between `duty_pattern` and legacy `shift_type`.
+  2. **Shifts Master (`shifts`) — Operational Rostering Domain**:
+     - Removed `station_code` and `station_id` from the `shifts` table definition, input forms, and uniqueness validation. Shifts are now bounded to Department / Unit and Section, removing artificial station coupling.
+     - Added optional `duty_pattern` classifier to shifts (`shifts.duty_pattern`), bridging operational shift teams (`4-Shift-A`, `4-Shift-B`) with their parent duty pattern (`4-Shift`).
+     - Added automatic column migration (`Database.cleanObsoleteShiftColumns()` and `Router.api_clean_obsolete_shift_columns()`) to drop obsolete `station_code`, `station_id`, and `dep_id` columns from Google Sheets.
+  3. **HRM Placements (`placements`) — Operational Scheduling Domain**:
+     - Retains concrete `shift_name` (linked to `shifts` master) to record the exact roster team assignment (`4-Shift-A`, `4-Shift-B`, `General Shift`) for active employees.
+  4. **Workforce Sanction vs. Actual Report (`HrmService.getWorkforceSetupReport`)**:
+     - Updated to display `Duty Pattern` and aggregate active employees placed across shift teams (`4-Shift-A`, `B`, `C`, `D`) against the budgeted `4-Shift` post.
+     - Live vacancy calculation accurately highlights shift-level deficits.
+
+---
+
 ## 1. Executive Summary & Architectural Shift
 
 This implementation plan establishes the architectural and technical specification for the **SANDVIORA AVIOSOLUTION** Human Resource Management (HRM), Organization (ORG), Training Quality & Compliance (TQC), and Workforce Management platform.
+
+### Requirement Update: Pay Groups, Designations, Hierarchy & Workforce
+
+Maintain `pay_groups` and `designations` as separate master tables. `pay_groups` contains `pg_id` (PK), unique `pg_category`, unique `pay_group`, integer `rank_level`, status, and audit fields. Its input form captures Level Name/Category (e.g. Admin, Tech, IT), Pay Group (e.g. PG-1, PG-10), Rank Level, and Active/Inactive status. `designations` contains `deg_id` (PK), `unit_id` (FK to `organization_units.unit_id`), `pg_category` (FK to `pay_groups.pg_category`), `pay_group`, `designation`, `designation_short`, status, and audit fields (`created_at`, `created_by`, `updated_at`, `updated_by`, `is_deleted`); its input form captures Department (dropdown showing `unit_name` from departments only, saved as `unit_id`), Pay Group Category (dropdown from `pg_category`), Pay Group (dropdown from `pay_group`), Designation (placeholder `' '`), Short Designation (placeholder `' '`), and Status (Active/Inactive).
+
+Use the recursive `organization_units` tree as the source of truth for MD & CEO -> Directorate -> Department/Division -> Wing/Section/Unit/Team. Explicit hierarchy type and parent linkage allow administrators to manage the complete supplied organization structure without hardcoded branches. Employee home unit and current placement unit are separate. `workforce_setup` records sanctioned posts for a unit, designation/pay group, station, and optional duty position; actual active headcount is computed from employee assignments. Reports should show sanctioned, actual, vacancy, and over-strength counts per unit and roll up descendants to directorates. Reject self-parenting/cycles and deactivate referenced units instead of deleting them.
 
 ### Crucial Technology Transition
 As specified, the previous technology stack (Django REST Framework + PostgreSQL + Next.js/React + Tailwind CSS) has been completely redesigned into a modern, resilient, high-performance architecture built strictly for the Google Workspace ecosystem:
@@ -66,8 +108,35 @@ As specified, the previous technology stack (Django REST Framework + PostgreSQL 
       - Icon badge frames (`.kpi-icon-box`): Scaled up to `46px x 46px` housing `26px` high-contrast iconography.
       - Content cards (`.content-card`): Base font size increased to `0.925rem` with `1.6` line-height and card titles (`.card-header-title`) increased to `0.975rem` (`font-weight: 800`).
       - Quick action navigation buttons (`.quick-nav-btn`): Scaled to `0.875rem` with `20px` icons.
-
----
+11. **Strict Input Field Label Consistency (Relational Label Symmetry & User Experience Standard)**:
+    - When a data attribute or relational foreign key represents the same underlying entity across multiple modules or forms (e.g., Station, Work Location, Organization Unit, Pay Group, Designation, Duty Position, Shift Assignment, Section/Wing, Staff ID, Employee Type, City, Effective From/To, Reference Number), its display label (`label`) MUST be 100% IDENTICAL across all input forms, view tables, and edit dialogs.
+    - Identical labeling gives users immediate cognitive recognition that two fields are relationally linked and share the exact same entity origin.
+    - **Standardized Unified Labels**:
+      - `Station (Airport Base)`: Used universally across Placements, Postings, Workforce Setup, Shifts, Organization Units, Sections, and Work Locations.
+      - `Work Location`: Used universally across Placements, Postings, Organization Units, Sections, and Work Locations.
+      - `Organization Unit`: Used universally across Placements, Employees, Workforce Setup, Shifts, Pay Groups, Courses, Organization Units, and Sections.
+      - `Pay Group`: Used universally across Employees, Extensions, Additional Charges, Acting Assignments, Workforce Setup, Pay Groups, and Promotions.
+      - `Designation`: Used universally across Employees, Additional Charges, Acting Assignments, Workforce Setup, and Pay Groups.
+      - `Duty Position`: Used universally across Placements, Workforce Setup, and Positions.
+      - `Shift Assignment`: Used universally across Placements and Shifts.
+      - `Section / Wing Letter Code`: Used universally across Placements, Shifts, Organization Units, Directorates, Departments, and Sections.
+      - `City`: Used universally across Postings, Stations, and Work Locations.
+      - `Staff ID`: Used universally across all employee transactional forms (Placements, Postings, Promotions, Extensions, Additional Charges, Acting, Separation, Migrations, Actions, Trainings, Disciplinary Cases).
+      - `Employee Type`: Used universally across Employee Types, Employees, and Employee Migrations.
+      - `Effective From` & `Effective To`: Used universally for all assignment commencement and conclusion dates across Placements (`placement_date`), Postings (`effective_from`), Extensions, Additional Charges, Acting Assignments, and Employee Actions.
+      - `Reference Number`: Used universally across Promotions, Employee Migrations, and Employee Actions.
+      - `Remarks`: Used universally across all forms requiring explanatory commentary.
+    - **Dropdown Option Display Standards**:
+      - `Parent Unit (Organization Unit)` dropdown options display strictly the clean full entity title (e.g., `Directorate of Flight Operations`) without bracketed hierarchy tags (`[DIRECTORATE]`) or unit code suffixes (`(DIR-FO)`).
+      - `Work Location` dropdown options display strictly the clean full premises name (e.g., `Head Office`, `Balaka Bhaban`, `Hangar Complex`) without station bracket prefixes (`[DAC]`) or parenthesized city tags.
+12. **End-to-End Cross-File Synchronization Protocol**:
+    - Architectural and schema modifications must NEVER be applied in isolation to a single sheet or isolated script file.
+    - Any change to fields, labels, relationships, or business logic must be simultaneously and consistently updated across all affected components:
+      - Front-end Schemas (`Schemas.html`)
+      - Backend Data Definitions (`Database.gs`)
+      - Business Logic and Aggregation Services (`HrmService.gs`, `OrgService.gs`, `TqcService.gs`, `Utils.gs`, `Router.gs`)
+      - View Modules and Grid Renderers (`ViewOrg.html`, `ViewHrm.html`, `ViewTqc.html`)
+      - System Architecture Blueprint (`IMPLEMENTATION_PLAN.md`)
 
 ## 3. Google Sheets Relational Database Architecture
 
@@ -91,153 +160,202 @@ The Google Spreadsheet workbook functions as the relational database. Each works
 |          |          |   |      |                                                                   |
 |  [designations] <---+   |      |                                                                   |
 |                         |      |                                                                   |
-|  [employees] <--------------------+                                                                   |
-|      |                                                                                               |
-|      +-- [placements] ----------+                                                                   |
+|  [persons]              |      |                                                                   |
+|      |                  |      |                                                                   |
+|      +-- [staff_identities]    |                                                                   |
+|      |          |              |                                                                   |
+|      +-- [employees]           |                                                                   |
+|      |          |              |                                                                   |
+|      +-- [placements] ---------+                                                                   |
 |      +-- [postings] -----------+                                                                   |
 |      +-- [promotion_references] <---+                                                              |
 |      +-- [promotions] --------------+                                                              |
-|      +-- [employee_actions] <-------+                                                              |
 |      +-- [extensions]                                                                              |
 |      +-- [additional_charges]                                                                      |
 |      +-- [acting_assignments]                                                                      |
-|      +-- [self_retirements]                                                                        |
+|      +-- [retirement_events]                                                                       |
 |      +-- [employee_migrations]                                                                     |
-|      +-- [disciplinary_cases]                                                                      |
-|      +-- [courses] & [trainings]                                                                   |
-|      +-- [payroll_calculations] & [audit_logs] & [users]                                           |
+|      +-- [seniority_overrides]                                                                     |
+|      +-- [acr_records] & [disciplinary_cases]                                                      |
+|      +-- [courses] & [training_records]                                                            |
+|      +-- [payroll_calculations] & [audit_logs]                                                     |
 |                                                                                                    |
 +----------------------------------------------------------------------------------------------------+
 ```
 
-### 3.1 Organization Master Sheets (ORG)
+### 3.1 Organization Master Sheets (ORG) — Normalized 3NF Architecture
 
 #### 1. Sheet: `organization_units`
-Stores the complete multi-tiered hierarchy (Directorates, Divisions, Departments, Sections, Wings, Teams).
-- `unit_id` (PK, String: `OU-001`): Unique identifier.
-- `unit_code` (String, Unique): e.g., `CSD`, `ASD`, `GH`, `SEC-RAMP`.
-- `unit_name` (String): e.g., "Airport Services Division", "Customer Services".
-- `unit_type` (String): `HEADQUARTER`, `DIRECTORATE`, `DIVISION`, `DEPARTMENT`, `WING`, `SECTION`, `UNIT`.
-- `parent_unit_id` (FK -> `organization_units.unit_id`, Nullable): Parent unit for arbitrary hierarchy nesting.
-- `location_id` (FK -> `work_locations.location_id`, Nullable): Work location assignment (e.g., Head Office Balaka, Motijheel Sales Office, HSIA Terminal 1).
-- `station_id` (FK -> `stations.station_id`, Nullable): Dependent physical airport station assignment (dynamically populated based on selected work location; stored as `NULL` for standalone non-airport entities).
-- `letter_code` (String): e.g., `DEP-GS`, `SEC-AW`.
+Stores the complete recursive multi-tiered corporate hierarchy for all **9 Directorates** (Directorates, Divisions, Departments, Wings, Sections, Sub-sections, Cells, Teams) driven purely by `parent_unit_id`.
+- `unit_id` (PK, String: `OU-CSD-001`): Unique identifier.
+- `unit_code` (String, Unique): e.g., `DIR-CS`, `DEP-AS`, `WING-AW`, `SEC-RAMP`.
+- `unit_name` (String): e.g., "Customer Services Directorate", "Airport Services Department", "Above Wing", "Ramp Control".
+- `parent_unit_id` (FK -> `organization_units.unit_id`, Nullable): Immediate superior unit for recursive corporate organogram tree nesting. Apex entities (`MD & CEO` or Root Directorates) have `NULL`/empty. Dynamically displays a clean indented tree (`↳ Unit Name`) without redundant type tags.
+- `station_id` (FK -> `stations.station_code`, Nullable): Associated airport flight station if station-specific (e.g., `DAC`, `CGP`, `CXB`). Displays strictly the clean 3-letter IATA code.
+- `location_id` (FK -> `work_locations.location_id`, Nullable): Physical workplace premises.
+- `letter_code` (String): e.g., `CSD`, `AS`, `AW`, `LM`.
 - `status` (String): `ACTIVE` / `INACTIVE`.
-- `created_at`, `updated_at` (ISO String).
-- `created_by`, `updated_by` (String).
-
-#### 2. Sheet: `stations`
-- `station_id` (PK, String: `STN-01`): Primary identifier.
-- `station_code` (String, Unique): Station Code (IATA) e.g., `DAC`, `CXB`, `CGP`, `LHR`, `JED`, `RUH`, `CCU`.
-- `station_icao` (String, Nullable): Station Code (ICAO) e.g., `VGHS`, `VGEG`, `VGSY`, `VECC`, `OERK`.
-- `station_name` (String): Full formal station / airport name (e.g., "Hazrat Shahjalal International Airport").
-- `station_location` (FK -> `work_locations.location_city`): Dependent on Location City in `work_locations`.
-- `station_type` (String): Station Type configured as select dropdown: `Base`, `Home`, `Foreign Station`.
-- `stn_ops_type` (String): Operational Type configured as select dropdown: `DOM`, `INTL`.
-- `status` (String): Configured as select dropdown: `Active`, `Inactive`.
 - `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
 
-#### 2.1 Sheet: `work_locations`
-Represents physical premises, buildings, territories, and cities. Master geographic entity where countries and cities are registered.
+> [!IMPORTANT]
+> **Consolidated 3NF Table Architecture & Legacy Cleanup**:
+> Legacy tables `directorates`, `departments`, and `sections` have been completely removed from active database operations and schemas. All organizational hierarchy levels are unified under `organization_units`. In all dropdown selectors across the entire application (ORG, HRM, TQC):
+> 1. All controls strictly display **a single clean piece of data** (e.g. clean Shift Name without timings, clean Pay Group code without designations, clean Designation without unit tags, clean 3-letter Station code).
+> 2. Whenever Pay Group is rendered in ANY dropdown (create forms, edit modals, cascading filters, spreadsheet filters, promo filters), duplicate pay group codes (e.g. repeated `PG-10`, `PG-9`, `PG-6`) are **strictly eliminated**. Each statutory Pay Group code appears **exactly once**, sorted in standard statutory precedence (`PG-1`, `PG-3(2)`, `PG-4`, `PG-5`, `PG-6`, `PG-7`, `PG-8`, `PG-9`, `PG-10`, `PG-11`, `PG-12`, `LOCAL`). Relational database integrity is preserved: database columns store normalized foreign keys (`sourceKey`) while UI components cleanly render display labels.
+
+#### 2. Sheet: `positions` (Functional Roles & In-Charge Duty Titles)
+Decouples operational leadership roles, duty titles, and in-charge responsibilities from static pay groups and substantive designations.
+- `position_id` (PK, String: `POS-001`): Primary identifier.
+- `position_title` (String, Unique): e.g., "Station Manager", "District Manager", "Country Manager", "Regional Manager", "In-charge Above Wing", "In-charge Below Wing", "Turn Around Coordinator (Red Cap)", "Ramp Controller", "Duty Manager".
+- `position_code` (String, Unique): e.g., `POS-SM`, `POS-DM`, `POS-IC-AW`, `POS-RED-CAP`.
+- `position_category` (String): `Head of Station`, `Functional Head`, `Shift In-Charge`, `Operational Duty`, `Technical / Maintenance`, `Administrative`.
+- `min_pg_id` (String, FK -> `pay_groups.pay_group`, Nullable): Minimum permissible pay grade (e.g., `PG-6`). Dropdowns display strictly the single Pay Group code.
+- `max_pg_id` (String, FK -> `pay_groups.pay_group`, Nullable): Maximum permissible pay grade (e.g., `PG-8`). Dropdowns display strictly the single Pay Group code.
+- `description` (String, Nullable): Duty responsibilities and terms of reference.
+- `status` (String): `ACTIVE` / `INACTIVE`.
+- `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
+
+#### 3. Sheet: `pay_groups` (Statutory Scale, Designation & Reporting Boss Hierarchy Master)
+Unified master combining statutory compensation scale, substantive cadre designation, short code, seniority precedence, organizational unit linkage, and immediate supervisory reporting lines.
+- `pg_id` (PK, String: `PGR-0001`): Primary identifier.
+- `unit_id` (String, FK -> `organization_units.unit_id`, Nullable): Department or Directorate to which this designation belongs. If left empty/null, applies organization-wide.
+- `pay_group` (String, NOT NULL): Pay grade scale (`PG-1`, `PG-3(2)`, `PG-4`, `PG-5`, `PG-6`, `PG-7`, `PG-8`, `PG-9`, `PG-10`, `PG-11`, `PG-12`, `LOCAL`).
+- `designation` (String, NOT NULL): Official substantive title, e.g., "Passenger Service Officer", "Assistant Manager", "Deputy General Manager", "General Manager".
+- `designation_short` (String, Nullable): Acronym/short code, e.g., `PSO`, `AM`, `MGR`, `DGM`, `GM`.
+- `reports_to_pg_id` (String, FK -> `pay_groups.pg_id`, Nullable): Immediate Reporting Boss. Dropdown displays strictly the clean single Designation title.
+- `rank_level` (Integer, Nullable): Numeric precedence rank (`12` down to `1`). Auto-filled based on statutory Pay Group.
+- `status` (String): `ACTIVE` / `INACTIVE`.
+- `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
+
+#### 4. Sheet: `designations` (Substantive Designations Master)
+Maintains department-specific and corporate substantive designations linked to pay groups and departmental hierarchy.
+- `deg_id` (PK, String: `DEG-0001`): Unique designation identifier.
+- `unit_id` (FK -> `organization_units.unit_id`): Department to which this designation belongs. Dropdown presents only departments (`unit_name`) and stores `unit_id`. Shown in view forms and grids as department name.
+- `pg_category` (FK -> `pay_groups.pg_category`): Category of the pay group (e.g., Admin, Tech, IT).
+- `pay_group` (String): Associated pay scale grade (e.g., `PG-1`, `PG-10`).
+- `designation` (String, NOT NULL): Official designation title.
+- `designation_short` (String, Nullable): Abbreviated designation title.
+- `status` (String, NOT NULL): `Active` / `Inactive`.
+- `created_at`, `created_by`, `updated_at`, `updated_by`, `is_deleted`.
+
+#### 5. Sheet: `workforce_setup` (Sanctioned Workforce Establishment)
+Defines approved organogram quotas, sanctioned posts, and shift patterns across stations and organizational units.
+- `setup_id` (PK, String: `SET-0001`): Unique identifier.
+- `unit_id` (FK -> `organization_units.unit_id`): Department, Wing, Section, or Directorate Unit.
+- `station_code` / `station_id` (FK -> `stations.station_code`, Nullable): Operating airport flight station (`DAC`, `CGP`, `LHR`). Left blank for Corporate Head Office posts.
+- `position_id` (FK -> `positions.position_title`, Nullable): Approved duty role. Optional (defaults to Designation).
+- `pay_group` (FK -> `pay_groups.pay_group`): Sanctioned remuneration grade.
+- `designation` (String, NOT NULL): Substantive designation title.
+- `sanctioned_posts` (Integer): Total sanctioned post quota.
+- `staff_number` / `set_up` (Integer): Backward-compatible mirrors of `sanctioned_posts`.
+- `shift_type` (String, Nullable): Duty Shift Name dynamically loaded from `shifts` table.
+- `remarks` (String, Nullable): Organogram approval manual reference.
+- `dir_id`, `dep_id`: Ancestral Directorate and Department auto-resolved upon insert/update.
+- `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
+
+#### 6. Sheet: `stations` (Operational Flight Stations & Airport Bases)
+Maintains IATA airport codes, domestic bases, and international flight stations.
+- `station_id` (PK, String: `STN-0001`): Primary identifier.
+- `station_code` (String, Unique, NOT NULL): 3-letter IATA code (`DAC`, `CGP`, `ZYL`, `CXB`, `DXB`, `LHR`).
+- `station_icao` (String, Nullable): ICAO airport identifier (`VGHS`, `EGLL`).
+- `station_name` (String, NOT NULL): Official airport title.
+- `station_type` (String, NOT NULL): `Base`, `Home`, `Foreign Station`, `Foreign Station (Offline)`.
+- `stn_ops_type` (String, NOT NULL): `Domestic` / `International`.
+- `city` (String, NOT NULL): Host city (`Dhaka`, `Chattogram`, `London`).
+- `status` (String, NOT NULL): `Active` / `Inactive`.
+- `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
+
+#### 7. Sheet: `work_locations` (Physical Premises, Terminals & Corporate Facilities)
+Registers physical workplace buildings, airport offices, and corporate premises.
 - `location_id` (PK, String: `LOC-0001`): Primary unique identifier.
-- `location_country` (String): e.g., "Bangladesh", "Saudi Arabia", "India".
-- `location_city` (String): e.g., "Dhaka", "Chattogram", "Sylhet", "Riyadh", "Kolkata".
-- `location_code` (String, Unique): e.g., `DAC-HO`, `DAC-CSO`, `DAC-APT`, `CGP-CSO`, `RUH-CITY`.
-- `location_name` (String): e.g., "Head Office Balaka", "Motijheel Sales Office", "HSIA Terminal 1", "Agrabad Sales Office".
-- `parent_location_id` (FK -> `work_locations.location_id`, Nullable): Parent office/location if nested under a regional administrative umbrella.
-- `address` (String, Nullable): Physical street or building address.
-- `status` (String): `Active` / `Inactive`.
+- `location_code` (String, Unique, NOT NULL): e.g., `101`, `102`.
+- `location_name` (String, NOT NULL): e.g., "Balaka Bhaban", "Terminal 1 (HSIA)".
+- `location_type` (String, NOT NULL): `Head Office`, `Airport Terminal`, `City Office`, etc.
+- `station_id` (FK -> `stations.station_code`, Nullable): Associated airport flight station.
+- `city` (String, FK -> `stations.city`, NOT NULL): Physical city.
+- `region` (String, Nullable): Territory options.
+- `country` (String, Nullable): Sovereign nation.
+- `status` (String, NOT NULL): `Active` / `Inactive`.
 - `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
 
-#### 3. Sheet: `employee_types` (Structural Workforce Classification)
-Configured under the ORG tab as an organization-level classification defining employee structural types.
-- `emp_type_id` (PK, String: `ETY-001`).
-- `emp_type_code` (String, Unique): e.g., `PERM`, `CASUAL`, `CONT`.
-- `emp_type` (String): Human readable name.
-- `description` (String): Description.
-
-#### 4. Sheet: `pay_groups`
-- `pay_group_id` (PK, String: `PG-01`): Unique identifier.
-- `pay_group` (String, Unique): e.g., `PG-1`, `PG-2`, `PG-3(2)`, `PG-4`, `PG-5`, `PG-6`, `PG-7`, `PG-8`, `PG-9`, `PG-10`, `PG-11`.
-- `rank_level` (Integer, Unique): Numeric hierarchy rank (e.g., `1` for PG-1 up to `14` for SPL). Higher rank = senior.
-- `basic_pay` (Number): Standard basic salary for payroll calculations.
-- `status` (String): `ACTIVE` / `INACTIVE`.
-
-#### 5. Sheet: `designations`
-- `designation_id` (PK, String: `DSG-01`): Unique identifier.
-- `design_code` (String, Unique): e.g., `MGR`, `DGM`, `AGM`, `OFR`, `SUP`, `SROFR`.
-- `designation_name` (String): Full formal title.
-- `short_designation` (String): Abbreviated designation.
-- `status` (String): `ACTIVE` / `INACTIVE`.
-
-#### 6. Sheet: `pay_group_designations`
-Maps designations eligible for each pay group.
-- `pg_designation_id` (PK, String: `PGD-01`).
-- `pay_group_id` (FK -> `pay_groups.pay_group_id`).
-- `designation_id` (FK -> `designations.designation_id`).
-- `is_primary` (Boolean): Default `TRUE`.
-
-#### 7. Sheet: `shifts`
-- `shift_id` (PK, String: `SHF-001`).
-- `dep_id` (String, FK -> `departments.dep_id` or `organization_units.unit_id`): Department binding.
-- `shift_name` (String): e.g., `Morning`, `Evening`, `Night`, `Roster A`, `General`.
-- `station_code` (String, FK -> `stations.station_code`): Station binding.
-- `sec_letter_code` (String, Nullable): Section binding.
-- `description` (String): Timing or details.
-- `status` (String): `ACTIVE` / `INACTIVE`.
-
-#### 8. Sheet: `position_establishments` (Workforce Set Up)
-- `establishment_id` (PK, String: `EST-0001`).
-- `directorate_code` (String): Directorate identifier.
-- `department_code` (String): Department identifier.
-- `station_code` (String, FK -> `stations.station_code`).
-- `pay_group` (String, FK -> `pay_groups.pay_group`).
-- `design_code` (String, FK -> `designations.design_code`).
-- `sanctioned_posts` (Integer): Sanctioned staff count.
-- `effective_from` (Date String: `YYYY-MM-DD`).
-- `approval_ref` (String): Official sanction reference letter.
-- `status` (String): `ACTIVE` / `INACTIVE`.
+#### 8. Sheet: `shifts` (Operational Work Shifts & Duty Rosters)
+Defines operational duty shifts per station and department.
+- `shift_id` (PK, String: `SHF-0001`): Primary identifier.
+- `unit_id` (FK -> `organization_units.unit_id`): Department or Wing managing the shift.
+- `station_code` (FK -> `stations.station_code`): Operating airport station.
+- `shift_code` (Number): Shift code number.
+- `shift_name` (String): Clean shift name (e.g., `Morning`, `Night`, `General`, `A`, `B`).
+- `shift_description` (String, Nullable): Shift timings and details.
+- `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
 
 ---
 
 ### 3.2 Human Resource Master Sheets (HRM)
 
-#### 9. Sheet: `employees` (Unified Employee Master Sheet)
-Single authoritative table storing all biological, personal, and employment details without requiring duplicate entries.
-- `emp_id` (PK, String: `EMP-000001`).
-- `staff_id` (String, Unique, NOT NULL): Primary active Staff ID (Strict Placeholder Standard: `05 Digits ID`).
-- `emp_name` (String, NOT NULL): Full Name.
-- `gender` (String, NOT NULL): `Male`, `Female`, `Other` (Input via dropdown).
-- `department_code` (String, FK -> `departments.dep_code` or `organization_units.unit_code`).
-- `dep_id` (String, Nullable): Foreign key to organization units.
-- `dir_id` (String, Nullable): Foreign key to directorate organization units.
-- `emp_type` (String, FK -> `employee_types.emp_type`).
-- `emp_type_id` (String, Nullable): Foreign key to employee types.
-- `pay_group` (String, FK -> `pay_groups.pay_group`): Baseline Pay Group.
+#### 8. Sheet: `persons`
+Decouples biological human data from changing staff numbers or contracts.
+- `person_id` (PK, String: `PER-000001`).
+- `full_name` (String): Complete legal name.
+- `dob` (Date String: `YYYY-MM-DD`).
+- `gender` (String, NOT NULL): Gender.
 - `contact_primary` (String, NOT NULL): Primary contact number.
-- `contact_secondary` (String, Nullable): Alternate contact number.
+- `contact_alternate` (String, Nullable): Secondary contact number.
 - `contact_family` (String, Nullable): Family contact number.
-- `official_email` (String, Nullable): Official airline/organization email ID.
-- `personal_email` (String, NOT NULL): Personal email ID.
-- `email` (String, Nullable): Universal fallback email address.
-- `dob` (Date String: `YYYY-MM-DD`): Date of Birth.
-- `joining_date` (Date String: `YYYY-MM-DD`): Joining date.
-- `retirement_date` (Date String: `YYYY-MM-DD`): Automatically calculated by the system (`DOB + 59 years - 1 day`) and persisted to the database. **No manual input required.**
+- `email` (String, Nullable): Work or personal email.
 - `home_district` (String, Nullable): Home district.
-- `picture_url` (String, Nullable): Employee photo / Drive ID.
+- `picture_drive_id` (String, Nullable): Google Drive File ID for employee photo.
 - `remarks` (String, Nullable): Notes on special status or suspension.
-- `status` (String): `ACTIVE`, `EXTENSION`, `RETIRED`.
+- `created_at`, `updated_at` (ISO String).
+
+#### 9. Sheet: `staff_identities`
+Allows seamless transition from Casual to Permanent staff IDs without losing history.
+- `identity_id` (PK, String: `IDN-0001`).
+- `person_id` (FK -> `persons.person_id`).
+- `staff_id` (String, Unique): e.g., `C-1024` or `B-5588`.
+- `identity_type` (String): `PERMANENT` / `CASUAL` / `CONTRACT`.
+- `is_primary` (Boolean): Current operational identity.
+- `valid_from` (Date String: `YYYY-MM-DD`).
+- `valid_to` (Date String, Nullable).
+
+#### 10. Sheet: `employee_types`
+- `emp_type_id` (PK, String: `TYP-001`).
+- `type_code` (String, Unique): e.g., `PERM`, `CASUAL`, `CONT`.
+- `emp_type` (String): Human readable name.
+- `description` (String): Description.
+
+#### 11. Sheet: `employees` (Core Profile)
+- `emp_id` (PK, String: `EMP-0001`).
+- `staff_id` (String, Unique): Primary active 5-digit Staff ID.
+- `emp_name` (String): Full employee name.
+- `gender` (String): `Male` / `Female` / `Other`.
+- `dep_id` (String, FK -> `organization_units.unit_id`): Home organizational unit identifier.
+- `department_code` (String, FK -> `organization_units.unit_code`): Home Organization (Directorate / Department).
+- `emp_type` (String, FK -> `employee_types.emp_type`): Service classification (Permanent, Contractual, Casual, Trainee).
+- `emp_type_id` (String, FK -> `employee_types.emp_type_id`).
+- `pay_group` (String, FK -> `pay_groups.pay_group`): Pay scale grade (e.g. `PG-7`).
+- `designation` (String): Official substantive designation title tied to the employee's department.
+- `contact_primary` (String): Primary telephone number.
+- `contact_secondary`, `contact_family` (String, Nullable).
+- `official_email`, `personal_email`, `email` (String).
+- `dob` (Date String: `YYYY-MM-DD` / `DDMMYYYY`).
+- `joining_date` (Date String: `YYYY-MM-DD` / `DDMMYYYY`).
+- `retirement_date` (Date String: `YYYY-MM-DD`): Calculated statutory retirement date.
+- `home_district` (String, Nullable).
+- `picture_url` (String, Nullable): Base64 or Drive photo link.
+- `remarks` (String, Nullable).
 - `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
+- **Dynamic Form Cascading Rule**: In the Employee input and edit forms, `Designation` is presented as a dropdown menu populated with `pay_groups` data filtered dynamically by the Directorate or Department selected in `Organization Unit`. The dropdown displays **only the full designation name** (e.g., "Passenger Service Officer"). Selecting a designation automatically assigns the corresponding `pay_group`, or selecting a `pay_group` narrows the designations to only roles under that pay scale in that Directorate/Department.
 
 #### 12. Sheet: `placements`
-- `placement_id` (PK, String: `PLC-000001`).
-- `staff_id` (String, FK -> `employees.staff_id`).
-- `station_code` (String, FK -> `stations.station_code`).
-- `sec_letter_code` (String): Section letter code matched with station.
-- `shift_name` (String): Shift matched with station and section.
-- `placement_date` (Date String: `YYYY-MM-DD`).
-- `status` (String): `ACTIVE` / `SUPERSEDED`.
-- `created_at` (ISO String).
+Records operational duty position, organizational unit assignment, workplace, and shift roster.
+- `placement_id` (PK, String: `PLC-0001`): Primary identifier.
+- `staff_id` (String, FK -> `employees.staff_id`): 5-digit employee ID.
+- `location_id` (String, FK -> `work_locations.location_id`): Physical workplace premises.
+- `organization_unit_id` (String, FK -> `organization_units.unit_id`): Assigned organizational unit (Dept, Wing, Section).
+- `position_id` (String, FK -> `positions.position_title`): Duty position / role in-charge.
+- `shift_name` (String, Nullable, FK -> `shifts.shift_name`): Shift roster assignment.
+- `placement_date` (Date String: `YYYY-MM-DD` / `DDMMYYYY`): Effective placement date.
+- `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
 
 #### 13. Sheet: `postings`
 Tracks employee geographic and physical work location transfers. Seamlessly supports both airport station-based staff and non-airport corporate/city office personnel.
@@ -318,42 +436,13 @@ Eliminates repeating lengthy (>20 character) official reference strings across h
 - `created_at` (ISO String).
 
 #### 21. Sheet: `employee_migrations`
-Tracks transitions between employment cadences (e.g., Casual to Contractual, Contractual to Permanent).
 - `migration_id` (PK, String: `MIG-0001`).
-- `reference_no` (String, NOT NULL): Official order / office memo reference number (e.g., `REF/2026/MIG/01`).
-- `previous_staff_id` (String): Previous Staff ID (Placeholder: `05 Digits ID`).
-- `present_staff_id` (String): Current Staff ID (Placeholder: `05 Digits ID`).
+- `previous_staff_id` (String): Old Casual/Previous ID.
+- `present_staff_id` (String): New Permanent/Current ID.
 - `migration_type` (String, FK -> `employee_types.emp_type`).
-- `migration_date` (Date String: `YYYY-MM-DD` / `DD-MMM-YYYY`): Universal 8-digit input standard `DDMMYYYY`.
+- `migration_date` (Date String: `YYYY-MM-DD`).
 - `remarks` (String, Nullable).
-- `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
-
-#### 21.1 Sheet: `employee_actions` (Administrative Career Actions & Transfers)
-Dedicated administrative lifecycle sheet managing departmental transfers, disciplinary/performance downgrades, redesignations, and cadre changes.
-- **Architectural Isolation**: Work Location and physical workplace desk duties are strictly decoupled and governed exclusively by `work_locations` and `placements`.
-- **Directorate Ancestry Resolution**: The user selects the target Department (`to_org_unit_id`). The system automatically queries `organization_units.parent_unit_id` to dynamically resolve the parent Directorate hierarchy without denormalizing or creating duplicate columns.
-- **Table Schema**:
-  - `action_id` (PK, String: `EAC-000001`): Primary unique identifier.
-  - `reference_no` (String, NOT NULL): Official order / office order memo reference number.
-  - `staff_id` (String, FK -> `employees.staff_id`): 05-digit Staff ID (Placeholder: `05 Digits ID`).
-  - `action_type` (String, NOT NULL): `TRANSFER`, `DOWNGRADE`, `REDESIGNATION`, `OTHER`.
-  - `from_org_unit_id` (FK -> `organization_units.unit_id`, Nullable): Current/Previous Department.
-  - `to_org_unit_id` (FK -> `organization_units.unit_id`, Nullable): New Target Department.
-  - `from_pay_group_id` (FK -> `pay_groups.pay_group_id`, Nullable): Current Pay Group.
-  - `to_pay_group_id` (FK -> `pay_groups.pay_group_id`, Nullable): New Pay Group (e.g., in DOWNGRADE).
-  - `from_designation` (String, Nullable): Current Designation.
-  - `to_designation` (String, Nullable): New Designation (e.g., in REDESIGNATION or DOWNGRADE).
-  - `effective_date` (Date String: `YYYY-MM-DD` / `DD-MMM-YYYY`): Universal 8-digit input standard `DDMMYYYY`.
-  - `disciplinary_case_id` (FK -> `disciplinary_cases.case_id`, Nullable): Mandatory/Conditional link when `action_type === 'DOWNGRADE'`.
-  - `remarks` (String, Nullable): Administrative notes, circular details, or justification.
-  - `created_at`, `updated_at`, `created_by`, `updated_by`, `is_deleted`.
-- **Duplicate Protection**: Enforced in `Database.checkDuplicate` by `staff_id`, `action_type`, and `reference_no`/`effective_date`.
-- **UI Integration**:
-  - Registered in `HRM_FORM_SEQUENCE` as `{ key: 'employee_actions', name: 'Employee Actions', icon: 'assignment_turned_in' }`.
-  - Accessible via dedicated navigation buttons in both **HRM Input Forms** and **HRM View Records** tab ribbons.
-  - Auto-fills `from_org_unit_id`, `from_pay_group_id`, and `from_designation` when entering `staff_id`.
-  - Displays real-time Directorate ancestry badge (`Directorate ➔ Division ➔ Department`) upon selecting `to_org_unit_id`.
-  - Synchronizes changes to active employee records and canonical read models (`getEmployeesDetailsList`, `getServiceHistory`).
+- `created_at` (ISO String).
 
 #### 22. Sheet: `acr_records` (Annual Confidential Reports)
 - `acr_id` (PK, String: `ACR-0001`).
@@ -430,6 +519,95 @@ Dedicated administrative lifecycle sheet managing departmental transfers, discip
 - `record_id` (String): Affected entity primary key.
 - `payload_summary` (String): JSON summary of before/after state.
 - `timestamp` (ISO String).
+
+---
+
+### 3.5 Multi-Station & 9-Directorate Enterprise Organogram Blueprint
+
+The organizational setup is modeled on the official corporate organogram manuals of Biman Bangladesh Airlines Ltd., normalized into a universal schema that dynamically accommodates all **9 Directorates** and all **Domestic and Foreign Stations**.
+
+#### 1. Domestic Stations Set-Up (Organogram Manual Chp 12, Issue 02, Rev 0)
+- **Top Authority**: District Manager (`VII` in major stations like Chittagong, Sylhet, Jessore, Barisal, Cox's Bazar; `VI / VII` in Saidpur; `VI` in Rajshahi).
+- **Core Stations Summary**:
+  | Station | Head of Station | Pay-Group | Approx Posts | Key Sections / Sub-Units |
+  |---|---|---|---|---|
+  | Chittagong (CGP) | District Manager | VII | ~250 | Counter & Resv, Sales Promo, Finance, Station Ops, Engineering, GSE, Security, MT |
+  | Sylhet (ZYL) | District Manager | VII | ~70 | Sales Promotion, Counter Sales, Finance, Station Ops, Security, GSE, Engineering |
+  | Cox's Bazar (CXB) | District Manager | VII | 31 | Counter Sales (5), Station Manager (5), Security (5), Accounts (1), Ops/Engg (14) |
+  | Saidpur (SPD) | District Manager | VI / VII | 18 | Counter Sales (3), Station Manager (5), Engg (2), Security (4), Finance (2) |
+  | Rajshahi (RJH) | District Manager | VI | 16 | Counter Sales (3), Station Manager (5), Engg (2), Security (4), Finance (1) |
+  | Jessore (JSR) | District Manager | VII | 16 | Counter Sales (3), Station Manager (5), Engg (2), Security (4), Finance (1) |
+  | Barisal (BZL) | District Manager | VII | 15 | Counter Sales (3), Station Manager (4), Engg (2), Security (3), Finance (1) |
+
+#### 2. Set-Up of Foreign Stations (Online & Offline Stations — 152 Posts)
+- **Classification**:
+  - **18 Online Stations** (143 Posts): Abu Dhabi, Bangkok, Dammam, Kathmandu, Kolkata, Kuala Lumpur, Kuwait, London, Muscat, Doha, Dubai, Jeddah, Riyadh, Singapore, Yangon, Delhi, Guangzhou, Medina, Chennai.
+  - **2 Offline Stations** (9 Posts): Hong Kong (1 post - Cargo based), Manchester (8 posts).
+- **Multi-Cadre Structure**:
+  - **Expatriate Bangladesh Cadre**: Regional Manager (`IX / VIII / VII`), Country Manager (`VIII / VII`), District Manager (`VII`), Station Manager (`VII / VI`), Manager Finance (`VII / VI / V`), Manager Operations (`VII / VI`), GSO/JGSO (`VI / V`).
+  - **Locally Recruited Staff (`LOCAL` Pay Group)**: Local secretaries, receptionists, ticketing assistants, traffic/cargo assistants, drivers, and cleaning personnel.
+- **Station-Specific Rank Variations**:
+  - *Jeddah*: Regional Manager (Western Province KSA) holds the highest foreign rank: Pay Group **IX**.
+  - *London*: Largest foreign station (16 posts), headed by Country Manager [VIII] with Station Manager [VII], Manager Finance [VII], Duty Officer [VI], and local clerks.
+  - *Abu Dhabi & Saidpur*: Station Manager is Pay Group **VI**, while in *London & Chittagong* it is Pay Group **VII**.
+
+#### 3. Customer Services Directorate (CSD) Hierarchy Schema
+- **Executive Leadership**: Director (Customer Services) [`SPL`] — 1 post.
+  - Admin Cell (5 posts: Dy. Mgr [VII], Jr. Officer [V], Admin Supv [IV], Admin Asst [3(II)], MLSS [I]).
+  - Director Office (2 posts: Dy. Mgr [VII], MLSS [I]).
+  - General Manager (Customer Services) [`X`] — 1 post:
+    - DGM (Ground Services) [`IX`] -> Manager GS Handling Agreement [`VIII`] (6 posts) + Manager System Ops, Rules & Standards [`VIII`] (6 posts) + Foreign Station Managers (38 posts).
+    - DGM (Flight Services) [`IX`].
+  - General Manager (Airport Services) [`X`] — 1 post (Airport Services Division: 75 posts total).
+    - DGM (Airport Services) [`IX`] -> Manager Customer Airlines Relations [`VIII`].
+    - DGM (Ground Handling) [`IX`] -> Operational Divisions:
+      - **Above Wing Section (728 posts)**: 4x Manager (Above Wing) [`VIII`] (Shift-based), 8x Dy. Manager / Shift In-Charge [`VII`], 52x Asst. Manager [`VI`], 52x JGSO [`V`], 160x GSS [`IV`], 208x GSA [`3(II)`], 236x Traffic Helper [`I`], 4x Admin Supv [`IV`], 4x MLSS [`I`].
+      - **Below Wing Section (888 posts)**: 4x Manager (Below Wing) [`VIII`] (Shift-based), 12x Dy. Manager / Shift In-Charge [`VII`], 40x Asst. Manager [`VI`], 56x Jr. Officer [`V`], 72x GSS [`IV`], 92x GSA [`3(II)`], 604x Traffic Helper [`I`], 4x Admin Supv [`IV`], 4x MLSS [`I`].
+      - **Domestic Wing, HSIA Section (91 posts)**: 1x Manager (Domestic Terminal HSIA) [`VIII`], 2x Dy. Manager (2 Shifts) [`VII`], 2x Asst. Manager [`VI`], 4x Jr. Officer [`V`], 14x GSS [`IV`], 20x GSA [`3(II)`], 46x Traffic Helper [`I`], 1x Admin Supv [`IV`], 1x MLSS [`I`].
+  - General Manager (GSE) [`X`] — 1 post.
+
+#### 4. Universal 9-Directorate Enterprise Architecture & Cross-Module Integrity Strategy
+
+> [!IMPORTANT]
+> **Core Strategic Architectural Directive**:
+> The sample organograms provided earlier (Customer Services Directorate, Domestic Station sets, Foreign Online/Offline stations) serve strictly as **illustrative benchmark models** demonstrating structural depth and operational variation. The system is **NOT** built around or restricted to any single Directorate, Division, or Station.
+>
+> The core database engine and application logic are fundamentally designed to universally support **ALL 9 Corporate Directorates** and any arbitrary multi-level hierarchy branch without structural alteration, schema branching, or hardcoded fallbacks.
+
+##### 1. The 9 Corporate Directorates of the Airline:
+1. **Directorate of Customer Services (CSD)**: Passenger handling, ramp supervision, baggage service, transit hubs, domestic & foreign station handling.
+2. **Directorate of Flight Operations (DFO)**: Flight safety, cockpit crew administration, cabin crew division, flight dispatch, flight technical operations, fleet management.
+3. **Directorate of Engineering & Material Management (DEMM)**: Line maintenance, base maintenance, avionics, powerplant, workshops, quality assurance, technical stores.
+4. **Directorate of Marketing & Sales (DMS)**: Commercial sales, cargo marketing, international reservations, passenger revenue, pricing & scheduling, city sales offices (CTO).
+5. **Directorate of Finance (DF)**: Corporate accounts, revenue audit, expenditure control, budget, station finance, staff payroll.
+6. **Directorate of Administration & Human Resources (DAHR)**: Personnel management, recruitment, legal affairs, general administration, protocol, welfare, training academy (BATC).
+7. **Directorate of Planning (DP)**: Corporate strategy, route analysis, aircraft acquisition & leasing, corporate economics.
+8. **Directorate of Procurement & Logistics Support (DPLS)**: Inflight service procurement, catering contracts, central store, motor transport (MT).
+9. **Directorate of Aviation Security (AVSEC)**: Airport security, passenger screening intelligence, security inspection, anti-smuggling, station security cells.
+
+##### 2. The Universal Multi-Tier Recursive Hierarchy Tree:
+Every organizational entity across all 9 Directorates is managed through the centralized, normalized `organization_units` master sheet in the **ORG** module:
+- **Level 1 — Directorate (`DIRECTORATE`)**: Top-level executive authority (Root node, `parent_unit_id = NULL`).
+- **Level 2 — Division (`DIVISION`)**: Major administrative or operational segment under a Directorate.
+- **Level 3 — Department (`DEPARTMENT`)**: Functional operational unit.
+- **Level 4 — Wing (`WING`)**: Specialized wing or fleet grouping under a Department.
+- **Level 5 — Section (`SECTION`)**: Tactical duty section (e.g., Line Maintenance, Ramp Control, Cabin Services, Reservation Counter).
+- **Level 6 — Sub-Section / Cell / Unit / Team (`SUB_SECTION`, `CELL`, `UNIT`)**: Ground duty teams or administrative cells.
+
+##### 3. Cross-Module Data Integrity & Zero-Mismatch Strategy:
+1. **ORG as the Single Source of Truth**:
+   - Master organizational units, stations, work locations, shifts, substantive designations, and pay groups are configured strictly in the **ORG** tab.
+2. **Strict Hierarchy Linkage in HRM & TQC**:
+   - **Employees (`employees`)**: Every employee profile links directly to their formal `Organization Unit` (`department_code` / `dep_id`). Selecting this unit dynamically resolves their parent Department and root Directorate, while cascading only the valid substantive designations and pay groups applicable to that unit or its parent hierarchy.
+   - **Placements (`placements`)**: Micro operational duty assignments link to an `Organization Unit` (Section/Wing), physical `Work Location`, operating `Station (Airport Base)`, functional `Duty Position`, and `Shift Assignment`.
+   - **Postings (`postings`)**: Macro administrative station postings link to `Station (Airport Base)` and `Work Location`.
+   - **Workforce Setup (`workforce_setup`)**: Sanctioned establishment quotas are strictly budgeted by `Organization Unit` (at any Directorate/Dept/Section tier) + `Station (Airport Base)` + `Duty Position` + `Pay Group` + `Designation`.
+   - **Operational Shifts (`shifts`)**: Roster timings belong strictly to an `Organization Unit` and `Station (Airport Base)`.
+   - **Employee Actions (`employee_actions`)**: Inter-directorate and inter-departmental transfers strictly preserve from/to `Organization Unit` foreign keys.
+   - **Aviation Courses (`courses`) in TQC**: Curriculums link directly to sponsoring `Organization Unit` (or organization-wide mandatory status).
+3. **Dynamic Multi-Tier Ancestry Resolution Engine (`resolveUnitHierarchy`)**:
+   - The backend service and front-end cascade listeners traverse all ancestral parent units from the leaf section up to the root Directorate.
+   - Eliminates all hardcoded directorate fallbacks, ensuring seamless operation for any directorate, department, or station now and in the future.
 
 ---
 
@@ -539,7 +717,8 @@ Apps Script Execution Engine (V8)
    - `api_get_promotion_batches`: Returns promotion reference cards.
    - `api_get_employee_promotion_report`: Produces official single-employee report.
    - `api_get_promotion_eligibility`: Computes eligibility records.
-   - `api_get_workforce_setup_report`: Computes Sanctioned vs Existing vs Deficit.
+   - `api_get_workforce_setup_report`: Computes dynamic Sanctioned vs Existing vs Deficit across Station, Unit, Position, and Pay Group.
+   - `api_seed_organogram_masters`: Initializes and synchronizes standard Pay Groups (SPL to LOCAL), Substantive Designations, Duty Positions (Station Manager, In-charge Above/Below Wing, Red Cap), Corporate Headquarters (HQ), 8 Domestic Stations, 18 Foreign Online Stations, 2 Foreign Offline Stations, and standard Work Locations.
    - `api_get_workforce_distribution`: Generates multi-variable distribution matrices.
    - `api_calculate_allowance`: Computes monthly gross salary, overtime, and allowances.
 
@@ -587,9 +766,6 @@ Apps Script Execution Engine (V8)
     }
     ```
   - Formats seniority ranks as two-digit strings (`01`, `02`, `03`...).
-- **Administrative Career Actions & Canonical Reconciler**:
-  - Automatically reconciles an employee's active Pay Group, Designation, and Department between `promotions` and `employee_actions` in the canonical read model (`getEmployeesDetailsList`).
-  - **Date Precedence Protocol**: If an employee has an administrative action record (e.g., `DOWNGRADE`, `REDESIGNATION`) with `effective_date >= latest_promotion_date`, the action's `to_pay_group_id` dynamically governs their current active Pay Group, `to_designation` becomes their active base designation, and `to_org_unit_id` updates their home department and resolves their parent directorate.
 
 #### 2. Dynamic Retirement Date & Status Resolution
 - **Statutory Formula**:
@@ -612,9 +788,8 @@ Apps Script Execution Engine (V8)
 - Calculated using full calendar year and month date arithmetic without assuming flat 30-day months.
 
 #### 4. Service History Reconstruction Engine
-- Pulls all historical assignments: `joining_date`, `placements`, `postings`, `promotions`, `employee_actions`, `acting_assignments`, `additional_charges`.
+- Pulls all historical assignments: `joining_date`, `placements`, `postings`, `promotions`, `acting_assignments`, `additional_charges`.
 - Sorts events chronologically ascending by start date.
-- Maps administrative actions into distinct milestones: `Action (TRANSFER)`, `Action (DOWNGRADE)`, `Action (REDESIGNATION)`, `Action (OTHER)` with reference numbers, official effective dates, and target departments.
 - **Dynamic End Date Rule**:
   - The `end_date` of any assignment $E_i$ is calculated as $StartDate(E_{i+1}) - 1\text{ Day}$.
   - The `end_date` of the latest assignment is evaluated as `Present` (or today's date).
@@ -712,8 +887,27 @@ Index.html (Master Viewport Container)
   - **Left-Hand Navigation Sidebar (`.app-sidebar-panel`)**:
     - Fixed consistent width of 235px (`width: 235px; min-width: 235px; max-width: 235px;`) eliminating any visual shifting or text-wrapping across all view switches.
     - Sidebar menu links styled with clean icon-to-label alignment, smooth hover transitions, and active teal accents.
-  - **Spreadsheet-Style Typography & Pure Black Data**:
-    - All employee information displayed in data tables is rendered strictly in pure black text (`color: #000000 !important; font-weight: 400 !important;`) across all table cells.
+  - **Spreadsheet-Style Grid & Compact Layout Standard (All View Forms Across ORG, HRM, TQC)**:
+    - All data tables (`.standard-data-table`) across all "View Form" tabs are engineered to look and feel like dense, professional Google Sheets / Excel spreadsheets:
+      - **Automatic Cell Width Adjustment Based on Data**: Tables utilize `width: max-content !important` and `table-layout: auto !important`. All headers (`th`) and data cells (`td`) have `width: auto !important`, `white-space: nowrap !important`, and `max-width: none !important`. Column widths dynamically auto-fit and hug the exact width of their cell contents and header labels without artificial stretching, empty gaps, or hardcoded pixel constraints.
+      - **Minimal Cell Padding**: Table cells (`td`) have compact padding of `2px 5px !important`, row height of `22px`, and `line-height: 1.25 !important` with clean `#e2e8f0` grid borders and `border-collapse: separate; border-spacing: 0`.
+      - **Header Compactness**: Table headers (`th`) styled with `3px 6px !important` padding, height `24px`, soft grey background `#f1f5f9`, and `#1e293b` text.
+      - **Dense Action Controls**: Row action buttons (`.btn-table-edit`, `.btn-table-delete`) reduced to `1px 5px !important`, height `20px !important`, and font size `10.5px !important`.
+      - **Font Sizing**: Base table font calibrated to `11px !important` with pure dark readable text (`color: #0f172a !important`).
+  - **ORG Units View Form Navigation, Category Sequence & Accurate Sub-Units Calculation**:
+    - **View Form Title & Labeling**: The view form header displays cleanly as `ORG Units - Records View` (removing any verbose "Hierarchy" branding), with the toolbar filter labeled as `Category:`.
+    - **Full Hierarchical Category Sequence (Including Divisions)**: Category filter buttons in `ViewOrg.html` and hierarchy sorting strictly reflect the 7-tier organizational structure:
+      `[All Units]`, `[Corporate]`, `[Directorates]`, `[Divisions]`, `[Departments]`, `[Wing]`, `[Section]`, `[Unit]`.
+    - **Dynamic Null / Zero-Count Suppression**: Category filter pills that have zero records (or null categories) are automatically hidden (`display: none`), ensuring only active categories with records are presented to the user alongside `[All Units]`.
+    - **Accurate Sub-Units Counting Engine**:
+      - Parent-child linkages are resolved across canonical parent identifiers (`unit_id`, `unit_code`, and `unit_name`) with case-insensitive and whitespace trimming.
+      - Soft-deleted rows (`is_deleted` or `status === 'DELETED'`) are strictly excluded from sub-unit counts and parent ancestry chains.
+      - Child units are deduplicated by unique identifier, ensuring 100% accurate sub-unit counts displayed as interactive pills (`X Sub-unit(s)`) with hover tooltips detailing child unit names and tiers.
+    - **Null Value Cell Guard**: Table cells with `null`, undefined, empty, or string `'NULL'` values render clean `-` placeholders instead of literal `"NULL"` badges.
+    - **Unit Code 3-Letter Prefix & Type Tier Detection**: Hierarchy tiers are automatically determined by `unit_type` or the first 3 capital letters of `unit_code` / `letter_code` (e.g. `DIR` $\rightarrow$ Directorate, `DIV` $\rightarrow$ Division, `DEP` $\rightarrow$ Department, `WIN` $\rightarrow$ Wing, `SEC` $\rightarrow$ Section, `UNI`/`UNT` $\rightarrow$ Unit, `COR`/`CEO` $\rightarrow$ Corporate).
+    - Tabular records and options are dynamically sorted and rendered according to canonical hierarchy priority:
+      `CORPORATE` (Priority 1) $\rightarrow$ `DIRECTORATE` (Priority 2) $\rightarrow$ `DIVISION` (Priority 3) $\rightarrow$ `DEPARTMENT` (Priority 4) $\rightarrow$ `WING` (Priority 5) $\rightarrow$ `SECTION` (Priority 6) $\rightarrow$ `UNIT` (Priority 7).
+    - **High-Contrast Color Accessibility**: Corporate in crimson (`#fee2e2`/`#991b1b`), Directorate in orange (`#ffedd5`/`#9a3412`), Division in warm amber (`#fef3c7`/`#92400e`), Department in emerald (`#dcfce7`/`#166534`), Wing in indigo (`#e0e7ff`/`#3730a3`), Section in purple (`#f3e8ff`/`#6b21a8`), Unit in teal (`#ccfbf1`/`#0f766e`).
 - **Layout Grid**:
   - Top Navbar: 100% width, height 64px, brand logo on left, primary module switcher (`ORG`, `HRM`, `TQC`) on center/right with compact button styling.
   - Sidebar: Fixed width (235px), `white-space: nowrap`, smooth hover indicators, non-collapsing menu tree.
@@ -762,9 +956,8 @@ function attachDateInputMask(inputElement) {
 
 ### 5.3 Dynamic Schemas & Form/Grid Engine (`Schemas.html`, `Components.html`)
 
-1. **Professional Data Input Form Header Standard**:
-   - Every input form across the entire application features a full, meaningful, professional header title paired with an operational subtitle describing its exact purpose and an enterprise status pill badge (`DATA INPUT FORM`), mirroring high-end enterprise portal standards (e.g., "Employee Duty Placement & Shift Assignment Form", "Employee Master Profile & Bio-Data Registration Form", "Employee Administrative Career Action (Transfer, Downgrade & Redesignation) Form", "Sanctioned Workforce Establishment & Headcount Allocation Form").
-   - Concise short titles (`shortTitle` / sequence `name`) are maintained for tab ribbons and navigation pills to prevent excessive wrapping and maintain compact UI aesthetics.
+1. **Title & Naming Convention Standard**:
+   - Redundant `"Form"` suffix is strictly eliminated from all module and schema titles (e.g., "Placements", "Employees", "Postings", "Workforce Set Up").
 2. **Normalized Lookup Display Standard**:
    - All dropdowns across every form display a single clean value (either the human-readable full name or the short letter code, never concatenating both with parenthetical codes/IDs e.g. `Flight Operations Directorate`, not `Flight Operations Directorate (DIR-01)`) while persisting normalized relational primary keys / codes (`sourceKey`) into the Google Sheets database.
 3. **Dependable Dynamic Select Fields (`dependable_select`)**:
@@ -779,30 +972,16 @@ function attachDateInputMask(inputElement) {
 
 1. **Executive Dashboard**:
    - 4 KPI Summary Cards with enhanced typography:
-     - **Directorates** (`.kpi-card`: label `0.825rem`, value `1.85rem`, subtext `0.825rem`, icon box `46px x 46px` teal, dynamically counted from `organization_units` where `unit_type IN ('DIRECTORATE', 'HEADQUARTER')`).
-     - **Departments** (`.kpi-card`: green, dynamically counted from `organization_units` where `unit_type IN ('DEPARTMENT', 'DIVISION')`).
-     - **Stations** (`.kpi-card`: amber, flight station operations).
-     - **Workforce Setups** (`.kpi-card`: purple, sanctioned post allocations).
+     - **Directorates** (`.kpi-card`: label `0.825rem`, value `1.85rem`, subtext `0.825rem`, icon box `46px x 46px` teal).
+     - **Departments** (`.kpi-card`: green).
+     - **Stations** (`.kpi-card`: amber).
+     - **Workforce Setups** (`.kpi-card`: purple).
    - Master Data & Corporate Structure Content Card (`.content-card`: title `0.975rem`, paragraph `0.925rem`).
-2. **Third Normal Form (3NF) Centralized Organization Hierarchy**:
-   - Eliminates redundant standalone forms for Directorates, Departments, and Sections.
-   - All administrative entities are unified in `organization_units` with recursive adjacency (`parent_unit_id`), `unit_type` (`HEADQUARTER`, `DIRECTORATE`, `DIVISION`, `DEPARTMENT`, `WING`, `SECTION`, `UNIT`), `location_id`, and dependent `station_id`.
-   - The master table view features an interactive **Hierarchy Tier Filter Bar**:
-     `[ All Units ] [ Directorates ] [ Divisions ] [ Departments ] [ Sections / Wings ] [ Units / Teams ]`
-     allowing instant single-click filtering without screen reloads or separate tabs.
-3. **Streamlined 7 Core ORG Forms Sequence (`ORG_FORM_SEQUENCE`)**:
-   1. `organization_units` (ORG Units Hierarchy: Directorates, Departments, Sections)
-   2. `shifts` (Operational Rosters & Work Shifts)
-   3. `pay_groups` (Pay Groups & Rank Hierarchy)
-   4. `employee_types` (Structural Workforce Classification: Permanent, Casual, Contractual)
-   5. `stations` (Flight Operational Stations: IATA, ICAO, Location Type, Domestic/International)
-   6. `work_locations` (Physical Premises & Corporate Offices with Dependent Station Mapping)
-   7. `workforce_setup` (Sanctioned Posts & Organogram Establishment)
-4. **Work Locations & Dependent Station Management**:
-   - Full master data CRUD for physical buildings and city offices.
-   - Decouples physical workplaces (e.g. Balaka Head Office, Motijheel Sales Office) from flight stations.
-   - Intelligent UI cascading: When a work location is non-airport, `station_id` is set to `NULL` and dependent station fields are cleanly hidden.
-5. **View Forms Data Grid**:
+2. **Input Records View**:
+   - Selectable list linking to uniform input forms: Directorates, Departments, Sections, Stations, Work Locations, Shifts, Pay Groups, Designations, Workforce Set Up.
+3. **Work Locations Management**:
+   - Full master data CRUD for physical buildings and city offices with airport station linkages (`station_id`) and parent-child location nesting (`parent_location_id`).
+4. **View Forms Data Grid**:
    - Real-time tabular data grids with pagination (20 rows per page), search filtering, row edit modal, and soft-delete protocol.
 
 ### 5.5 Training, Quality & Compliance (TQC) Specification (`ViewTqc.html`)
@@ -863,7 +1042,7 @@ HRM (Main Menu)
 
 - **Workflow**:
   - Clicking "Input Records" opens a selectable list view in the right div.
-  - User selects one of the 12 forms from the list and clicks **OK**.
+  - User selects one of the 11 forms from the list and clicks **OK**.
   - The chosen form renders inside the same div.
   - Every form follows an identical visual format, compact labels, and concise placeholders.
   - System metadata (`created_at`, `updated_at`, `created_by`, `updated_by`) are excluded from form fields.
@@ -871,146 +1050,152 @@ HRM (Main Menu)
 
 #### 1. Placement Form
 - **Fields**:
-  - `Staff ID` (Text with autocomplete lookup displaying Employee Name).
-  - `Posting` (Dropdown populated from `station_code` in `stations` table).
-  - `Placement` (Dependable dropdown: filters `sec_letterCode` in `organization_units` matching selected `station_code`).
-  - `Shift` (Dependable dropdown: filters `shift_name` in `shifts` matching selected `station_code`).
-  - `Placement Date` (Universal 8-digit date input, formatted to `DD-MMM-YYYY`).
+  - `Staff ID` (Text with lookup: 5-digit employee ID).
+  - `Work Location` (Select from `work_locations.location_id`: physical workplace premises).
+  - `Station (Airport Base)` (Select from `stations.station_code`: auto-resolved from Work Location or selectable).
+  - `Organization Unit` (Select from `organization_units.unit_id`: department/wing/section).
+  - `Section / Wing Letter Code` (Text: e.g., AW, BW, RMP).
+  - `Duty Position` (Select from `positions.position_title`: operational duty role).
+  - `Shift Assignment` (Select from `shifts.shift_name`: dependable dropdown filtered by Station and Organization Unit).
+  - `Effective From` (Universal 8-digit date input, formatted to `DD-MMM-YYYY`, stored as `placement_date`).
 - **Action**: Saves to `placements` sheet; updates active placement indicator.
 
 #### 2. Employee Types Form
 - **Fields**:
-  - `Code of Employee Type` (Text, e.g., `PERM`, `CASUAL`).
-  - `Employee Type` (Text, e.g., "Permanent", "Casual", "Contract").
-  - `Description` (Text).
+  - `Type Code` (Text: e.g., `EMT-01`, `PERM`).
+  - `Employee Type` (Text: e.g., "Permanent", "Casual", "Contract", "Trainee").
+  - `Description` (Text: brief cadre description).
 - **Action**: Saves to `employee_types` sheet.
 
 #### 3. Employees Form
 - **Fields**:
-  - `Department Code` (Dropdown from `organization_units` / `departments`).
+  - `Staff ID` (Text, NOT NULL, Unique 5-digit ID).
   - `Full Name` (Text, NOT NULL).
-  - `Gender` (Dropdown: `Male`, `Female`, `Other`, NOT NULL).
-  - `Staff ID` (Text, NOT NULL, Unique, Placeholder: `05 Digits ID`).
-  - `Employee Type` (Dropdown from `emp_type` in `employee_types`).
-  - `Pay Group` (Dropdown from `pay_group` in `pay_groups`).
-  - `Contact Number` (Text, NOT NULL).
-  - `Contact Number (Alternate)` (Text, Nullable).
-  - `Contact Number (Family)` (Text, Nullable).
+  - `Gender` (Select: `Male`, `Female`, `Other`).
+  - `Date of Birth` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Organization Unit` (Select from `organization_units`: home department/directorate).
+  - `Employee Type` (Select from `employee_types.emp_type`).
+  - `Pay Group` (Select from `pay_groups.pay_group`: dynamically cascaded by home Organization Unit).
+  - `Designation` (Text: official substantive title auto-populated from pay group).
+  - `Joining Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Primary Contact` (Text: primary telephone number).
+  - `Alternate Contact` (Text, Nullable).
+  - `Family Contact` (Text, Nullable: emergency family phone).
   - `Official Email` (Email format, Nullable).
   - `Personal Email` (Email format, NOT NULL).
-  - `Email` (Universal fallback email, Nullable).
-  - `Date Of Birth` (Universal 8-digit date input -> `DD-MMM-YYYY`).
-  - `Joining Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
   - `Home District` (Text, Nullable).
-  - `Picture` (Image upload field with Drive preview, Nullable).
+  - `Employee Photo` (Image upload field with Drive preview, Nullable).
   - `Remarks` (Text, Nullable).
 - **Action**:
-  - Saves directly to single `employees` sheet.
-  - Automatically calculates statutory retirement date (`DOB + 59 years - 1 day`) and saves it to the database table (no manual input required).
+  - Creates an `employees` record.
+  - Auto-calculates statutory retirement date (`DOB + 59 years - 1 day`).
 
 #### 4. Posting Form
 - **Fields**:
-  - `Staff ID` (Text with autocomplete lookup).
-  - `Station Code` (Dropdown from `station_code` in `stations`).
-  - `Posting Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
-- **Action**: Saves to `postings` sheet.
+  - `Staff ID` (Text with lookup).
+  - `Station (Airport Base)` (Select from `stations.station_code`: auto-resolved from Work Location or selectable).
+  - `Work Location` (Select from `work_locations.location_id`).
+  - `City` (Text: auto-resolved from Work Location / Station).
+  - `Effective From` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Effective To` (Universal 8-digit date input -> `DD-MMM-YYYY`, Nullable).
+  - `Status` (Select: `Active`, `Inactive`).
+- **Action**: Saves to `postings` sheet; establishes official administrative station posting.
 
 #### 5. Promotion Form (Single & Bulk "Multiple Employees")
 - **Standard Single Promotion Form**:
-  - `Reference No` (Text / Combobox: allows selecting existing reference or typing new >20-character official letter string).
-  - `Publication Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
-  - `Staff ID` (Text input).
-  - `Present Pay Group` (Text / Autocomplete, no restrictive dropdown).
-  - `Promoted Pay Group` (Text / Autocomplete, no restrictive dropdown).
+  - `Reference Number` (Text: official order letter string, e.g., `BG.HR.PROM.2026.08871`).
+  - `Staff ID` (Text: 5-digit employee ID).
+  - `Sequence No` (Number: auto-assigned or manual sequence rank).
+  - `Present Pay Group` (Select from `pay_groups.pay_group`).
+  - `Promoted Pay Group` (Select from `pay_groups.pay_group`).
   - `Promotion Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
   - `Multiple Entry Checkbox` (Toggle switch).
 - **"Multiple Employees" Bulk Entry Mode** (When Checkbox is checked):
-  - The form transitions to the bulk entry layout:
-    - `Reference No` (Text).
-    - `Publication Date` (Universal date input).
+  - Transitioned bulk layout:
+    - `Reference Number` (Text).
     - `Present Pay Group` (Uniform for the entire batch).
     - `Promoted Pay Group` (Uniform for the entire batch).
     - `Promotion Date` (Uniform for the entire batch).
     - `Multiple Staff ID` (Textarea accepting comma-separated Staff IDs, e.g., `2011, 2015, 2044, 2098`).
 - **Backend Batch Processing Engine**:
-  1. Resolves `Reference No` into `ref_id` inside `promotion_references` sheet.
+  1. Resolves `Reference Number` into `ref_id` inside `promotion_references` sheet.
   2. Parses the comma-separated Staff IDs into an ordered array.
   3. Iterates through the list, assigning sequential sequence numbers (`1, 2, 3...`) based strictly on input position.
   4. Commits all records to `promotions` sheet in a single batch operation.
 
 #### 6. Extension Form
 - **Fields**:
-  - `Staff ID` (Text with autocomplete).
-  - `Extension From` (Universal date input -> `DD-MMM-YYYY`).
-  - `Extension Pay Group` (Dropdown from `pay_groups`).
-  - `Extension To` (Universal date input -> `DD-MMM-YYYY`).
+  - `Staff ID` (Text with lookup).
+  - `Effective From` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Pay Group` (Select from `pay_groups.pay_group`).
+  - `Effective To` (Universal 8-digit date input -> `DD-MMM-YYYY`).
 - **Action**: Saves to `extensions` sheet; updates employee status to `Extension`.
 
 #### 7. Additional Charge Form
 - **Fields**:
-  - `Staff ID` (Text with autocomplete).
-  - `From` (Universal date input -> `DD-MMM-YYYY`).
-  - `Pay Group` (Dropdown from `pay_groups`).
-  - `Designation` (Dropdown from `designations`).
-  - `To` (Universal date input -> `DD-MMM-YYYY`, Nullable, if blank that means the employee continue this position).
-  - **Action**: Saves to `additional_charges` sheet.
+  - `Staff ID` (Text with lookup).
+  - `Effective From` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Pay Group` (Select from `pay_groups.pay_group`).
+  - `Designation` (Select from `pay_groups.designation`).
+  - `Effective To` (Universal 8-digit date input -> `DD-MMM-YYYY`, Nullable; blank indicates continuing charge).
+  - `Default Continue` (Checkbox: default `TRUE`).
+- **Action**: Saves to `additional_charges` sheet.
 
 #### 8. Acting / In-charge Form
 - **Fields**:
-  - `Staff ID` (Text with autocomplete).
-  - `From` (Universal date input -> `DD-MMM-YYYY`).
-  - `Pay Group` (Dropdown from `pay_groups`).
-  - `Designation` (Dropdown from `designations`).
-  - `To` (Universal date input -> `DD-MMM-YYYY`, Nullable, if blank that means the employee continue this position).
+  - `Staff ID` (Text with lookup).
+  - `Effective From` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Pay Group` (Select from `pay_groups.pay_group`).
+  - `Designation` (Select from `pay_groups.designation`).
+  - `Effective To` (Universal 8-digit date input -> `DD-MMM-YYYY`, Nullable; blank indicates continuing appointment).
+  - `Default Continue` (Checkbox: default `TRUE`).
 - **Action**: Saves to `acting_assignments` sheet.
 
-#### 9. Separation Form
+#### 9. Separation (Self-Retirement / Resignation / Left Job) Form
 - **Fields**:
-  - `Staff ID` (Text with autocomplete).
-  - `Date` (Universal date input -> `DD-MMM-YYYY`).
-  - `Event Type` (Dropdown: `Self Retirement`, `Resignation`, `Left Job`).
-  - `Remarks` (Textarea, e.g., reasons for leaving).
-- **Action**: Saves to `retirement_events` sheet; updates employee status to `Retired`.
+  - `Staff ID` (Text with lookup).
+  - `Event Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Event Type` (Select: `Self Retirement`, `Resignation`, `Left Job`).
+  - `Remarks` (Text: separation grounds and reference).
+- **Action**: Saves to `self_retirements` sheet; updates employee status to `Retired`.
 
-#### 10. Emp Migrations Form
+#### 10. Employee Migration Form
 - **Fields**:
-  - `Reference Number` (Text, NOT NULL, e.g. `REF/2026/MIG/01`).
-  - `Previous Staff ID` (Text: old casual/temporary ID, Placeholder: `05 Digits ID`).
-  - `Present Staff ID` (Text: new permanent ID, Placeholder: `05 Digits ID`).
-  - `Migration Type` (Dropdown from `employee_types`).
-  - `Migration Date` (Universal date input -> `DD-MMM-YYYY`).
+  - `Reference Number` (Text: official cadre change resolution reference).
+  - `Previous Staff ID` (Text: old casual/temporary ID).
+  - `Present Staff ID` (Text: new permanent ID).
+  - `Employee Type` (Select from `employee_types.emp_type`).
+  - `Migration Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
   - `Remarks` (Text).
-- **Action**:
-  - Saves to `employee_migrations` sheet.
-  - Updates `employees` table, linking or transitioning `staff_id`.
-  - Preserves complete casual placement, training, and service history.
+- **Action**: Saves to `employee_migrations` sheet.
 
-#### 11. Set Up Form (Workforce Sanction)
+#### 11. Employee Actions Form (Transfers, Downgrades, Redesignations)
 - **Fields**:
-  - `Station Code` (Dropdown from `stations.station_code`).
-  - `Pay Group` (Dropdown from `pay_groups.pay_group`).
-  - `Designation` (Dropdown from `designations.design_code`).
-  - `Staff Number` (Integer: sanctioned posts).
-- **Action**: Saves to `position_establishments` sheet.
+  - `Reference Number` (Text: administrative office order reference).
+  - `Staff ID` (Text with lookup).
+  - `Action Type` (Select: `TRANSFER`, `DOWNGRADE`, `REDESIGNATION`, `OTHER`).
+  - `From Organization Unit` (Select from `organization_units.unit_id`: auto-detected).
+  - `To Organization Unit` (Select from `organization_units.unit_id`: target unit).
+  - `From Pay Group` (Select from `pay_groups.pay_group`: auto-detected).
+  - `To Pay Group` (Select from `pay_groups.pay_group`).
+  - `From Designation` (Dynamic select from `pay_groups.designation`: filtered strictly by `From Organization Unit` hierarchy, displays only full designation name, auto-detected upon Staff ID entry, auto-syncs with `From Pay Group`).
+  - `To Designation` (Dynamic select from `pay_groups.designation`: filtered strictly by `To Organization Unit` hierarchy, displays only full designation name, auto-syncs with `To Pay Group`).
+  - `Effective From` (Universal 8-digit date input -> `DD-MMM-YYYY`).
+  - `Disciplinary Case Ref` (Select from `disciplinary_cases.case_id`, optional for downgrades).
+  - `Remarks` (Text).
+- **Action**: Saves to `employee_actions` sheet; automatically updates employee home unit, pay group, and designation in `employees`.
 
-#### 12. Employee Actions Form (Administrative Career Events & Transfers)
+#### 12. Workforce Setup Form (Normalized Sanctioned Headcount Allocation)
 - **Fields**:
-  - `Reference No` (Text, NOT NULL, official order/circular memo number).
-  - `Staff ID` (Text, NOT NULL, Placeholder: `05 Digits ID` with dynamic blur auto-population).
-  - `Action Type` (Dropdown: `TRANSFER`, `DOWNGRADE`, `REDESIGNATION`, `OTHER`).
-  - `Previous Department` (`from_org_unit_id`, auto-populated from active employee profile).
-  - `New Department` (`to_org_unit_id`, dropdown with real-time dynamic Directorate ancestry badge: `Directorate ➔ Division ➔ Department`).
-  - `Current Pay Group` (`from_pay_group_id`, auto-populated).
-  - `New Pay Group` (`to_pay_group_id`, selectable e.g. for Downgrades).
-  - `Current Designation` (`from_designation`, auto-populated).
-  - `New Designation` (`to_designation`, e.g. for Redesignation or Downgrades).
-  - `Effective Date` (Universal 8-digit date input -> `DD-MMM-YYYY`).
-  - `Disciplinary Case` (`disciplinary_case_id`, conditional dropdown dynamically revealed only when `Action Type === 'DOWNGRADE'`).
-  - `Remarks` (Textarea).
-- **Action**:
-  - Saves directly to `employee_actions` sheet via transactional RPC (`api_create`).
-  - Automatically updates active employee home department, pay group, and canonical read models (`getEmployeesDetailsList`, `getServiceHistory`).
-- **Button Placement**: Dedicated button configured in `HRM_FORM_SEQUENCE` in both **Input Records** and **View Forms** tab ribbons.
+  - `Organization Unit` (Select from `organization_units.unit_id`).
+  - `Station (Airport Base)` (Select from `stations.station_code`, optional/blank for Corporate Head Office posts).
+  - `Duty Position` (Select from `positions.position_title`).
+  - `Pay Group` (Select from `pay_groups.pay_group`).
+  - `Designation` (Text: substantive title).
+  - `Sanctioned Posts` (Number: approved post quota).
+  - `Shift Pattern` (Select: `General (Day)`, `2-Shift Roster`, `3-Shift Roster`, `4-Shift Roster`, `Continuous / 24-7`, `Non-Shift`).
+  - `Remarks` (Text: organogram manual chapter/issue reference).
+- **Action**: Saves to `workforce_setup` sheet.
 
 ---
 
@@ -1084,7 +1269,7 @@ HRM (Main Menu)
   - Filter 3: Text Search input (instant real-time search across Employee Name and Staff ID).
   - *(Note: The Status dropdown tab is removed from the Employee List toolbar to streamline filtering via dedicated tabs).*
 - **7 Functional Sub-view Buttons**:
-  1. **All Employees** (Default active view, formerly Details List)
+  1. **Details List** (Default active view)
   2. **Precise List**
   3. **On Job**
   4. **Retired**
@@ -1092,10 +1277,10 @@ HRM (Main Menu)
   6. **TH**
   7. **Pay Group** (Dynamic selection menu)
 
-#### 1. "All Employees" Table Structure
+#### 1. "Details List" Table Structure
 - **Active Personnel Only**: Strictly filters out and does not show any retired employees (`status !== 'Retired'`). Retired personnel are housed exclusively in the dedicated "Retired" tab.
 - `SL`: Sequential row index (auto-generated 1, 2, 3...).
-- `Name`: Employee full name from `employees`.
+- `Name`: Employee full name from `persons`.
 - `Staff ID`: Active primary Staff ID.
 - `Previous ID`: Old/Casual staff ID from `employee_migrations` (if applicable).
 - `Pay Group`: Latest Pay Group resolved from `promotions` (or `employees.pay_group` if no promotion exists).
@@ -1250,9 +1435,9 @@ Provides a multi-select dropdown populated from `pay_groups.pay_group` allowing 
   - `Department` (Dynamically updates based on Directorate).
   - `Station` (Dynamically updates based on Department).
 - **Dynamic Table Structure**:
-  - Groups data by Pay Group and Designation.
+  - Groups data across Station, Unit / Wing, Position / Role, and Pay Group.
   - Columns:
-    - `Directorate`, `Department`, `Station`, `Pay Group`, `Designation`, `Sanctioned (Setup)`, `Existing (Active Personnel)`, `Required (Deficit = Sanctioned - Existing)`.
+    - `Station`, `Unit / Wing`, `Position / Role`, `Pay Group`, `Shift Roster`, `Sanctioned (Setup)`, `Existing (Active Personnel)`, `Required (Deficit = Sanctioned - Existing)`.
 - **Dynamic Exclusion**:
   - Excludes all retired personnel from the `Existing` count.
   - Automatically omits any department or group with zero assigned personnel and zero sanctioned posts.
@@ -1287,7 +1472,7 @@ Provides a multi-select dropdown populated from `pay_groups.pay_group` allowing 
   - Form displays:
     - `Staff ID` & `Employee Name`.
     - `Pay Group` (Mandatory field, auto-populated from employee profile).
-    - `Basic Pay` (Read-only, retrieved from employee's current `pay_groups.basic_pay`).
+    - `Basic Pay` (Input field, entered during salary calculation; used to compute overtime rate $\text{Rate} = \frac{\text{Basic Pay}}{200} \times 1.5$ for PG-1 to PG-5 and gross monthly salary).
     - `Attendance Days` (Input).
     - `Meal Allowance Eligible Days` (Input, rate calculated based on corporate policy).
     - `Overtime Hours Worked` (Input).
@@ -1325,7 +1510,7 @@ PHASE 2: CORE GAS BACKEND SERVICE LAYER
   └── Implement OrgService.gs (hierarchies, dependent dropdown resolvers)
        ↓
 PHASE 3: HRM BUSINESS ENGINE IMPLEMENTATION
-  ├── Build HrmService.gs (Employees, Promotions, Workforce, Analytics)
+  ├── Build HrmService.gs (Persons, Employees, Migrations)
   ├── Implement Promotion Engine (promotion_references, bulk CSV parser)
   ├── Code Seniority Calculation (Date primary, Sequence secondary, Override)
   └── Code Retirement & Placement Duration engines
@@ -1388,11 +1573,6 @@ PHASE 7: SYSTEM AUDIT, QUALITY ASSURANCE & DEPLOYMENT
 - [ ] All dropdowns display human-readable titles while storing normalized IDs/codes in Google Sheets.
 - [ ] Redundant `"Form"` suffix is eliminated from all schema and view titles.
 - [ ] Selecting any form from the selectable list and clicking OK opens that form in the right div.
-- [ ] Dedicated **"Employee Actions"** button is placed in `HRM_FORM_SEQUENCE` in both Input Records and View Forms tab ribbons.
-- [ ] Typing 5-digit Staff ID in Employee Actions form automatically pre-fills previous department, current pay group, and designation.
-- [ ] Selecting target department in Employee Actions form displays real-time dynamic Directorate ancestry badge (`Directorate ➔ Division ➔ Department`).
-- [ ] Selecting `Action Type === 'DOWNGRADE'` dynamically reveals the conditional `disciplinary_case_id` selector.
-- [ ] Employee migrations form features `Reference Number` as first field, with standardized `'05 Digits ID'` placeholder.
 - [ ] Saving updates the relevant sheet and leaves the form ready for continuous entry.
 - [ ] Pagination operates correctly across 20, 50, 100, 150, 200, 300, and "All".
 - [ ] Deletion triggers a stylized confirmation modal and displays "Data successfully deleted".
@@ -1434,3 +1614,53 @@ PHASE 7: SYSTEM AUDIT, QUALITY ASSURANCE & DEPLOYMENT
 - [ ] Monthly salary calculator accurately factors basic pay, attendance, meal allowance, and overtime into auto-generated PDF pay slips.
 - [ ] Frontend consists purely of native HTML, CSS, and JavaScript with zero external frameworks.
 - [ ] All page container divs, forms, and cards feature compact spacing; top navigation buttons feature reduced border-radius.
+
+### 8. Universal Label Consistency & End-to-End Synchronization
+- [ ] 100% of shared relational fields carry identical display labels (`label`) across all input forms, view tables, and edit dialogs (`Station (Airport Base)`, `Work Location`, `Organization Unit`, `Pay Group`, `Designation`, `Duty Position`, `Shift Assignment`, `Section / Wing Letter Code`, `City`, `Staff ID`, `Employee Type`, `Effective From`, `Effective To`, `Reference Number`, `Remarks`).
+- [ ] Schema configurations (`Schemas.html`), backend table structures (`Database.gs`), service handlers (`HrmService.gs`), and view templates (`ViewOrg.html`, `ViewHrm.html`, `ViewTqc.html`) operate in full synchronization.
+- [ ] Architecture blueprint (`IMPLEMENTATION_PLAN.md`) comprehensively documents all structural, functional, and relational specifications.
+
+### 9. Full-Screen View Forms, Zero Padding & Dynamic Layout Standard (ORG, HRM, TQC)
+- [x] **Zero Outer Padding Across View & Input Stages**: All container divs housing "View Forms" and "Input Records" across ORG, HRM, and TQC modules render with zero margin and zero padding (`width: 100%; height: 100%; padding: 0; margin: 0; overflow: hidden; display: flex; flex-direction: column;`).
+- [x] **Full-Screen Edge-to-Edge Form Expansion**: Dynamic forms and edit forms (`.form-shell-container`) span 100% full width and 100% full height edge-to-edge (`width: 100%; min-width: 100%; max-width: 100%; margin: 0; padding: 0; border: none; border-radius: 0; box-shadow: none; flex: 1; display: flex; flex-direction: column;`). The legacy 860px box constraint and centering margins have been completely eliminated.
+- [x] **Responsive Multi-Column Field Grid**: Form fields layout (`.form-two-column-grid`) adapts responsively to desktop and widescreen viewports using `display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem 1.25rem;` providing optimal spacing without squeezing inputs.
+- [x] **Natural Dynamic Footer (`.form-shell-footer`)**: Form footers dynamically flow to the bottom of the form (`margin-top: auto; position: static !important; box-shadow: none; padding: 1rem 1.5rem !important; display: flex; justify-content: space-between; align-items: center;`). As the form fields expand downward, the footer sits naturally below all inputs; when the user scrolls down, all fields and action buttons ("Cancel", "Save Changes", "Delete") remain 100% accessible with zero cut off or overlapping overlays.
+- [x] **Unconstrained Table & Grid Scrolling**: Spreadsheet table containers (`.table-container`) utilize unconstrained flex height (`flex: 1; min-height: 0; overflow: auto; border: none;`) eliminating artificial `max-height: calc(100vh - 220px)` clamping. Native horizontal and vertical scrollbars (navigation bars) engage automatically whenever data exceeds viewport dimensions.
+- [x] **Clean Unit Code Display Rule**: In tabular records (`ViewOrg.html`), the Unit Code column displays strictly the clean, normalized code (e.g. `DIR-CS`, `DEP-AS`) without any attached bracketed tier badges (such as `[DIRECTORATE]`, `[DEPARTMENT]`).
+- [x] **Standard Airline Multi-Tier Management Role Architecture**:
+  - Administrative Tier: Managed via `organization_units` (e.g. `Airport Services Department`, `Ground Services Department`).
+  - Statutory Pay Group / Rank: Managed via `pay_groups` (e.g. `PG-9` for DGM, `PG-8` for Manager, `PG-7` for Asst Manager).
+  - Functional Duty Role: Managed via `positions` (e.g. `DGM - Airport Services`, `DGM - Ground Handling`, `Manager - Above Wing`, `Station Manager - CGP`, `Country Manager / SM - LHR`).
+  - Station Linkage: Linked via `stations` (`DAC`, `CGP`, `LHR`).
+  - Workforce Headcount & Deployment: Configured via `workforce_setup` (approved organogram) and `placements` / `postings` (individual officer deployment).
+
+### 10. Pay Groups Architecture & Departmental Cadre Linkage (`unit_id`)
+- [x] **Departmental Cadre Association for Pay Groups & Designations**:
+  - `pay_groups` table and form explicitly support `unit_id` (`Department / Unit`) to enable department-specific / directorate-specific cadres and designations, alongside common cadre designations (`-- All Units (Common Cadre) --`).
+  - **Pay Groups Schema**:
+    1. `unit_id` (Select: `organization_units`, optional — defaults to All Units/Common Cadre)
+    2. `pay_group` (Select: `PG-1`, `PG-3(2)`, ... `PG-12`, `LOCAL`)
+    3. `designation` (Text: e.g. `Deputy General Manager`, `Manager`)
+    4. `designation_short` (Text: e.g. `DGM`, `MGR`, `AM`)
+    5. `rank_level` (Number: Auto-fills with Pay Group)
+    6. `status` (Select: `ACTIVE` / `INACTIVE`)
+  - **Eliminated Erroneous Reporting Box**: The non-functional `Reports To (Superior)` and supervisory hierarchy dashed preview box have been cleanly removed, keeping the form focused and streamlined.
+  - **Relational Cascading**: In `workforce_setup`, when a Department/Unit is selected, Pay Groups and Designations cascade and filter dynamically to show only the designations linked to that unit or common cadre.
+  - **Auto-Fill Rank Level**: Selection of Pay Group (e.g. `PG-9`) automatically calculates and populates the statutory numerical rank level (`10`), while allowing manual override if required.
+
+### 11. Designations Master Table & Form Implementation (`designations`)
+- [x] **Relational Schema**:
+  - `deg_id` (PK), `unit_id` (FK -> `organization_units.unit_id`), `pg_category` (FK -> `pay_groups.pg_category`), `pay_group`, `designation`, `designation_short`, `status`, `created_at`, `created_by`, `updated_at`, `updated_by`, `is_deleted`.
+- [x] **Input Form Architecture**:
+  - `Department`: Select dropdown populated strictly with departments from `organization_units` (filtering out directorates, sections, wings, and units using tier detection). Displays clean `unit_name` and saves `unit_id`.
+  - `Pay Group Category`: Dynamic select dropdown populated with distinct `pg_category` from `pay_groups`.
+  - `Pay Group`: Dynamic select dropdown filtered by selected `pg_category` from `pay_groups`.
+  - `Designation`: Text input with placeholder `' '`, required.
+  - `Short Designation`: Text input with placeholder `' '`, optional.
+  - `Status`: Select dropdown (`Active`, `Inactive`, default `Active`).
+- [x] **Grid & View Display Rule**:
+  - In all tabular records and edit/detail views, the Department column automatically resolves `unit_id` against `organization_units` and displays the clean Department Name (`unit_name`).
+- [x] **Edit Modal & Cascading**:
+  - Fully supports edit mode with department selection (clean `unit_name`), preselected `unit_id`, and responsive dynamic cascading between `pg_category` and `pay_group`.
+
+

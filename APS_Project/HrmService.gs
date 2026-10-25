@@ -63,6 +63,60 @@ var HrmService = (function() {
   }
 
   /**
+   * Recursively resolves the organizational unit hierarchy for any unit across all 9 Directorates.
+   * Traverses parent_unit_id up the tree until reaching the root Directorate.
+   * 
+   * @param {string} unitIdentifier - Target unit_id or unit_code.
+   * @param {Object} unitMap - Map of unit_id/unit_code to organization_units objects.
+   * @returns {Object} { rootDir, parentDep, currentUnit, ancestryPath }
+   */
+  function resolveUnitHierarchy(unitIdentifier, unitMap) {
+    if (!unitIdentifier || !unitMap) {
+      return { rootDir: null, parentDep: null, currentUnit: null, ancestryPath: [] };
+    }
+    var cleanKey = String(unitIdentifier).trim().toUpperCase();
+    var current = unitMap[cleanKey];
+    if (!current) {
+      return { rootDir: null, parentDep: null, currentUnit: null, ancestryPath: [] };
+    }
+
+    var ancestry = [];
+    var visited = {};
+    var curr = current;
+    var rootDir = null;
+    var parentDep = null;
+
+    while (curr && !visited[curr.unit_id]) {
+      visited[curr.unit_id] = true;
+      ancestry.unshift(curr);
+      var type = String(curr.unit_type || '').toUpperCase();
+
+      if (type === 'DIRECTORATE' || type === 'HEADQUARTER' || !curr.parent_unit_id) {
+        rootDir = curr;
+      } else if (type === 'DEPARTMENT' || type === 'DIVISION') {
+        if (!parentDep) parentDep = curr;
+      }
+
+      if (curr.parent_unit_id) {
+        curr = unitMap[String(curr.parent_unit_id).trim().toUpperCase()];
+      } else {
+        break;
+      }
+    }
+
+    if (!rootDir && ancestry.length > 0) {
+      rootDir = ancestry[0];
+    }
+
+    return {
+      rootDir: rootDir,
+      parentDep: parentDep,
+      currentUnit: current,
+      ancestryPath: ancestry
+    };
+  }
+
+  /**
    * Canonical Employee Read Model
    * Single unified backend query powering all 7 employee list views.
    * Joins 16 distinct database tables in memory to provide 0ms relational rendering.
@@ -78,7 +132,7 @@ var HrmService = (function() {
     var payGroups = Database.getAll('pay_groups', forceRefresh);
     var migrations = Database.getAll('employee_migrations', forceRefresh);
     var extensions = Database.getAll('extensions', forceRefresh);
-    var retirements = Database.getAll('self_retirements', forceRefresh);
+    var separations = Database.getAll('employee_separations', forceRefresh);
     var addlCharges = Database.getAll('additional_charges', forceRefresh);
     var actingList = Database.getAll('acting_assignments', forceRefresh);
     var stations = Database.getAll('stations', forceRefresh);
@@ -86,6 +140,8 @@ var HrmService = (function() {
     var shifts = Database.getAll('shifts', forceRefresh);
     var orgUnits = Database.getAll('organization_units', forceRefresh);
     var employeeActions = Database.getAll('employee_actions', forceRefresh);
+    var positions = Database.getAll('positions', forceRefresh);
+    var designations = Database.getAll('designations', forceRefresh);
 
     var today = new Date();
 
@@ -93,9 +149,13 @@ var HrmService = (function() {
     var pgMap = {};
     var pgRankMap = {};
     payGroups.forEach(function(pg) {
-      var pgKey = String(pg.pay_group || pg.pg_id || '').trim().toUpperCase();
-      pgMap[pgKey] = pg;
-      pgRankMap[pgKey] = parseInt(pg.rank_level || 0, 10);
+      var pgKey = String(pg.pay_group || '').trim().toUpperCase();
+      var idKey = String(pg.pg_id || '').trim().toUpperCase();
+      var unitKey = String(pg.unit_id || '').trim().toUpperCase();
+      if (idKey) pgMap[idKey] = pg;
+      if (unitKey && pgKey) pgMap[unitKey + '_' + pgKey] = pg;
+      if (pgKey && !pgMap[pgKey]) pgMap[pgKey] = pg;
+      if (pgKey) pgRankMap[pgKey] = parseInt(pg.rank_level || 0, 10);
     });
 
     // 1.1 Directorate Map & 2. Department Map (Synthesized from centralized 3NF organization_units)
@@ -127,6 +187,20 @@ var HrmService = (function() {
         }
       });
     }
+
+    // 1.2 Positions Map & Designations Map
+    var posMap = {};
+    (positions || []).forEach(function(p) {
+      if (p.position_id) posMap[String(p.position_id).trim().toUpperCase()] = p;
+      if (p.position_code) posMap[String(p.position_code).trim().toUpperCase()] = p;
+      if (p.position_title) posMap[String(p.position_title).trim().toUpperCase()] = p;
+    });
+
+    var desigMap = {};
+    (designations || []).forEach(function(d) {
+      if (d.designation_id) desigMap[String(d.designation_id).trim().toUpperCase()] = d;
+      if (d.designation_name) desigMap[String(d.designation_name).trim().toUpperCase()] = d;
+    });
 
     // 2.1 Work Locations Map (Keyed by location_id and location_code)
     var locMap = {};
@@ -163,12 +237,15 @@ var HrmService = (function() {
       }
     });
 
-    // 6. Retirements Map (Self-Retirement, Resignation, Left Job)
-    var retirementMap = {};
-    retirements.forEach(function(ret) {
+    // 6. Retirements / Separation Map (Self-Retirement, Resignation, Termination, Death, Left Job)
+    var separationMap = {};
+    separations.forEach(function(ret) {
       var sid = String(ret.staff_id || '').trim().toUpperCase();
-      if (!retirementMap[sid] || new Date(ret.retirement_date) > new Date(retirementMap[sid].retirement_date)) {
-        retirementMap[sid] = ret;
+      var rDate = Utils.parseDate(ret.separation_date || ret.retirement_date);
+      var existing = separationMap[sid];
+      var existingDate = existing ? Utils.parseDate(existing.separation_date || existing.retirement_date) : null;
+      if (!existing || (rDate && existingDate && rDate > existingDate) || (rDate && !existingDate) || (!existingDate)) {
+        separationMap[sid] = ret;
       }
     });
 
@@ -254,7 +331,7 @@ var HrmService = (function() {
       var latestPlacement = placementMap[sid];
       var latestPosting = postingMap[sid];
       var extension = extensionMap[sid];
-      var retirementEvent = retirementMap[sid];
+      var retirementEvent = separationMap[sid];
 
       // Pay Group & Designation resolution: Reconcile between Promotion and Administrative Action
       var currentPg = '';
@@ -278,10 +355,13 @@ var HrmService = (function() {
         currentPg = emp.pay_group || '';
       }
 
-      var pgObj = pgMap[String(currentPg).trim().toUpperCase()] || {};
+      var empUnitKey = String(emp.dep_id || emp.department_code || '').trim().toUpperCase();
+      var pgObj = (empUnitKey && pgMap[empUnitKey + '_' + String(currentPg).trim().toUpperCase()])
+               || pgMap[String(currentPg).trim().toUpperCase()]
+               || {};
       var baseDesignation = (latestAction && latestAction.to_designation && (!promoDateObj || (actDateObj && actDateObj >= promoDateObj)))
         ? latestAction.to_designation
-        : (pgObj.designation_short || pgObj.designation || currentPg || '-');
+        : (emp.designation || pgObj.designation || pgObj.designation_short || currentPg || '-');
 
       // Combined Designation: base designation + Add. Charge + Acting
       var desigParts = [baseDesignation];
@@ -306,16 +386,21 @@ var HrmService = (function() {
         }
       }
 
-      if (retirementEvent && retirementEvent.retirement_date) {
-        var retDate = Utils.parseDate(retirementEvent.retirement_date);
-        effectiveRetDate = retDate;
+      var separationType = '';
+      if (retirementEvent) {
+        var sepDate = Utils.parseDate(retirementEvent.separation_date || retirementEvent.retirement_date);
+        if (sepDate) effectiveRetDate = sepDate;
         status = 'Retired';
+        separationType = retirementEvent.event_type || 'Separation';
       } else if (effectiveRetDate && effectiveRetDate <= today && status !== 'Extension') {
         status = 'Retired';
+        separationType = 'Statutory Retirement';
       } else if (statutoryRetDate && statutoryRetDate <= today && status !== 'Extension') {
         status = 'Retired';
-      } else if (emp.status === 'Retired' || emp.status === 'RETIRED') {
+        separationType = 'Statutory Retirement';
+      } else if (emp.status === 'Retired' || emp.status === 'RETIRED' || emp.status === 'Not In Service' || emp.status === 'Resigned' || emp.status === 'Termination' || emp.status === 'Terminated' || emp.status === 'Death' || emp.status === 'Left Job') {
         status = 'Retired';
+        separationType = emp.status || 'Not In Service';
       }
 
       // Calculate days to retirement for active employees (due in <= 180 days)
@@ -349,12 +434,12 @@ var HrmService = (function() {
 
       if (latestPlacement) {
         var pLocId = String(latestPlacement.location_id || '').trim().toUpperCase();
-        workLocObj = locMap[pLocId];
-        if (workLocObj) {
-          workLocName = workLocObj.location_name || workLocObj.location_code || '-';
-          var stnId = String(workLocObj.station_id || '').trim().toUpperCase();
-          var matchedStn = stnMap[stnId];
-          postingStn = matchedStn ? (matchedStn.station_code || matchedStn.station_name) : (workLocObj.station_id || latestPlacement.station_code || '-');
+        var pWorkLoc = locMap[pLocId];
+        if (pWorkLoc) {
+          workLocName = pWorkLoc.location_name || pWorkLoc.location_code || '-';
+          var pStnId = String(pWorkLoc.station_id || '').trim().toUpperCase();
+          var pMatchedStn = stnMap[pStnId];
+          postingStn = pMatchedStn ? (pMatchedStn.station_code || pMatchedStn.station_name) : (pWorkLoc.station_id || latestPlacement.station_code || '-');
         } else if (latestPlacement.station_code) {
           postingStn = latestPlacement.station_code;
         }
@@ -367,18 +452,28 @@ var HrmService = (function() {
         }
 
         if (latestPlacement.position_id) {
-          placementPosition = latestPlacement.position_id;
+          var pObj = posMap[String(latestPlacement.position_id).trim().toUpperCase()];
+          placementPosition = pObj ? (pObj.position_title || pObj.position_code) : latestPlacement.position_id;
         }
-      } else if (latestPosting) {
+      }
+
+      // Authoritative macro administrative posting order overrides or establishes official station posting
+      if (latestPosting) {
+        var pstStnCode = String(latestPosting.station_code || '').trim().toUpperCase();
         var pstLocId = String(latestPosting.location_id || '').trim().toUpperCase();
-        workLocObj = locMap[pstLocId];
-        if (workLocObj) {
-          workLocName = workLocObj.location_name || workLocObj.location_code || '-';
-          var stnId2 = String(workLocObj.station_id || '').trim().toUpperCase();
+        var pstWorkLoc = locMap[pstLocId];
+
+        if (pstStnCode) {
+          var matchedStn3 = stnMap[pstStnCode];
+          postingStn = matchedStn3 ? (matchedStn3.station_code || matchedStn3.station_name) : pstStnCode;
+        } else if (pstWorkLoc) {
+          var stnId2 = String(pstWorkLoc.station_id || '').trim().toUpperCase();
           var matchedStn2 = stnMap[stnId2];
-          postingStn = matchedStn2 ? (matchedStn2.station_code || matchedStn2.station_name) : (workLocObj.station_id || latestPosting.station_code || '-');
-        } else {
-          postingStn = latestPosting.station_code || '-';
+          postingStn = matchedStn2 ? (matchedStn2.station_code || matchedStn2.station_name) : (pstWorkLoc.station_id || pstWorkLoc.location_name || '-');
+        }
+
+        if (workLocName === '-' && pstWorkLoc) {
+          workLocName = pstWorkLoc.location_name || pstWorkLoc.location_code || '-';
         }
       }
 
@@ -388,18 +483,18 @@ var HrmService = (function() {
         placementDisplay = workLocName + ' (' + placementUnit + ')';
       }
 
-      // Home Organization: Employee's formal home ownership (Directorate / Department)
+      // Home Organization: Employee's formal home ownership (Directorate / Department / Unit)
       var depCode = emp.department_code || emp.dep_id || '';
       if (latestAction && latestAction.to_org_unit_id && (!promoDateObj || (actDateObj && actDateObj >= promoDateObj))) {
         depCode = latestAction.to_org_unit_id;
       }
-      var homeOrgUnit = unitMap[String(depCode).trim().toUpperCase()];
+      var hier = resolveUnitHierarchy(depCode, unitMap);
+      var homeOrgUnit = hier.currentUnit || unitMap[String(depCode).trim().toUpperCase()];
       var depObj = depMap[String(depCode).trim().toUpperCase()];
       var homeOrgDisplay = homeOrgUnit ? (homeOrgUnit.unit_name || homeOrgUnit.unit_code) : (depObj ? (depObj.dep_name || depObj.dep_letter_code || depObj.dep_code) : (depCode || '-'));
       var depLetter = homeOrgUnit ? (homeOrgUnit.letter_code || homeOrgUnit.unit_code) : (depObj ? (depObj.dep_letter_code || depObj.dep_code) : (depCode || '-'));
-      var dirId = (depObj && depObj.dir_id) ? depObj.dir_id : (emp.dir_id || (homeOrgUnit && homeOrgUnit.parent_unit_id ? homeOrgUnit.parent_unit_id : ''));
-      var dirObj = dirMap[String(dirId).trim().toUpperCase()];
-      var dirName = dirObj ? (dirObj.dir_name || dirObj.dir_code || dirId) : (dirId || 'Airport Services Division');
+      var dirObj = hier.rootDir || (depObj && depObj.dir_id ? dirMap[String(depObj.dir_id).trim().toUpperCase()] : null);
+      var dirName = dirObj ? (dirObj.unit_name || dirObj.dir_name || dirObj.unit_code || dirObj.dir_code) : (homeOrgUnit && homeOrgUnit.unit_type === 'DIRECTORATE' ? (homeOrgUnit.unit_name || homeOrgUnit.unit_code) : (homeOrgDisplay !== '-' ? homeOrgDisplay : '-'));
 
       processedList.push({
         name: emp.emp_name || emp.full_name || '-',
@@ -428,6 +523,7 @@ var HrmService = (function() {
         work_location: workLocName,
         placement_unit: placementUnit,
         placement_position: placementPosition,
+        position: placementPosition,
         placement_duration: placementDuration,
         posting: postingStn,
         station: postingStn,
@@ -440,6 +536,12 @@ var HrmService = (function() {
         joining_date_formatted: formatDate(emp.joining_date),
         retirement_date: effectiveRetDate,
         retirement_date_formatted: formatDate(effectiveRetDate),
+        separation_date: retirementEvent ? (retirementEvent.separation_date || retirementEvent.retirement_date) : effectiveRetDate,
+        separation_date_formatted: formatDate(retirementEvent ? (retirementEvent.separation_date || retirementEvent.retirement_date) : effectiveRetDate),
+        separation_type: separationType,
+        event_type: separationType,
+        is_retired: (status === 'Retired'),
+        is_not_in_service: (status === 'Retired'),
         days_to_retire: daysToRetire,
         is_retiring_soon: isRetiringSoon,
         home_district: emp.home_district || '-',
@@ -875,29 +977,23 @@ var HrmService = (function() {
         break;
       }
     }
-    if (!depObj && orgUnits) {
-      for (var ouIdx = 0; ouIdx < orgUnits.length; ouIdx++) {
-        var ou = orgUnits[ouIdx];
-        if (String(ou.unit_id || ou.unit_code || '').trim().toUpperCase() === String(depCode).trim().toUpperCase()) {
-          depObj = { dep_id: ou.unit_id, dep_code: ou.unit_code || ou.unit_id, dep_name: ou.unit_name, dir_id: ou.parent_unit_id };
-          break;
-        }
-      }
-    }
-    var depName = depObj ? (depObj.dep_name || depObj.dep_code) : (depCode || '-');
-
-    var dirId = (depObj && depObj.dir_id) ? depObj.dir_id : (rawEmp.dir_id || (latestPlc ? latestPlc.dir_id : ''));
-    var dirObj = null;
+    var uMap = {};
     if (orgUnits) {
-      for (var ou2 = 0; ou2 < orgUnits.length; ou2++) {
-        var ouD = orgUnits[ou2];
-        if (String(ouD.unit_id || ouD.unit_code || '').trim().toUpperCase() === String(dirId).trim().toUpperCase()) {
-          dirObj = { dir_id: ouD.unit_id, dir_code: ouD.unit_code || ouD.unit_id, dir_name: ouD.unit_name };
-          break;
-        }
-      }
+      orgUnits.forEach(function(u) {
+        if (u.unit_id) uMap[String(u.unit_id).trim().toUpperCase()] = u;
+        if (u.unit_code) uMap[String(u.unit_code).trim().toUpperCase()] = u;
+      });
     }
-    var dirName = dirObj ? (dirObj.dir_name || dirObj.dir_code) : (dirId || 'Airport Services Division');
+
+    var hier = resolveUnitHierarchy(depCode, uMap);
+    var homeUnit = hier.currentUnit;
+    var depName = depObj ? (depObj.dep_name || depObj.dep_code) : (homeUnit ? (homeUnit.unit_name || homeUnit.unit_code) : (depCode || '-'));
+
+    var dirObj = hier.rootDir;
+    if (!dirObj && dirId && uMap[String(dirId).trim().toUpperCase()]) {
+      dirObj = uMap[String(dirId).trim().toUpperCase()];
+    }
+    var dirName = dirObj ? (dirObj.unit_name || dirObj.dir_name || dirObj.unit_code || dirObj.dir_code) : (homeUnit && homeUnit.unit_type === 'DIRECTORATE' ? (homeUnit.unit_name || homeUnit.unit_code) : (depName !== '-' ? depName : '-'));
 
     // 5. Retirement Status Resolution
     var today = new Date();
@@ -905,10 +1001,13 @@ var HrmService = (function() {
     var effectiveRetDate = statutoryRetDate;
     var status = rawEmp.status || 'Active';
 
-    var selfR = Database.getAll('self_retirements');
+    var selfR = Database.getAll('employee_separations');
     for (var srIdx = 0; srIdx < selfR.length; srIdx++) {
-      if (String(selfR[srIdx].staff_id || '').trim().toUpperCase() === cleanId && selfR[srIdx].retirement_date) {
-        effectiveRetDate = Utils.parseDate(selfR[srIdx].retirement_date);
+      if (String(selfR[srIdx].staff_id || '').trim().toUpperCase() === cleanId) {
+        var sDate = selfR[srIdx].separation_date || selfR[srIdx].retirement_date;
+        if (sDate) {
+          effectiveRetDate = Utils.parseDate(sDate);
+        }
         status = 'Retired';
         break;
       }
@@ -1003,7 +1102,7 @@ var HrmService = (function() {
       name: empName,
       staff_id: rawEmp.staff_id,
       report_id: reportIdentifier,
-      directorate: dirName || 'AIRPORT SERVICES DIVISION',
+      directorate: dirName || '-',
       department: depName || '-',
       joining_date: joiningDateFormatted,
       current_pg: currentPg,
@@ -1165,26 +1264,32 @@ var HrmService = (function() {
   }
 
   /**
-   * Workforce Setup (Sanctioned vs Existing vs Required Deficit)
-   * Excludes retired personnel.
+   * Workforce Sanction vs Actual Deficit Engine
+   * Dynamically calculates Sanctioned vs Existing vs Deficit across Station, Unit, Position & Pay Group.
    * Auto-excludes groups with 0 assigned personnel and 0 setup.
    */
   function getWorkforceSetupReport(filters) {
     var setupRecords = Database.getAll('workforce_setup');
     var allDetails = getEmployeesDetailsList();
+    var orgUnits = Database.getAll('organization_units');
+    var positions = Database.getAll('positions');
+
+    var unitMap = {};
+    (orgUnits || []).forEach(function(u) {
+      if (u.unit_id) unitMap[String(u.unit_id).trim().toUpperCase()] = u;
+      if (u.unit_code) unitMap[String(u.unit_code).trim().toUpperCase()] = u;
+    });
+
+    var posMap = {};
+    (positions || []).forEach(function(p) {
+      if (p.position_id) posMap[String(p.position_id).trim().toUpperCase()] = p;
+      if (p.position_code) posMap[String(p.position_code).trim().toUpperCase()] = p;
+      if (p.position_title) posMap[String(p.position_title).trim().toUpperCase()] = p;
+    });
 
     // Filter out retired personnel from active headcount
     var activeEmployees = allDetails.filter(function(e) {
       return e.status !== 'Retired';
-    });
-
-    // Group active employees by Station, Pay Group, Designation
-    var existingCounts = {};
-    activeEmployees.forEach(function(e) {
-      var stn = String(e.posting || '').toUpperCase().trim();
-      var pg = String(e.pay_group || '').toUpperCase().trim();
-      var key = stn + '|' + pg;
-      existingCounts[key] = (existingCounts[key] || 0) + 1;
     });
 
     var rows = [];
@@ -1192,22 +1297,73 @@ var HrmService = (function() {
     setupRecords.forEach(function(set) {
       var stn = String(set.station_code || set.station_id || '').toUpperCase().trim();
       var pg = String(set.pay_group || '').toUpperCase().trim();
-      var desig = set.designation || '-';
-      var sanctioned = parseInt(set.set_up || set.staff_number || 0, 10);
+      var sanctioned = parseInt(set.sanctioned_posts || set.set_up || set.staff_number || 0, 10);
 
-      var key = stn + '|' + pg;
-      var existing = existingCounts[key] || 0;
+      // Resolve unit name
+      var unitId = String(set.unit_id || set.dep_id || '').trim();
+      var uObj = unitId ? unitMap[unitId.toUpperCase()] : null;
+      var unitName = uObj ? (uObj.unit_name || uObj.unit_code) : (unitId || '-');
+
+      // Resolve position title
+      var rawPos = set.position_id || set.designation || '';
+      var posObj = rawPos ? posMap[String(rawPos).trim().toUpperCase()] : null;
+      var posTitle = posObj ? (posObj.position_title || posObj.position_code) : (rawPos || '-');
+
+      // Count active matching employees
+      var existing = activeEmployees.filter(function(e) {
+        var eStn = String(e.posting || e.station || '').toUpperCase().trim();
+        var ePg = String(e.pay_group || '').toUpperCase().trim();
+
+        // Must match station and pay group:
+        // If workforce_setup specifies a station (e.g. DAC, CGP, DXB), employee must be at that station.
+        // If workforce_setup station is empty or '-', it is a Directorate / Head Office post:
+        // matches employees whose posting is empty, '-', 'HQ', or not assigned to an airport station.
+        if (stn && stn !== '-') {
+          if (eStn !== stn) return false;
+        } else {
+          // Directorate / Head Office post: exclude employees explicitly posted to a specific airport station
+          if (eStn && eStn !== '-' && eStn !== 'HQ' && eStn !== 'HEAD OFFICE') return false;
+        }
+        if (pg && pg !== '-' && ePg !== pg) return false;
+
+        // If setup specifies a position, verify match against placement position or designation
+        if (rawPos && rawPos !== '-') {
+          var ePos = String(e.placement_position || e.position || '').toUpperCase().trim();
+          var eDesig = String(e.designation || '').toUpperCase().trim();
+          var matchPos = (ePos === String(posTitle).toUpperCase() || ePos === String(rawPos).toUpperCase() ||
+                          eDesig.indexOf(String(posTitle).toUpperCase()) !== -1 || eDesig.indexOf(String(rawPos).toUpperCase()) !== -1);
+          if (!matchPos) return false;
+        }
+
+        // If setup specifies a unit, verify match against placement unit or department
+        if (unitId && unitId !== '-') {
+          var eUnit = String(e.placement_unit || '').toUpperCase().trim();
+          var eDept = String(e.department || e.home_organization || '').toUpperCase().trim();
+          var matchUnit = (eUnit === String(unitName).toUpperCase() || eUnit === unitId.toUpperCase() ||
+                           eDept === String(unitName).toUpperCase() || eDept === unitId.toUpperCase());
+          if (!matchUnit) return false;
+        }
+
+        return true;
+      }).length;
+
       var required = Math.max(0, sanctioned - existing);
 
       // Auto exclude rows with 0 sanctioned and 0 existing
       if (sanctioned === 0 && existing === 0) return;
 
       rows.push({
-        directorate: set.dir_id || '-',
-        department: set.dep_id || '-',
-        station: stn || '-',
+        unit_id: unitId || '-',
+        unit: unitName,
+        directorate: set.dir_id || (uObj && uObj.unit_type === 'DIRECTORATE' ? uObj.unit_name : '-'),
+        department: set.dep_id || unitName,
+        station: stn || 'Head Office',
+        position: posTitle,
+        designation: posTitle,
         pay_group: pg || '-',
-        designation: desig,
+        duty_pattern: set.duty_pattern || set.shift_type || 'General (Office)',
+        shift_type: set.duty_pattern || set.shift_type || 'General',
+        remarks: set.remarks || '',
         sanctioned: sanctioned,
         existing: existing,
         required: required
@@ -1397,7 +1553,7 @@ var HrmService = (function() {
       return String(p.pay_group || '').trim().toUpperCase() === payGroupSpecified.toUpperCase();
     });
 
-    var basicPay = pg ? parseFloat(pg.basic_pay || 0) : 50000;
+    var basicPay = (data.basic_pay !== undefined && data.basic_pay !== null && data.basic_pay !== '') ? parseFloat(data.basic_pay) : 0;
     var attendanceDays = parseFloat(data.attendance_days || 0);
     var mealDays = parseFloat(data.meal_days || 0);
     var overtimeHours = parseFloat(data.overtime_hours || 0);
@@ -1496,6 +1652,7 @@ var HrmService = (function() {
       emp_type: data.emp_type || '',
       emp_type_id: data.emp_type_id || '',
       pay_group: data.pay_group || '',
+      designation: data.designation || '',
       contact_primary: data.contact_primary || '',
       contact_secondary: data.contact_secondary || data.contact_alternate || '',
       contact_family: data.contact_family || '',

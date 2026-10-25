@@ -62,11 +62,15 @@ var app = window.app = {
    * Loads the default module ('ORG').
    */
   init: function() {
-    // Non-blocking background prefetch for 0ms transitions
-    api.getMasterData().catch(function() {});
-    api.getHrmDetails().catch(function() {});
+    // Start optional prefetches without allowing missing/failing API methods to block navigation.
+    try {
+      if (typeof api !== 'undefined' && api.getMasterData) Promise.resolve(api.getMasterData()).catch(function() {});
+      if (typeof api !== 'undefined' && api.getHrmDetails) Promise.resolve(api.getHrmDetails()).catch(function() {});
+    } catch (prefetchError) {
+      console.warn('Background data prefetch failed; navigation remains available.', prefetchError);
+    }
 
-    // Default to first module (ORG)
+    // Default to first module (ORG); module buttons remain usable if rendering fails.
     this.loadSidebar('ORG');
   },
 
@@ -76,6 +80,10 @@ var app = window.app = {
    * @param {string} moduleKey - Target module ('ORG', 'HRM', or 'TQC').
    */
   loadSidebar: function(moduleKey) {
+    if (!this.modules[moduleKey]) {
+      console.warn('Unknown module requested:', moduleKey);
+      return;
+    }
     this.currentModule = moduleKey;
 
     var titleEl = document.getElementById('sidebar-title');

@@ -4,53 +4,216 @@
 </div>
 
 <script>
-/**
- * ============================================================================
- * SANDVIORA AVIOSOLUTION - Organizational Structure (ORG) Module Controller
- * ============================================================================
- * File: ViewOrg.html
- * Architectural Role: Client-Side View Controller for Organizational Hierarchy
- * 
- * Description:
- * Manages the corporate administrative hierarchy adhering to strict Third Normal
- * Form (3NF) relational standards. Centralizes the management of organizational
- * entities (Directorates, Departments, Sections, Stations, Work Locations, Shifts,
- * Pay Groups, Employee Types, and Workforce Sanctions) into a unified structure.
- * 
- * Submenus & Modes:
- * 1. Dashboard (`renderDashboard`):
- *    Displays high-level KPI count cards across all administrative tiers.
- * 2. Input Records (`renderInputRecords`, `openInputForm`, `submitDynamicForm`):
- *    Presents a selectable list of ORG modules to open dynamic data entry forms.
- * 3. View Forms (`renderViewForms`, `openViewGrid`, `deleteRecord`):
- *    Presents structured data tables with search, sorting, pagination, and deletion.
- * ============================================================================
- */
-var orgViews = window.orgViews = {
-  activeView: 'dashboard',
-  currentGridData: [],
-  currentGridPage: 1,
-  currentGridPageSize: 20,
+  /**
+   * ============================================================================
+   * SANDVIORA AVIOSOLUTION - Organizational Structure (ORG) Module Controller
+   * ============================================================================
+   * File: ViewOrg.html
+   * Architectural Role: Client-Side View Controller for Organizational Hierarchy
+   * 
+   * Description:
+   * Manages the corporate administrative hierarchy adhering to strict Third Normal
+   * Form (3NF) relational standards. Centralizes the management of organizational
+   * entities (Directorates, Departments, Sections, Stations, Work Locations, Shifts,
+   * Pay Groups, Employee Types, and Workforce Sanctions) into a unified structure.
+   * 
+   * Submenus & Modes:
+   * 1. Dashboard (`renderDashboard`):
+   *    Displays high-level KPI count cards across all administrative tiers.
+   * 2. Input Records (`renderInputRecords`, `openInputForm`, `submitDynamicForm`):
+   *    Presents a selectable list of ORG modules to open dynamic data entry forms.
+   * 3. View Forms (`renderViewForms`, `openViewGrid`, `deleteRecord`):
+   *    Presents structured data tables with search, sorting, pagination, and deletion.
+   * ============================================================================
+   */
+  var orgViews = window.orgViews = {
+    activeView: 'dashboard',
+    currentGridData: [],
+    currentGridPage: 1,
+    currentGridPageSize: 20,
 
-  renderDashboard: function() {
-    this.activeView = 'dashboard';
-    var mount = document.getElementById('org-content-mount');
-    if (!mount) return;
+    detectUnitTier: function (u) {
+      if (!u) return 'UNIT';
+      var explicitType = String(u.unit_type || '').trim().toUpperCase();
+      var explicitTier = {
+        'EXECUTIVE': 'CORPORATE',
+        'CORPORATE': 'CORPORATE',
+        'CEO': 'CORPORATE',
+        'MD & CEO': 'CORPORATE',
+        'DIRECTORATE': 'DIRECTORATE',
+        'DIVISION': 'DIVISION',
+        'DEPARTMENT': 'DEPARTMENT',
+        'WING': 'WING',
+        'SUB-WING': 'WING',
+        'SECTION': 'SECTION',
+        'UNIT': 'UNIT',
+        'TEAM': 'UNIT'
+      };
+      if (explicitTier[explicitType]) return explicitTier[explicitType];
+      var rawCode = String(u.unit_code || '').trim().toUpperCase();
+      var cleanCode = rawCode.replace(/[^A-Z]/g, '');
+      var prefix3 = cleanCode.slice(0, 3);
 
-    mount.innerHTML = `
+      if (prefix3 === 'COR' || prefix3 === 'CEO' || rawCode.startsWith('COR') || rawCode.startsWith('CEO') || rawCode.startsWith('MD') || rawCode.startsWith('HQ')) {
+        return 'CORPORATE';
+      }
+      if (prefix3 === 'DIR' || rawCode.startsWith('DIR')) {
+        return 'DIRECTORATE';
+      }
+      if (prefix3 === 'DIV' || rawCode.startsWith('DIV')) {
+        return 'DIVISION';
+      }
+      if (prefix3 === 'DEP' || rawCode.startsWith('DEP')) {
+        return 'DEPARTMENT';
+      }
+      if (prefix3 === 'WIN' || prefix3 === 'WNG' || rawCode.startsWith('WIN') || rawCode.startsWith('WNG')) {
+        return 'WING';
+      }
+      if (prefix3 === 'SEC' || rawCode.startsWith('SEC')) {
+        return 'SECTION';
+      }
+      if (prefix3 === 'UNI' || prefix3 === 'UNT' || rawCode.startsWith('UNI') || rawCode.startsWith('UNT')) {
+        return 'UNIT';
+      }
+
+      var lCode = String(u.letter_code || '').trim().toUpperCase();
+      var lClean = lCode.replace(/[^A-Z]/g, '');
+      var lPrefix3 = lClean.slice(0, 3);
+      if (lPrefix3 === 'COR' || lPrefix3 === 'CEO' || lCode.startsWith('COR') || lCode.startsWith('CEO') || lCode.startsWith('MD')) return 'CORPORATE';
+      if (lPrefix3 === 'DIR' || lCode.startsWith('DIR')) return 'DIRECTORATE';
+      if (lPrefix3 === 'DIV' || lCode.startsWith('DIV')) return 'DIVISION';
+      if (lPrefix3 === 'DEP' || lCode.startsWith('DEP')) return 'DEPARTMENT';
+      if (lPrefix3 === 'WIN' || lPrefix3 === 'WNG' || lCode.startsWith('WIN')) return 'WING';
+      if (lPrefix3 === 'SEC' || lCode.startsWith('SEC')) return 'SECTION';
+      if (lPrefix3 === 'UNI' || lPrefix3 === 'UNT' || lCode.startsWith('UNI')) return 'UNIT';
+
+      var uType = String(u.unit_type || '').trim().toUpperCase();
+      if (uType === 'CORPORATE' || uType === 'CEO' || uType === 'MD & CEO') return 'CORPORATE';
+      if (uType === 'DIRECTORATE' || uType === 'HEADQUARTER') return 'DIRECTORATE';
+      if (uType === 'DIVISION') return 'DIVISION';
+      if (uType === 'DEPARTMENT') return 'DEPARTMENT';
+      if (uType === 'WING' || uType === 'SUB-WING') return 'WING';
+      if (uType === 'SECTION') return 'SECTION';
+      if (uType === 'UNIT' || uType === 'TEAM') return 'UNIT';
+
+      var uName = String(u.unit_name || '').trim().toUpperCase();
+      if (uName.indexOf('DIRECTORATE') !== -1) return 'DIRECTORATE';
+      if (uName.indexOf('DIVISION') !== -1) return 'DIVISION';
+      if (uName.indexOf('DEPARTMENT') !== -1) return 'DEPARTMENT';
+      if (uName.indexOf('WING') !== -1) return 'WING';
+      if (uName.indexOf('SECTION') !== -1) return 'SECTION';
+      if (uName.indexOf('CORPORATE') !== -1 || uName.indexOf('CEO') !== -1 || uName.indexOf('MANAGING DIRECTOR') !== -1) return 'CORPORATE';
+
+      if (!u.parent_unit_id) return 'CORPORATE';
+
+      return 'UNIT';
+    },
+
+    buildHierarchyTreeOptions: function (units) {
+      if (!units || !units.length) return [];
+      var unitMap = {};
+      var childrenMap = {};
+      var typePriority = {
+        'CORPORATE': 1, 'MD & CEO': 1, 'CEO': 1,
+        'DIRECTORATE': 2, 'HEADQUARTER': 2,
+        'DIVISION': 3,
+        'DEPARTMENT': 4,
+        'WING': 5,
+        'SECTION': 6,
+        'UNIT': 7, 'TEAM': 7
+      };
+
+      units.forEach(function (u) {
+        if (!u.unit_id) return;
+        unitMap[u.unit_id] = u;
+        var pId = (u.parent_unit_id || '').trim();
+        if (!childrenMap[pId]) childrenMap[pId] = [];
+        childrenMap[pId].push(u);
+      });
+
+      var sortUnits = function (list) {
+        return list.slice().sort(function (a, b) {
+          var pA = typePriority[orgViews.detectUnitTier(a)] || 99;
+          var pB = typePriority[orgViews.detectUnitTier(b)] || 99;
+          if (pA !== pB) return pA - pB;
+          return String(a.unit_name || '').localeCompare(String(b.unit_name || ''));
+        });
+      };
+
+      var roots = [];
+      units.forEach(function (u) {
+        var pId = (u.parent_unit_id || '').trim();
+        if (!pId || !unitMap[pId]) {
+          roots.push(u);
+        }
+      });
+      roots = sortUnits(roots);
+
+      var treeList = [];
+      var visited = {};
+
+      var traverse = function (node, depth) {
+        if (visited[node.unit_id]) return;
+        visited[node.unit_id] = true;
+
+        var indent = '';
+        for (var i = 0; i < depth; i++) {
+          indent += '\u00A0\u00A0\u00A0\u00A0';
+        }
+        var prefix = depth === 0 ? '' : (indent + '↳ ');
+        var label = prefix + (node.unit_name || node.unit_code);
+
+        treeList.push({
+          unit_id: node.unit_id,
+          unit_code: node.unit_code,
+          unit_name: node.unit_name,
+          unit_type: node.unit_type,
+          label: label,
+          depth: depth,
+          raw: node
+        });
+
+        var children = childrenMap[node.unit_id] || [];
+        var sortedChildren = sortUnits(children);
+        sortedChildren.forEach(function (child) {
+          traverse(child, depth + 1);
+        });
+      };
+
+      roots.forEach(function (r) {
+        traverse(r, 0);
+      });
+
+      units.forEach(function (u) {
+        if (!visited[u.unit_id]) {
+          traverse(u, 0);
+        }
+      });
+
+      return treeList;
+    },
+
+    renderDashboard: function () {
+      this.activeView = 'dashboard';
+      var mount = document.getElementById('org-content-mount');
+      if (!mount) return;
+
+      mount.innerHTML = `
       <div class="dashboard-shell animate-fade-in">
         <div class="dashboard-header-row">
           <div>
             <h1 class="dashboard-title">Organization Overview</h1>
             <p class="dashboard-subtitle">Corporate Hierarchy & Master Configuration</p>
           </div>
-          <button type="button" class="btn-cancel" onclick="orgViews.renderDashboard()" style="font-weight: 700;">
-            <span class="material-icons" style="font-size: 16px; color: var(--brand-teal);">sync</span>
-            <span>Refresh Counts</span>
-          </button>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-cancel" onclick="orgViews.renderDashboard()" style="font-weight: 700;">
+              <span class="material-icons" style="font-size: 16px; color: var(--brand-teal);">sync</span>
+              <span>Refresh Counts</span>
+            </button>
+          </div>
         </div>
 
-        <div class="kpi-cards-grid">
+        <div class="kpi-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
           <div class="kpi-card">
             <div>
               <p class="kpi-label">Directorates</p>
@@ -63,22 +226,42 @@ var orgViews = window.orgViews = {
           </div>
           <div class="kpi-card">
             <div>
-              <p class="kpi-label">Departments</p>
+              <p class="kpi-label">Org Units / Wings</p>
               <h3 class="kpi-value" id="org-stat-dep">-</h3>
-              <span class="kpi-subtext" style="color: var(--status-success);">Operating Depts</span>
+              <span class="kpi-subtext" style="color: var(--status-success);">Depts & Wings</span>
             </div>
             <div class="kpi-icon-box green">
-              <span class="material-icons">domain</span>
+              <span class="material-icons">account_tree</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Duty Positions</p>
+              <h3 class="kpi-value" id="org-stat-pos">-</h3>
+              <span class="kpi-subtext" style="color: #3b82f6;">Roles & In-Charge</span>
+            </div>
+            <div class="kpi-icon-box blue">
+              <span class="material-icons">badge</span>
             </div>
           </div>
           <div class="kpi-card">
             <div>
               <p class="kpi-label">Stations</p>
               <h3 class="kpi-value" id="org-stat-st">-</h3>
-              <span class="kpi-subtext" style="color: var(--status-warning);">Aviation Hubs</span>
+              <span class="kpi-subtext" style="color: var(--status-warning);">Domestic & Intl</span>
             </div>
             <div class="kpi-icon-box amber">
               <span class="material-icons">place</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div>
+              <p class="kpi-label">Pay Groups</p>
+              <h3 class="kpi-value" id="org-stat-pg">-</h3>
+              <span class="kpi-subtext" style="color: #ec4899;">Rank Scales</span>
+            </div>
+            <div class="kpi-icon-box pink">
+              <span class="material-icons">payments</span>
             </div>
           </div>
           <div class="kpi-card">
@@ -99,135 +282,139 @@ var orgViews = window.orgViews = {
           </div>
           <p style="font-size: 0.925rem; color: var(--text-secondary); line-height: 1.6;">
             The Organization module serves as the foundational structural backbone of SANDVIORA AVIOSOLUTION. 
-            All Directorates, Departments, Sections, Shifts, Pay Groups, and Station master entries defined here provide 
-            the normalized relational lookups and constraints for the HRM personnel and TQC training operations.
+            All Directorates, Departments, Sections, Wings, Positions, Shifts, Pay Groups, and Station master entries defined here provide 
+            the normalized 3NF relational lookups and constraints for the HRM personnel and TQC training operations.
           </p>
         </div>
       </div>
     `;
 
-    api.getMasterData().then(function(m) {
-      var setVal = function(id, val) {
-        var el = document.getElementById(id);
-        if (el) el.innerText = val;
-      };
-      var orgUnits = m.organization_units || [];
-      var dirCount = orgUnits.filter(function(u){
-        var t = String(u.unit_type || '').toUpperCase();
-        return t === 'DIRECTORATE' || t === 'HEADQUARTER';
-      }).length || (m.directorates || []).length;
+      api.getMasterData().then(function (m) {
+        var setVal = function (id, val) {
+          var el = document.getElementById(id);
+          if (el) el.innerText = val;
+        };
+        var orgUnits = m.organization_units || [];
+        var dirCount = orgUnits.filter(function (u) {
+          return orgViews.detectUnitTier(u) === 'DIRECTORATE';
+        }).length;
 
-      var depCount = orgUnits.filter(function(u){
-        var t = String(u.unit_type || '').toUpperCase();
-        return t === 'DEPARTMENT' || t === 'DIVISION';
-      }).length || (m.departments || []).length;
+        var depCount = orgUnits.filter(function (u) {
+          var t = orgViews.detectUnitTier(u);
+          return t === 'DEPARTMENT' || t === 'WING';
+        }).length;
 
-      setVal('org-stat-dir', dirCount);
-      setVal('org-stat-dep', depCount);
-      setVal('org-stat-st', (m.stations || []).length);
-      setVal('org-stat-setup', (m.workforce_setup || []).length);
-    }).catch(function() {});
-  },
+        setVal('org-stat-dir', dirCount);
+        setVal('org-stat-dep', depCount);
+        setVal('org-stat-pos', (m.positions || []).length);
+        setVal('org-stat-st', (m.stations || []).length);
+        setVal('org-stat-pg', (m.pay_groups || []).length);
+        setVal('org-stat-setup', (m.workforce_setup || []).length);
+      }).catch(function () { });
+    },
 
-  currentInputFormKey: 'organization_units',
-  currentViewFormKey: 'organization_units',
 
-  renderInputRecords: function(formKey) {
-    this.activeView = 'input';
-    var mount = document.getElementById('org-content-mount');
-    if (!mount) return;
+    currentInputFormKey: 'organization_units',
+    currentViewFormKey: 'organization_units',
 
-    var selectedKey = formKey || this.currentInputFormKey || 'organization_units';
-    if (selectedKey === 'directorates' || selectedKey === 'departments' || selectedKey === 'sections') {
-      selectedKey = 'organization_units';
-    }
-    this.currentInputFormKey = selectedKey;
+    renderInputRecords: function (formKey) {
+      this.activeView = 'input';
+      var mount = document.getElementById('org-content-mount');
+      if (!mount) return;
 
-    var html = `
-      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+      var selectedKey = formKey || this.currentInputFormKey || 'organization_units';
+      if (selectedKey === 'directorates' || selectedKey === 'departments' || selectedKey === 'sections') {
+        selectedKey = 'organization_units';
+      }
+      this.currentInputFormKey = selectedKey;
+
+      var html = `
+      <div style="width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; padding: 0; margin: 0;">
         <div class="form-tabs-bar" id="org-input-tabs-bar">
     `;
 
-    ORG_FORM_SEQUENCE.forEach(function(item) {
-      var isActive = item.key === selectedKey ? 'active' : '';
-      html += `
+      ORG_FORM_SEQUENCE.forEach(function (item) {
+        var isActive = item.key === selectedKey ? 'active' : '';
+        html += `
         <button type="button" class="form-tab-btn ${isActive}" data-form="${item.key}" onclick="orgViews.switchInputForm('${item.key}')">
           <span class="material-icons">${item.icon || 'edit_document'}</span>
           <span>${item.name}</span>
         </button>
       `;
-    });
+      });
 
-    html += `
+      html += `
         </div>
-        <div id="org-input-mount" style="flex: 1;"></div>
+        <!-- Active Form Mount Stage (Zero padding, full width & height, dynamic scroll) -->
+        <div id="org-input-mount" style="flex: 1; min-height: 0; width: 100%; overflow: auto; padding: 0; margin: 0; display: flex; flex-direction: column;"></div>
       </div>
     `;
 
-    mount.innerHTML = html;
-    this.openInputForm(selectedKey);
-  },
+      mount.innerHTML = html;
+      this.openInputForm(selectedKey);
+    },
 
-  switchInputForm: function(formKey) {
-    this.currentInputFormKey = formKey;
-    document.querySelectorAll('#org-input-tabs-bar .form-tab-btn').forEach(function(btn) {
-      btn.classList.toggle('active', btn.dataset.form === formKey);
-    });
-    this.openInputForm(formKey);
-  },
+    switchInputForm: function (formKey) {
+      this.currentInputFormKey = formKey;
+      document.querySelectorAll('#org-input-tabs-bar .form-tab-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.form === formKey);
+      });
+      this.openInputForm(formKey);
+    },
 
-  renderViewForms: function(formKey) {
-    this.activeView = 'view';
-    var mount = document.getElementById('org-content-mount');
-    if (!mount) return;
+    renderViewForms: function (formKey) {
+      this.activeView = 'view';
+      var mount = document.getElementById('org-content-mount');
+      if (!mount) return;
 
-    var selectedKey = formKey || this.currentViewFormKey || 'organization_units';
-    if (selectedKey === 'directorates' || selectedKey === 'departments' || selectedKey === 'sections') {
-      selectedKey = 'organization_units';
-    }
-    this.currentViewFormKey = selectedKey;
+      var selectedKey = formKey || this.currentViewFormKey || 'organization_units';
+      if (selectedKey === 'directorates' || selectedKey === 'departments' || selectedKey === 'sections') {
+        selectedKey = 'organization_units';
+      }
+      this.currentViewFormKey = selectedKey;
 
-    var html = `
-      <div style="padding: 1rem 1.25rem; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+      var html = `
+      <div style="width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; padding: 0; margin: 0;">
         <div class="form-tabs-bar" id="org-view-tabs-bar">
     `;
 
-    ORG_FORM_SEQUENCE.forEach(function(item) {
-      var isActive = item.key === selectedKey ? 'active' : '';
-      html += `
+      ORG_FORM_SEQUENCE.forEach(function (item) {
+        var isActive = item.key === selectedKey ? 'active' : '';
+        html += `
         <button type="button" class="form-tab-btn ${isActive}" data-form="${item.key}" onclick="orgViews.switchViewGrid('${item.key}')">
           <span class="material-icons">${item.icon || 'table_view'}</span>
           <span>${item.name}</span>
         </button>
       `;
-    });
+      });
 
-    html += `
+      html += `
         </div>
-        <div id="org-view-mount" style="flex: 1; min-height: 0; display: flex; flex-direction: column;"></div>
+        <!-- Active View Mount Stage (Zero padding, full width & height, dynamic scroll) -->
+        <div id="org-view-mount" style="flex: 1; min-height: 0; width: 100%; overflow: auto; padding: 0; margin: 0; display: flex; flex-direction: column;"></div>
       </div>
     `;
 
-    mount.innerHTML = html;
-    this.openViewGrid(selectedKey);
-  },
+      mount.innerHTML = html;
+      this.openViewGrid(selectedKey);
+    },
 
-  switchViewGrid: function(formKey) {
-    this.currentViewFormKey = formKey;
-    document.querySelectorAll('#org-view-tabs-bar .form-tab-btn').forEach(function(btn) {
-      btn.classList.toggle('active', btn.dataset.form === formKey);
-    });
-    this.openViewGrid(formKey);
-  },
+    switchViewGrid: function (formKey) {
+      this.currentViewFormKey = formKey;
+      document.querySelectorAll('#org-view-tabs-bar .form-tab-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.form === formKey);
+      });
+      this.openViewGrid(formKey);
+    },
 
-  openInputForm: function(formKey) {
-    var schema = AppSchemas[formKey];
-    if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
+    openInputForm: function (formKey) {
+      var schema = AppSchemas[formKey];
+      if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
 
-    var mount = document.getElementById('org-input-mount');
-    if (!mount) return;
+      var mount = document.getElementById('org-input-mount');
+      if (!mount) return;
 
-    var html = `
+      var html = `
       <div class="form-shell-container animate-scale-up">
         <div class="form-shell-header">
           <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
@@ -236,13 +423,8 @@ var orgViews = window.orgViews = {
             </div>
             <div style="min-width: 0;">
               <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">${schema.title}</h3>
-              ${schema.subtitle ? `<p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">${schema.subtitle}</p>` : ''}
+              ${schema.subtitle ? `<p style="font-size: 0.75rem; color: #ffffff; margin: 2px 0 0 0; line-height: 1.25;">${schema.subtitle}</p>` : ''}
             </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
-            <span style="background: rgba(45, 212, 191, 0.12); color: var(--brand-teal-light); border: 1px solid rgba(45, 212, 191, 0.3); font-size: 0.65rem; font-weight: 800; padding: 0.18rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
-              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--brand-teal-light); display: inline-block;"></span> DATA INPUT FORM
-            </span>
           </div>
         </div>
 
@@ -250,47 +432,59 @@ var orgViews = window.orgViews = {
           <div class="form-two-column-grid">
     `;
 
-    schema.fields.forEach(function(field) {
-      var req = field.required ? '<span style="color: var(--status-danger);">*</span>' : '';
-      html += `
+      schema.fields.forEach(function (field) {
+        var req = field.required ? '<span style="color: var(--status-danger);">*</span>' : '';
+        html += `
         <div class="form-group ${field.type === 'textarea' ? 'full-width' : ''}" id="form-group-${field.name}">
           <label>${field.label} ${req}</label>
       `;
 
-      if (field.type === 'select' || field.type === 'dependable_select') {
-        html += `<select name="${field.name}" id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}>`;
-        html += `<option value="">-- ${field.placeholder || 'Select ' + field.label} --</option>`;
-        if (field.options) {
-          field.options.forEach(function(opt) {
-            html += `<option value="${opt}">${opt}</option>`;
-          });
+        if (field.type === 'select' || field.type === 'dependable_select') {
+          html += `<select name="${field.name}" id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}>`;
+          html += `<option value="">-- ${field.placeholder || 'Select ' + field.label} --</option>`;
+          if (field.options) {
+            field.options.forEach(function (opt) {
+              html += `<option value="${opt}">${opt}</option>`;
+            });
+          }
+          html += `</select>`;
+        } else {
+          html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} />`;
         }
-        html += `</select>`;
-      } else {
-        html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} />`;
-      }
 
-      html += `</div>`;
+        html += `</div>`;
 
-      if (field.name === 'parent_unit_id') {
-        html += `
+        if (field.name === 'parent_unit_id') {
+          html += `
           <div id="org-hierarchy-preview-box" class="full-width" style="grid-column: 1 / -1; background: rgba(13, 148, 136, 0.08); border: 1.5px dashed var(--brand-teal); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; font-size: 0.78rem; color: var(--text-primary); margin-top: -0.25rem;">
-            <div style="font-weight: 800; font-size: 0.75rem; color: var(--brand-teal-light); text-transform: uppercase; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
-              <span class="material-icons" style="font-size: 15px;">account_tree</span>
-              <span>Parent-Child Hierarchy Tree Preview</span>
+            <div style="font-weight: 800; font-size: 0.75rem; color: #0f766e; text-transform: uppercase; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span class="material-icons" style="font-size: 15px; color: #0f766e;">account_tree</span>
+              <span style="color: #0f766e; letter-spacing: 0.02em;">Parent-Child Hierarchy Tree Preview</span>
             </div>
             <div id="org-hierarchy-preview-text" style="color: var(--text-secondary); line-height: 1.5;">
               <em>No parent selected. This unit will be created at the Top-Level (Root Directorate).</em>
             </div>
           </div>
         `;
-      }
-    });
+        } else if (field.name === 'unit_id' && schema.table === 'workforce_setup') {
+          html += `
+          <div id="ws-hierarchy-preview-box" class="full-width" style="grid-column: 1 / -1; background: rgba(13, 148, 136, 0.08); border: 1.5px dashed var(--brand-teal); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; font-size: 0.78rem; color: var(--text-primary); margin-top: -0.25rem;">
+            <div style="font-weight: 800; font-size: 0.75rem; color: #0f766e; text-transform: uppercase; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span class="material-icons" style="font-size: 15px; color: #0f766e;">apartment</span>
+              <span style="color: #0f766e; letter-spacing: 0.02em;">Directorate & Department Ancestry Hierarchy</span>
+            </div>
+            <div id="ws-hierarchy-preview-text" style="color: var(--text-secondary); line-height: 1.5;">
+              <em>Select an Organization Unit to preview its Directorate, Department, and Section hierarchy chain.</em>
+            </div>
+          </div>
+        `;
+        }
+      });
 
-    html += `
+      html += `
           </div>
 
-          <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+          <div class="form-shell-footer">
             <button type="button" class="btn-cancel" onclick="document.getElementById('org-dynamic-form').reset()">Reset</button>
             <button type="submit" class="btn-primary-action" id="btn-org-save">
               <span class="material-icons" style="font-size: 16px;">save</span>
@@ -301,475 +495,1136 @@ var orgViews = window.orgViews = {
       </div>
     `;
 
-    mount.innerHTML = html;
-    this.populateFormSelects(schema);
-  },
+      mount.innerHTML = html;
+      this.populateFormSelects(schema);
+    },
 
-  populateFormSelects: async function(schema) {
-    var self = this;
-    for (var i = 0; i < schema.fields.length; i++) {
-      var f = schema.fields[i];
-      if ((f.type === 'select' || f.type === 'dependable_select') && f.source) {
-        var sel = document.getElementById('field-' + f.name);
-        if (!sel) continue;
+    populateFormSelects: async function (schema) {
+      var self = this;
+      if (!self.masterData) {
         try {
-          var list = await api.read(f.source);
-          if (list && list.length > 0) {
-            sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
-            var seen = {};
-            list.forEach(function(item) {
-              var val = item[f.sourceKey] || item.id || item.code || item[Object.keys(item)[0]];
-              var disp = item[f.sourceDisplay] || item.name || val;
-              if (f.source === 'stations') {
-                disp = (item.station_code ? '[' + item.station_code + '] ' : '') + (item.station_name || val);
-              } else if (f.source === 'work_locations') {
-                var stnTag = (item.station_id || item.station_code) ? '[' + (item.station_id || item.station_code) + '] ' : '';
-                disp = stnTag + (item.location_name || item.location_code || val);
-              }
-              if (val && !seen[val]) {
-                seen[val] = true;
-                var opt = document.createElement('option');
-                opt.value = val;
-                opt.textContent = disp || val;
-                sel.appendChild(opt);
-              }
-            });
-          }
-        } catch(err) {
-          console.warn('Error populating select for ' + f.source, err);
+          self.masterData = await api.getMasterData();
+        } catch (eMd) {
+          self.masterData = {};
         }
       }
-    }
 
-    // Work Location to Station Dependency
-    var locSel = document.getElementById('field-location_id');
-    var stnSel = document.getElementById('field-station_id') || document.getElementById('field-station_code');
-    if (locSel && stnSel) {
-      locSel.addEventListener('change', function() {
-        self.updateLocationStationDependency(document.getElementById('org-dynamic-form'), this.value);
-      });
-      // Initialize dependent station state
-      self.updateLocationStationDependency(document.getElementById('org-dynamic-form'), locSel.value);
-    }
+      for (var i = 0; i < schema.fields.length; i++) {
+        var f = schema.fields[i];
+        if ((f.type === 'select' || f.type === 'dependable_select') && f.source) {
+          var sel = document.getElementById('field-' + f.name);
+          if (!sel) continue;
+          try {
+            var list = (self.masterData && self.masterData[f.source] && self.masterData[f.source].length > 0)
+              ? self.masterData[f.source]
+              : await api.read(f.source);
+            if (!list || list.length === 0) {
+              try {
+                var md = await api.getMasterData();
+                if (md && md[f.source] && md[f.source].length > 0) {
+                  list = md[f.source];
+                  if (!self.masterData) self.masterData = {};
+                  self.masterData[f.source] = md[f.source];
+                }
+              } catch (eMd) { }
+            }
 
-    if (schema.table === 'organization_units') {
-      var pSel = document.getElementById('field-parent_unit_id');
-      if (pSel) {
-        pSel.addEventListener('change', function() {
-          var val = this.value;
-          var previewText = document.getElementById('org-hierarchy-preview-text');
+            // Fallback for work_locations if sheet is still blank
+            if (f.source === 'work_locations' && (!list || list.length === 0)) {
+              list = [
+                { location_id: 'LOC-0001', location_code: '101', location_name: 'Head Office (Balaka Bhaban)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0002', location_code: '102', location_name: 'Airport Terminal 1 (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0003', location_code: '103', location_name: 'Airport Terminal 2 (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0004', location_code: '104', location_name: 'Hangar Complex (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0005', location_code: '105', location_name: 'Cargo Terminal (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0006', location_code: '106', location_name: 'Biman Training Center (BATC)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0007', location_code: '107', location_name: 'Motijheel District Sales Office', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0008', location_code: '201', location_name: 'Shah Amanat Int\'l Airport Terminal', station_id: 'CGP', city: 'Chittagong', country: 'Bangladesh' },
+                { location_id: 'LOC-0009', location_code: '301', location_name: 'Osmani Int\'l Airport Terminal', station_id: 'ZYL', city: 'Sylhet', country: 'Bangladesh' }
+              ];
+            }
+
+            if (list && list.length > 0) {
+              sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
+              if (f.source === 'organization_units') {
+                if (schema.table === 'designations' && f.name === 'unit_id') {
+                  var deptUnits = (list || []).filter(function (u) {
+                    var tier = orgViews.detectUnitTier(u);
+                    var uType = String(u.unit_type || '').trim().toUpperCase();
+                    var uName = String(u.unit_name || '').trim().toUpperCase();
+                    return tier === 'DEPARTMENT' || uType === 'DEPARTMENT' || uType === 'DIVISION' || uName.indexOf('DEPARTMENT') !== -1;
+                  });
+                  deptUnits.sort(function (a, b) {
+                    return String(a.unit_name || '').localeCompare(String(b.unit_name || ''));
+                  });
+                  deptUnits.forEach(function (dept) {
+                    var opt = document.createElement('option');
+                    opt.value = dept.unit_id;
+                    opt.textContent = dept.unit_name || dept.unit_code || dept.unit_id;
+                    opt.dataset.unitName = dept.unit_name || '';
+                    opt.dataset.unitType = dept.unit_type || 'DEPARTMENT';
+                    opt.dataset.unitCode = dept.unit_code || '';
+                    sel.appendChild(opt);
+                  });
+                  continue;
+                }
+                var treeNodes = self.buildHierarchyTreeOptions(list);
+                treeNodes.forEach(function (node) {
+                  var opt = document.createElement('option');
+                  opt.value = node.unit_id;
+                  opt.textContent = node.label;
+                  opt.dataset.unitName = node.unit_name || '';
+                  opt.dataset.unitType = node.unit_type || '';
+                  opt.dataset.unitCode = node.unit_code || '';
+                  sel.appendChild(opt);
+                });
+                continue;
+              }
+              var itemsToRender = list.slice();
+              var isPgCodeField = (f.source === 'pay_groups' && f.name.indexOf('designation') === -1);
+              if (isPgCodeField) {
+                var uniquePgs = {};
+                list.forEach(function (item) {
+                  var p = String(item.pay_group || '').trim();
+                  if (p) uniquePgs[p] = true;
+                });
+                var stdOrder = ['PG-1', 'PG-3(2)', 'PG-4', 'PG-5', 'PG-6', 'PG-7', 'PG-8', 'PG-9', 'PG-10', 'PG-11', 'PG-12', 'LOCAL'];
+                var sorted = Object.keys(uniquePgs).sort(function (a, b) {
+                  var iA = stdOrder.indexOf(a);
+                  var iB = stdOrder.indexOf(b);
+                  if (iA !== -1 && iB !== -1) return iA - iB;
+                  if (iA !== -1) return -1;
+                  if (iB !== -1) return 1;
+                  return a.localeCompare(b);
+                });
+                itemsToRender = sorted.map(function (p) { return { pay_group: p }; });
+              } else if (f.source === 'stations' && f.name === 'city') {
+                var citiesSeen = {};
+                var uniqueCities = [];
+                list.forEach(function (item) {
+                  var c = (item.city || '').trim();
+                  if (c && !citiesSeen[c.toUpperCase()]) {
+                    citiesSeen[c.toUpperCase()] = true;
+                    uniqueCities.push({ city: c });
+                  }
+                });
+                uniqueCities.sort(function (a, b) {
+                  return a.city.localeCompare(b.city);
+                });
+                itemsToRender = uniqueCities;
+              }
+              var seen = {};
+              itemsToRender.forEach(function (item) {
+                var val = item[f.sourceKey] || item.location_id || item.location_code || item.id || item.code;
+                var disp = item[f.sourceDisplay] || item.name || val;
+                if (f.source === 'stations' && f.name === 'city') {
+                  val = item.city;
+                  disp = item.city;
+                } else if (f.source === 'stations') {
+                  disp = item.station_code || item.station_id || val;
+                } else if (f.source === 'work_locations') {
+                  val = item.location_id || item.location_code || item.id || item.code || val;
+                  disp = item.location_name || item.location_code || val;
+                } else if (f.source === 'positions') {
+                  disp = item.position_title || item.position_code || val;
+                } else if (f.source === 'shifts') {
+                  disp = item.shift_name || item.shift_code || val;
+                } else if (f.source === 'pay_groups') {
+                  if (isPgCodeField) {
+                    disp = item.pay_group || val;
+                    val = item.pay_group || val;
+                  } else if (f.name === 'designation') {
+                    disp = item.designation || val;
+                  } else {
+                    disp = item.designation || item.pay_group || val;
+                  }
+                } else if (f.source === 'organization_units') {
+                  disp = item.unit_name || item.unit_code || val;
+                }
+                var dedupeKey = (f.source === 'shifts') ? (item.shift_name || val) : (isPgCodeField ? (item.pay_group || val) : ((f.source === 'pay_groups') ? (item.designation || val) : ((f.source === 'work_locations') ? (item.location_id || item.location_code || val) : val)));
+                if (val && !seen[dedupeKey]) {
+                  seen[dedupeKey] = true;
+                  var opt = document.createElement('option');
+                  opt.value = val;
+                  opt.textContent = disp || val;
+                  opt.dataset.designation = item.designation || '';
+                  opt.dataset.payGroup = item.pay_group || '';
+                  opt.dataset.unitId = item.unit_id || '';
+                  opt.dataset.unitType = item.unit_type || '';
+                  opt.dataset.stationId = item.station_id || item.station_code || '';
+                  opt.dataset.locationCode = item.location_code || '';
+                  opt.dataset.locationName = item.location_name || '';
+                  sel.appendChild(opt);
+                }
+              });
+            } else if (f.name === 'parent_unit_id') {
+              sel.innerHTML = `<option value="">-- None (Top-Level / Corporate Authority) --</option>`;
+            }
+          } catch (err) {
+            console.warn('Error populating select for ' + f.source, err);
+          }
+        }
+      }
+
+      // Work Location to Station Dependency (for forms referencing work_locations)
+      var locSel = document.getElementById('field-location_id');
+      var stnSel = document.getElementById('field-station_id') || document.getElementById('field-station_code');
+      if (locSel && stnSel && schema.table !== 'work_locations') {
+        locSel.addEventListener('change', function () {
+          var selOpt = this.options[this.selectedIndex];
+          var linkedStn = selOpt ? (selOpt.dataset.stationId || '') : '';
+          self.updateLocationStationDependency(document.getElementById('org-dynamic-form'), this.value, linkedStn);
+        });
+        // Initialize dependent station state without hiding controls
+        if (locSel.value) {
+          var initOpt = locSel.options[locSel.selectedIndex];
+          var initStn = initOpt ? (initOpt.dataset.stationId || '') : '';
+          self.updateLocationStationDependency(document.getElementById('org-dynamic-form'), locSel.value, initStn);
+        }
+      }
+
+      // Work Location - Station & City Relational Dependency (Station is primary driver)
+      if (schema.table === 'work_locations') {
+        var wStnSel = document.getElementById('field-station_id') || document.getElementById('field-station_code');
+        var wCitySel = document.getElementById('field-city');
+        var wCountryInp = document.getElementById('field-country');
+        var wRegionSel = document.getElementById('field-region');
+
+        if (wStnSel) {
+          wStnSel.addEventListener('change', function () {
+            var selStn = this.value;
+            if (!selStn) return;
+            api.read('stations').then(function (stations) {
+              var foundStn = (stations || []).find(function (s) {
+                return String(s.station_code || s.station_id || '').trim().toUpperCase() === String(selStn).trim().toUpperCase();
+              });
+              if (foundStn) {
+                if (wCitySel && foundStn.city) {
+                  wCitySel.value = foundStn.city;
+                }
+                var sType = String(foundStn.station_type || '').toLowerCase();
+                var sCity = String(foundStn.city || '').trim().toUpperCase();
+                var isForeignStn = sType.indexOf('foreign') !== -1;
+                var isBangladesh = !isForeignStn || (sType.indexOf('base') !== -1 || sType.indexOf('home') !== -1) ||
+                  ['DHAKA', 'CHITTAGONG', 'SYLHET', 'COX\'S BAZAR', 'JESSORE', 'SAIDPUR', 'RAJSHAHI', 'BARISAL'].indexOf(sCity) !== -1;
+
+                if (wCountryInp) {
+                  if (foundStn.country && String(foundStn.country).trim().toLowerCase() !== 'foreign') {
+                    wCountryInp.value = foundStn.country;
+                  } else if (isBangladesh) {
+                    wCountryInp.value = 'Bangladesh';
+                  } else {
+                    wCountryInp.value = '';
+                  }
+                }
+                if (wRegionSel) {
+                  if (isBangladesh) {
+                    wRegionSel.value = 'Home';
+                  } else if (foundStn.region) {
+                    wRegionSel.value = foundStn.region;
+                  }
+                }
+              }
+            });
+          });
+        }
+
+        if (wCitySel) {
+          wCitySel.addEventListener('change', function () {
+            var selCity = this.value;
+            if (!selCity) return;
+            api.read('stations').then(function (stations) {
+              var currStnVal = wStnSel ? wStnSel.value : '';
+              var matchingStations = (stations || []).filter(function (s) {
+                return !selCity || String(s.city || '').trim().toLowerCase() === String(selCity).trim().toLowerCase();
+              });
+              if (wStnSel) {
+                wStnSel.innerHTML = '<option value="">-- None / Head Office (Non-Airport Facility) --</option>';
+                matchingStations.forEach(function (s) {
+                  var sCode = s.station_code || s.station_id;
+                  var opt = document.createElement('option');
+                  opt.value = sCode;
+                  opt.textContent = sCode;
+                  if (sCode === currStnVal) opt.selected = true;
+                  wStnSel.appendChild(opt);
+                });
+              }
+              if (wCountryInp && !wCountryInp.value) {
+                var matchedCStn = (stations || []).find(function (s) {
+                  return String(s.city || '').trim().toLowerCase() === String(selCity).trim().toLowerCase();
+                });
+                if (matchedCStn) {
+                  var mType = String(matchedCStn.station_type || '').toLowerCase();
+                  var mCity = String(matchedCStn.city || '').trim().toUpperCase();
+                  var isBdCity = (mType.indexOf('foreign') === -1 || mType.indexOf('base') !== -1 || mType.indexOf('home') !== -1) ||
+                    ['DHAKA', 'CHITTAGONG', 'SYLHET', 'COX\'S BAZAR', 'JESSORE', 'SAIDPUR', 'RAJSHAHI', 'BARISAL'].indexOf(mCity) !== -1;
+                  if (isBdCity) {
+                    wCountryInp.value = 'Bangladesh';
+                    if (wRegionSel && !wRegionSel.value) wRegionSel.value = 'Home';
+                  }
+                }
+              }
+            });
+          });
+        }
+      }
+
+      if (schema.table === 'organization_units') {
+        var pSel = document.getElementById('field-parent_unit_id');
+        var previewText = document.getElementById('org-hierarchy-preview-text');
+
+        var updateHierarchyPreview = function () {
           if (!previewText) return;
-          if (!val) {
-            previewText.innerHTML = '<em>No parent selected. This unit will be created at the Top-Level (Root Directorate).</em>';
+          var pVal = pSel ? pSel.value : '';
+
+          if (!pVal) {
+            previewText.innerHTML = '<em>No parent selected. This unit will be created at the Top-Level (Apex / Directorate Level).</em>';
           } else {
-            api.read('organization_units').then(function(units) {
+            Promise.all([
+              api.read('organization_units').catch(function () { return []; }),
+              api.getMasterData().catch(function () { return null; })
+            ]).then(function (res) {
+              var units = (res[0] && res[0].length > 0) ? res[0] : ((res[1] && res[1].organization_units) || []);
               var map = {};
-              (units || []).forEach(function(u) { map[u.unit_id] = u; });
+              (units || []).forEach(function (u) { map[u.unit_id] = u; });
               var chain = [];
-              var curr = map[val];
+              var curr = map[pVal];
+              var parentU = curr;
               while (curr) {
-                chain.unshift((curr.unit_name || curr.unit_code) + ' [' + (curr.unit_type || 'UNIT') + ']');
+                chain.unshift(curr.unit_name || curr.unit_code);
                 curr = curr.parent_unit_id ? map[curr.parent_unit_id] : null;
               }
-              chain.push('<strong style="color: var(--brand-teal-light);">➔ [New Unit]</strong>');
-              previewText.innerHTML = '<span style="color: var(--brand-teal-light); font-weight: 800;">Ancestry Path:</span> ' + chain.join(' ➔ ');
+              chain.push('<strong style="color: #0f766e;">[New Sub-Unit]</strong>');
+              previewText.innerHTML = '<span style="color: #0f766e; font-weight: 800;">Ancestry Path:</span> ' + chain.join(' ➔ ');
+
+              // Auto-suggest parent location and station to child unit if not manually selected
+              if (parentU) {
+                if (locSel && !locSel.value && parentU.location_id) {
+                  locSel.value = parentU.location_id;
+                  self.updateLocationStationDependency(document.getElementById('org-dynamic-form'), parentU.location_id, parentU.station_id);
+                }
+                if (stnSel && !stnSel.value && parentU.station_id) {
+                  stnSel.value = parentU.station_id;
+                }
+              }
             });
           }
+        };
+
+        if (pSel) pSel.addEventListener('change', updateHierarchyPreview);
+      }
+
+      if (schema.table === 'workforce_setup') {
+        var wsUnitSel = document.getElementById('field-unit_id');
+        var wsPgSel = document.getElementById('field-pay_group');
+        var wsDesigSel = document.getElementById('field-designation');
+        var wsPosSel = document.getElementById('field-position_id');
+
+        var updateWsPayGroups = function (selectedUnitId) {
+          Promise.all([
+            api.read('pay_groups').catch(function () { return []; }),
+            api.read('organization_units').catch(function () { return []; })
+          ]).then(function (res) {
+            var pgs = res[0] || [];
+            var orgUnits = res[1] || [];
+            var matchedU = null;
+            if (selectedUnitId) {
+              matchedU = orgUnits.find(function (u) {
+                return String(u.unit_id || u.unit_code || '').trim().toUpperCase() === String(selectedUnitId).trim().toUpperCase();
+              });
+            }
+            var ancestorIds = {};
+            var chain = [];
+            if (matchedU) {
+              var currU = matchedU;
+              var visitedU = {};
+              while (currU && !visitedU[currU.unit_id]) {
+                visitedU[currU.unit_id] = true;
+                chain.unshift(currU.unit_name || currU.unit_code);
+                if (currU.unit_id) ancestorIds[String(currU.unit_id).trim().toUpperCase()] = true;
+                if (currU.unit_code) ancestorIds[String(currU.unit_code).trim().toUpperCase()] = true;
+                var parentId = currU.parent_unit_id ? String(currU.parent_unit_id).trim().toUpperCase() : null;
+                currU = parentId ? orgUnits.find(function (ou) {
+                  return String(ou.unit_id || ou.unit_code || '').trim().toUpperCase() === parentId;
+                }) : null;
+              }
+            }
+
+            var prevWsEl = document.getElementById('ws-hierarchy-preview-text');
+            if (prevWsEl) {
+              if (chain.length > 0) {
+                prevWsEl.innerHTML = '<span style="color: #0f766e; font-weight: 800;">Ancestry Path:</span> ' + chain.join(' ➔ ');
+              } else {
+                prevWsEl.innerHTML = '<em>Select an Organization Unit to preview its Directorate, Department, and Section hierarchy chain.</em>';
+              }
+            }
+
+            var filtered = pgs.filter(function (pg) {
+              var pgU = String(pg.unit_id || '').trim().toUpperCase();
+              if (!pgU || pgU === 'ALL' || pgU === 'CORPORATE') return true;
+              if (ancestorIds[pgU]) return true;
+              return false;
+            });
+
+            if (!selectedUnitId) filtered = pgs;
+
+            // Extract unique clean pay groups
+            var uniquePgs = {};
+            filtered.forEach(function (item) {
+              var p = (item.pay_group || '').trim();
+              if (p) uniquePgs[p] = true;
+            });
+
+            var stdOrder = ['PG-1', 'PG-3(2)', 'PG-4', 'PG-5', 'PG-6', 'PG-7', 'PG-8', 'PG-9', 'PG-10', 'PG-11', 'PG-12', 'LOCAL'];
+            var sortedPgs = Object.keys(uniquePgs).sort(function (a, b) {
+              var iA = stdOrder.indexOf(a);
+              var iB = stdOrder.indexOf(b);
+              if (iA !== -1 && iB !== -1) return iA - iB;
+              if (iA !== -1) return -1;
+              if (iB !== -1) return 1;
+              return a.localeCompare(b);
+            });
+
+            if (wsPgSel) {
+              var currentPg = wsPgSel.value;
+              wsPgSel.innerHTML = '<option value="">-- Select Pay Group --</option>';
+              sortedPgs.forEach(function (pg) {
+                var opt = document.createElement('option');
+                opt.value = pg;
+                opt.textContent = pg; // ONLY clean single pay group name
+                if (pg === currentPg) opt.selected = true;
+                wsPgSel.appendChild(opt);
+              });
+            }
+
+            // Populate Designations
+            var populateDesignations = function (targetPg) {
+              if (!wsDesigSel) return;
+              if (wsDesigSel.tagName === 'SELECT') {
+                var currentDesig = wsDesigSel.value;
+                var desigList = filtered.filter(function (item) {
+                  if (!targetPg) return true;
+                  return String(item.pay_group || '').trim().toUpperCase() === String(targetPg).trim().toUpperCase();
+                });
+                var seenD = {};
+                wsDesigSel.innerHTML = '<option value="">-- Select Designation --</option>';
+                desigList.forEach(function (item) {
+                  var d = (item.designation || '').trim();
+                  if (d && !seenD[d]) {
+                    seenD[d] = true;
+                    var opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d; // ONLY clean designation name
+                    opt.dataset.payGroup = item.pay_group || '';
+                    if (d === currentDesig) opt.selected = true;
+                    wsDesigSel.appendChild(opt);
+                  }
+                });
+              }
+            };
+
+            populateDesignations(wsPgSel ? wsPgSel.value : '');
+
+            if (wsPgSel) {
+              wsPgSel.onchange = function () {
+                populateDesignations(this.value);
+              };
+            }
+
+            if (wsDesigSel && wsDesigSel.tagName === 'SELECT') {
+              wsDesigSel.onchange = function () {
+                var selOpt = this.options[this.selectedIndex];
+                if (selOpt && selOpt.dataset.payGroup && wsPgSel && !wsPgSel.value) {
+                  wsPgSel.value = selOpt.dataset.payGroup;
+                }
+                if (wsPosSel && !wsPosSel.value && this.value) {
+                  wsPosSel.value = this.value;
+                }
+              };
+            }
+          });
+        };
+
+        if (wsUnitSel) {
+          wsUnitSel.addEventListener('change', function () {
+            updateWsPayGroups(this.value);
+          });
+        }
+        if (wsPosSel) {
+          wsPosSel.addEventListener('change', function () {
+            var selectedPos = this.value;
+            if (selectedPos && wsDesigSel && !wsDesigSel.value) {
+              wsDesigSel.value = selectedPos;
+            }
+          });
+        }
+      }
+
+      if (schema.table === 'designations') {
+        var categorySelect = document.getElementById('field-pg_category');
+        var designationPgSelect = document.getElementById('field-pay_group');
+        var categoryRows = [];
+        api.read('pay_groups').then(function(rows) {
+          categoryRows = rows || [];
+          if (categorySelect) {
+            var categories = {};
+            categoryRows.forEach(function(row) { if (row.pg_category) categories[row.pg_category] = true; });
+            categorySelect.innerHTML = '<option value="">-- Select category --</option>';
+            Object.keys(categories).sort().forEach(function(category) {
+              var option = document.createElement('option'); option.value = category; option.textContent = category; categorySelect.appendChild(option);
+            });
+          }
+          if (categorySelect) categorySelect.dispatchEvent(new Event('change'));
         });
-      }
-    }
-  },
-
-  updateLocationStationDependency: async function(container, selectedLocId, selectedStationId) {
-    if (!container) return;
-    var stnSelect = container.querySelector('[name="station_id"]') || container.querySelector('[name="station_code"]');
-    if (!stnSelect) return;
-    var stnGroup = stnSelect.closest('.form-group');
-
-    if (!selectedLocId) {
-      if (stnGroup) stnGroup.style.display = 'none';
-      stnSelect.innerHTML = '<option value="">-- No Airport Station Associated --</option>';
-      stnSelect.value = '';
-      return;
-    }
-
-    try {
-      var locations = await api.read('work_locations');
-      var loc = (locations || []).find(function(l) {
-        return String(l.location_id || l.location_code || '').trim().toLowerCase() === String(selectedLocId).trim().toLowerCase();
-      });
-
-      var stations = await api.read('stations');
-      var matchedStn = null;
-
-      if (loc) {
-        var associatedStnId = loc.station_id || loc.station_code || '';
-        if (associatedStnId) {
-          matchedStn = (stations || []).find(function(s) {
-            return String(s.station_id || s.station_code || '').trim().toLowerCase() === String(associatedStnId).trim().toLowerCase();
-          });
-        }
-        if (!matchedStn && loc.location_city) {
-          matchedStn = (stations || []).find(function(s) {
-            return String(s.station_location || '').trim().toLowerCase() === String(loc.location_city || '').trim().toLowerCase();
+        if (categorySelect && designationPgSelect) {
+          categorySelect.addEventListener('change', function() {
+            var category = this.value;
+            designationPgSelect.innerHTML = '<option value="">-- Select pay group --</option>';
+            var seenPg = {};
+            var stdOrder = ['PG-1', 'PG-3(2)', 'PG-4', 'PG-5', 'PG-6', 'PG-7', 'PG-8', 'PG-9', 'PG-10', 'PG-11', 'PG-12', 'LOCAL'];
+            var matchedPgs = [];
+            categoryRows.filter(function(row) { return !category || String(row.pg_category) === category; }).forEach(function(row) {
+              var p = String(row.pay_group || '').trim();
+              if (p && !seenPg[p]) {
+                seenPg[p] = true;
+                matchedPgs.push(p);
+              }
+            });
+            matchedPgs.sort(function(a, b) {
+              var iA = stdOrder.indexOf(a);
+              var iB = stdOrder.indexOf(b);
+              if (iA !== -1 && iB !== -1) return iA - iB;
+              if (iA !== -1) return -1;
+              if (iB !== -1) return 1;
+              return a.localeCompare(b);
+            });
+            matchedPgs.forEach(function(pg) {
+              var option = document.createElement('option');
+              option.value = pg;
+              option.textContent = pg;
+              designationPgSelect.appendChild(option);
+            });
           });
         }
       }
 
-      if (matchedStn) {
-        var stnVal = matchedStn.station_id || matchedStn.station_code;
-        var stnDisp = matchedStn.station_name || matchedStn.station_code;
-
-        stnSelect.innerHTML = `
-          <option value="">-- Select Station --</option>
-          <option value="${stnVal}">${stnDisp}</option>
-        `;
-        stnSelect.value = selectedStationId || stnVal;
-        if (stnGroup) {
-          stnGroup.style.display = 'block';
-        }
-      } else {
-        // Non-airport entity (e.g. Head Office, Motijheel Sales Office, Admin Building)
-        stnSelect.innerHTML = '<option value="">-- No Airport Station Associated --</option>';
-        stnSelect.value = '';
-        if (stnGroup) {
-          stnGroup.style.display = 'none';
+      if (schema.table === 'pay_groups') {
+        var pgInput = document.getElementById('field-pay_group');
+        var rankInput = document.getElementById('field-rank_level');
+        var rankMap = {
+          'PG-1': 1, 'PG-3(2)': 4, 'PG-4': 5, 'PG-5': 6, 'PG-6': 7,
+          'PG-7': 8, 'PG-8': 9, 'PG-9': 10, 'PG-10': 11, 'PG-11': 12, 'PG-12': 13
+        };
+        if (pgInput && rankInput) {
+          pgInput.addEventListener('change', function () {
+            var val = (this.value || '').trim();
+            if (rankMap[val] !== undefined) {
+              rankInput.value = rankMap[val];
+            }
+          });
         }
       }
-    } catch (e) {
-      console.warn('Error updating location-station dependency:', e);
-    }
-  },
+    },
 
-  handleFormSubmit: function(e, formKey) {
-    e.preventDefault();
-    var schema = AppSchemas[formKey];
-    if (!schema) return;
+    updateLocationStationDependency: async function (container, selectedLocId, selectedStationId) {
+      if (!container) return;
+      var stnSelect = container.querySelector('[name="station_id"]') || container.querySelector('[name="station_code"]');
+      if (!stnSelect) return;
 
-    var form = document.getElementById('org-dynamic-form');
-    if (!form) return;
+      if (!selectedLocId) return;
 
-    var saveBtn = document.getElementById('btn-org-save');
-    if (saveBtn) {
-      saveBtn.disabled = true;
-      saveBtn.innerHTML = '<span class="material-icons animate-spin" style="font-size: 16px;">sync</span> Saving...';
-    }
+      try {
+        var locations = await api.read('work_locations');
+        var loc = (locations || []).find(function (l) {
+          return String(l.location_id || l.location_code || '').trim().toLowerCase() === String(selectedLocId).trim().toLowerCase();
+        });
 
-    var formData = new FormData(form);
-    var payload = {};
-    formData.forEach(function(val, key) {
-      payload[key] = val;
-    });
-
-    if (formKey === 'workforce_setup') {
-      if (payload.staff_number !== undefined && payload.set_up === undefined) {
-        payload.set_up = payload.staff_number;
+        if (loc && loc.station_id) {
+          stnSelect.value = selectedStationId || loc.station_id;
+        }
+      } catch (e) {
+        console.warn('Error updating location-station dependency:', e);
       }
-    }
+    },
 
-    api.create(schema.table, payload, schema.prefix, schema.pk)
-      .then(function() {
-        app.toast('Record successfully saved in ' + schema.title, 'success');
-        form.reset();
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
-        }
-        if (typeof orgViews.loadGridData === 'function') {
-          orgViews.loadGridData(formKey, true);
-        }
-      })
-      .catch(function(err) {
-        if (err.isDuplicate || (err.message && (err.message.indexOf('already exists') !== -1 || err.message.indexOf('Duplicate') !== -1))) {
-          Components.showDuplicateModal(err.message, 'Form: ' + schema.title);
-        } else {
-          app.toast('Save failed: ' + err.message, 'error');
-        }
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
-        }
+    handleFormSubmit: function (e, formKey) {
+      e.preventDefault();
+      var schema = AppSchemas[formKey];
+      if (!schema) return;
+
+      var form = document.getElementById('org-dynamic-form');
+      if (!form) return;
+
+      var saveBtn = document.getElementById('btn-org-save');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="material-icons animate-spin" style="font-size: 16px;">sync</span> Saving...';
+      }
+
+      var formData = new FormData(form);
+      var payload = {};
+      formData.forEach(function (val, key) {
+        payload[key] = val;
       });
-  },
 
-  openViewGrid: function(formKey) {
-    if (formKey === 'directorates' || formKey === 'departments' || formKey === 'sections') {
-      formKey = 'organization_units';
-    }
-    var schema = AppSchemas[formKey];
-    if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
+      if (formKey === 'workforce_setup') {
+        var sNum = payload.sanctioned_posts || payload.staff_number || payload.set_up;
+        if (sNum !== undefined && sNum !== '') {
+          payload.sanctioned_posts = sNum;
+          payload.staff_number = sNum;
+          payload.set_up = sNum;
+        }
+        var wsPgEl = document.getElementById('field-pay_group');
+        if (wsPgEl && wsPgEl.selectedIndex >= 0) {
+          var selOpt = wsPgEl.options[wsPgEl.selectedIndex];
+          if (selOpt && selOpt.dataset.payGroup) {
+            payload.pay_group = selOpt.dataset.payGroup;
+          }
+          if (selOpt && selOpt.dataset.designation && !payload.designation) {
+            payload.designation = selOpt.dataset.designation;
+          }
+        }
+        if (payload.position_id && !payload.designation) {
+          payload.designation = payload.position_id;
+        }
+        if (payload.station_code && !payload.station_id) {
+          payload.station_id = payload.station_code;
+        }
+        if (payload.duty_pattern && !payload.shift_type) {
+          payload.shift_type = payload.duty_pattern;
+        }
+      } else if (formKey === 'shifts') {
+        if (!payload.unit_id && payload.dep_id) {
+          payload.unit_id = payload.dep_id;
+        }
+        delete payload.station_code;
+        delete payload.station_id;
+        delete payload.dep_id;
+      }
 
-    var mount = document.getElementById('org-view-mount');
-    if (!mount) return;
+      api.create(schema.table, payload, schema.prefix, schema.pk)
+        .then(function (savedRec) {
+          app.toast('Record successfully saved in ' + schema.title, 'success');
+          form.reset();
+          if (orgViews.masterData && orgViews.masterData[schema.table]) {
+            orgViews.masterData[schema.table].push(savedRec || payload);
+          }
+          if (schema.table === 'organization_units') {
+            orgViews.populateFormSelects(schema);
+            var prevEl = document.getElementById('org-hierarchy-preview-text');
+            if (prevEl) {
+              prevEl.innerHTML = '<em>No parent selected. This unit will be created at the Top-Level (Corporate / Root Authority).</em>';
+            }
+          } else if (schema.table === 'workforce_setup') {
+            orgViews.populateFormSelects(schema);
+            var wsPrevEl = document.getElementById('ws-hierarchy-preview-text');
+            if (wsPrevEl) {
+              wsPrevEl.innerHTML = '<em>Select an Organization Unit to preview its Directorate, Department, and Section hierarchy chain.</em>';
+            }
+          } else if (schema.table === 'pay_groups') {
+            orgViews.populateFormSelects(schema);
+            var pgPrevEl = document.getElementById('pg-reporting-preview-text');
+            if (pgPrevEl) {
+              pgPrevEl.innerHTML = '<em>Select an Organization Unit and Immediate Reporting Boss to preview the corporate reporting chain.</em>';
+            }
+          }
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
+          }
+          if (typeof orgViews.loadGridData === 'function') {
+            orgViews.loadGridData(formKey, false);
+          }
+        })
+        .catch(function (err) {
+          if (err.isDuplicate || (err.message && (err.message.indexOf('already exists') !== -1 || err.message.indexOf('Duplicate') !== -1))) {
+            Components.showDuplicateModal(err.message, 'Form: ' + schema.title);
+          } else {
+            app.toast('Save failed: ' + err.message, 'error');
+          }
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<span class="material-icons" style="font-size: 16px;">save</span> <span>Save Record</span>';
+          }
+        });
+    },
 
-    var tierFilterHtml = '';
-    if (formKey === 'organization_units') {
-      tierFilterHtml = `
-        <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-left: auto;">
-          <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 0.25rem;">Tier:</span>
-          <button type="button" class="tier-filter-pill active" data-tier="ALL" onclick="orgViews.filterTier('ALL')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--brand-teal); background: var(--brand-teal); color: #fff; cursor: pointer;">All Units</button>
-          <button type="button" class="tier-filter-pill" data-tier="DIRECTORATE" onclick="orgViews.filterTier('DIRECTORATE')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Directorates</button>
-          <button type="button" class="tier-filter-pill" data-tier="DIVISION" onclick="orgViews.filterTier('DIVISION')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Divisions</button>
-          <button type="button" class="tier-filter-pill" data-tier="DEPARTMENT" onclick="orgViews.filterTier('DEPARTMENT')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Departments</button>
-          <button type="button" class="tier-filter-pill" data-tier="SECTION" onclick="orgViews.filterTier('SECTION')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Sections / Wings</button>
-          <button type="button" class="tier-filter-pill" data-tier="UNIT" onclick="orgViews.filterTier('UNIT')" style="padding: 2px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border-light); background: var(--surface-card); color: var(--text-secondary); cursor: pointer;">Units / Teams</button>
-        </div>
-      `;
-    }
+    openViewGrid: function (formKey) {
+      if (formKey === 'directorates' || formKey === 'departments' || formKey === 'sections') {
+        formKey = 'organization_units';
+      }
+      var schema = AppSchemas[formKey];
+      if (!schema) return app.toast('Schema not found for ' + formKey, 'error');
 
-    var html = `
+      var mount = document.getElementById('org-view-mount');
+      if (!mount) return;
+
+      var tierFilterHtml = '';
+      if (formKey === 'organization_units') {
+        var tiers = [
+          { key: 'ALL', label: 'All Units' },
+          { key: 'CORPORATE', label: 'Corporate' },
+          { key: 'DIRECTORATE', label: 'Directorates' },
+          { key: 'DIVISION', label: 'Divisions' },
+          { key: 'DEPARTMENT', label: 'Departments' },
+          { key: 'WING', label: 'Wing' },
+          { key: 'SECTION', label: 'Section' },
+          { key: 'UNIT', label: 'Unit' }
+        ];
+
+        tierFilterHtml = '<div style="display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; margin-left: auto;">';
+        tierFilterHtml += '<span style="font-size: 0.7rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-right: 0.2rem;">Category:</span>';
+        tiers.forEach(function (t) {
+          var isAct = t.key === 'ALL' ? 'active' : '';
+          var actBg = t.key === 'ALL' ? 'background: #0f766e; color: #ffffff; border-color: #0f766e;' : 'background: #ffffff; color: #1e293b; border-color: #cbd5e1;';
+          tierFilterHtml += `<button type="button" class="tier-filter-pill ${isAct}" id="tier-pill-${t.key}" data-tier="${t.key}" onclick="orgViews.filterTier('${t.key}')" style="padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid; ${actBg} cursor: pointer; transition: all 0.15s ease;"><span class="tier-label">${t.label}</span> <span class="tier-badge-count" id="tier-count-${t.key}" style="opacity: 0.85; font-size: 10px; font-weight: 800;"></span></button>`;
+        });
+        tierFilterHtml += '</div>';
+      }
+
+      var viewTitle = (schema.shortTitle || schema.title.replace(/ Form$/i, '')).replace(/ & Hierarchy/i, '').replace(/ Hierarchy/i, '');
+      var html = `
       <div class="data-grid-shell animate-fade-in" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
-        <div class="grid-header-toolbar" style="flex-wrap: wrap; gap: 0.65rem;">
+        <div class="grid-header-toolbar" style="flex-wrap: wrap; gap: 0.65rem; padding: 0.4rem 0.65rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="material-icons" style="color: var(--brand-teal-light); font-size: 18px;">${schema.table === 'organization_units' ? 'account_tree' : 'table_chart'}</span>
-            <h3 style="font-size: 0.8125rem; font-weight: 800; text-transform: uppercase;">${(schema.title || '').replace(/ Form$/i, '')} - Records View</h3>
+            <span class="material-icons" style="color: #0f766e; font-size: 18px;">${schema.table === 'organization_units' ? 'account_tree' : 'table_chart'}</span>
+            <h3 style="font-size: 0.8125rem; font-weight: 800; text-transform: uppercase; color: #0f172a;">${viewTitle} - Records View</h3>
           </div>
           ${tierFilterHtml}
-          <button type="button" class="btn-cancel" style="padding: 0.35rem 0.65rem; color: var(--text-white); background: var(--surface-dark-elevated); border-color: var(--border-dark); margin-left: ${formKey === 'organization_units' ? '0' : 'auto'};" onclick="orgViews.loadGridData('${formKey}', true)">
-            <span class="material-icons" style="font-size: 14px;">sync</span>
+          <button type="button" class="btn-cancel" style="padding: 0.25rem 0.55rem; color: #ffffff; background: #0f766e; border-color: #0f766e; font-size: 11px; margin-left: ${formKey === 'organization_units' ? '0' : 'auto'};" onclick="orgViews.loadGridData('${formKey}', true)">
+            <span class="material-icons" style="font-size: 13px;">sync</span>
             <span>Refresh</span>
           </button>
         </div>
 
-        <div class="table-container" style="flex: 1; overflow: auto; min-height: 280px; max-height: calc(100vh - 220px);">
-          <table class="standard-data-table" id="org-data-table" style="min-width: 100%; border-collapse: separate; border-spacing: 0;">
+        <div class="table-container" style="flex: 1; min-height: 0; overflow: auto; background-color: #ffffff; border: none;">
+          <table class="standard-data-table" id="org-data-table" style="width: max-content; table-layout: auto; border-collapse: separate; border-spacing: 0;">
             <thead>
               <tr id="org-grid-header"></tr>
             </thead>
             <tbody id="org-grid-body">
-              <tr><td colspan="${schema.fields.length + 3}" style="text-align: center; padding: 2rem; color: var(--text-muted);"><span class="material-icons animate-spin" style="font-size: 18px; vertical-align: middle; margin-right: 0.4rem;">sync</span>Loading records...</td></tr>
+              <tr><td colspan="${schema.fields.length + 3}" style="text-align: center; padding: 1.5rem; color: #64748b;"><span class="material-icons animate-spin" style="font-size: 16px; vertical-align: middle; margin-right: 0.4rem;">sync</span>Loading records...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     `;
 
-    mount.innerHTML = html;
-    this.selectedTier = 'ALL';
-    this.loadGridData(formKey);
-  },
+      mount.innerHTML = html;
+      this.selectedTier = 'ALL';
+      this.loadGridData(formKey);
+    },
 
-  filterTier: function(tier) {
-    this.selectedTier = tier;
-    document.querySelectorAll('.tier-filter-pill').forEach(function(pill) {
-      var isMatch = pill.dataset.tier === tier;
-      pill.classList.toggle('active', isMatch);
-      pill.style.background = isMatch ? 'var(--brand-teal)' : 'var(--surface-card)';
-      pill.style.color = isMatch ? '#fff' : 'var(--text-secondary)';
-      pill.style.borderColor = isMatch ? 'var(--brand-teal)' : 'var(--border-light)';
-    });
-    if (this.gridContext && this.gridContext.records) {
-      this.renderTableRows(this.gridContext);
-    }
-  },
-
-  renderTableRows: function(ctx) {
-    var tbody = document.getElementById('org-grid-body');
-    if (!tbody || !ctx) return;
-
-    var records = ctx.records || [];
-    var schema = ctx.schema;
-    var formKey = ctx.formKey;
-    var unitMap = ctx.unitMap || {};
-    var childMap = ctx.childMap || {};
-    var locMap = ctx.locMap || {};
-    var stnMap = ctx.stnMap || {};
-    var tier = this.selectedTier || 'ALL';
-
-    var filtered = records;
-    if (formKey === 'organization_units' && tier !== 'ALL') {
-      filtered = records.filter(function(r) {
-        var t = String(r.unit_type || '').toUpperCase();
-        if (tier === 'DIRECTORATE') return t === 'DIRECTORATE' || t === 'HEADQUARTER';
-        if (tier === 'DIVISION') return t === 'DIVISION';
-        if (tier === 'DEPARTMENT') return t === 'DEPARTMENT';
-        if (tier === 'SECTION') return t === 'SECTION' || t === 'WING';
-        if (tier === 'UNIT') return t === 'UNIT' || t === 'TEAM';
-        return true;
+    filterTier: function (tier) {
+      this.selectedTier = tier;
+      document.querySelectorAll('.tier-filter-pill').forEach(function (pill) {
+        var isMatch = pill.dataset.tier === tier;
+        pill.classList.toggle('active', isMatch);
+        pill.style.background = isMatch ? '#0f766e' : '#ffffff';
+        pill.style.color = isMatch ? '#ffffff' : '#1e293b';
+        pill.style.borderColor = isMatch ? '#0f766e' : '#cbd5e1';
       });
-    }
+      if (this.gridContext && this.gridContext.records) {
+        this.renderTableRows(this.gridContext);
+      }
+    },
 
-    if (filtered.length === 0) {
-      var colSpan = schema.fields.length + (formKey === 'organization_units' ? 4 : 3);
-      tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No records found matching ${tier !== 'ALL' ? tier : 'criteria'}.</td></tr>`;
-      return;
-    }
+    renderTableRows: function (ctx) {
+      var tbody = document.getElementById('org-grid-body');
+      if (!tbody || !ctx) return;
 
-    var bHtml = '';
-    filtered.forEach(function(r, idx) {
-      var pkVal = r[schema.pk] || r.id || ('#' + (idx + 1));
-      bHtml += `<tr>`;
-      bHtml += `<td style="text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>`;
-      bHtml += `<td style="font-weight: 700; color: var(--brand-teal); font-family: monospace;">${pkVal}</td>`;
-      schema.fields.forEach(function(f) {
-        var val = r[f.name];
-        if (formKey === 'organization_units' && f.name === 'parent_unit_id') {
-          if (val && unitMap[val]) {
-            var parentU = unitMap[val];
-            bHtml += `<td style="white-space: nowrap;"><strong>${parentU.unit_name || parentU.unit_code}</strong> <span style="font-size: 0.7rem; color: var(--text-muted);">[${parentU.unit_type || 'UNIT'}]</span></td>`;
-          } else {
-            bHtml += `<td style="white-space: nowrap;"><span style="color: var(--brand-teal-light); font-weight: 700; font-size: 0.75rem;">Top-Level (Root)</span></td>`;
-          }
-        } else if (f.name === 'location_id') {
-          var locDisp = (val && locMap[val]) ? locMap[val] : (val || '-');
-          bHtml += `<td style="white-space: nowrap;">${locDisp}</td>`;
-        } else if (f.name === 'station_id' || f.name === 'station_code') {
-          var stnDisp = (val && stnMap[val]) ? stnMap[val] : (val || '-');
-          bHtml += `<td style="white-space: nowrap;">${stnDisp}</td>`;
-        } else if (formKey === 'organization_units' && f.name === 'unit_type') {
-          var badgeColor = 'rgba(13,148,136,0.15)';
-          var txtColor = 'var(--brand-teal-light)';
-          if (val === 'HEADQUARTER' || val === 'DIRECTORATE') {
-            badgeColor = 'rgba(234, 88, 12, 0.15)';
-            txtColor = '#ea580c';
-          } else if (val === 'DEPARTMENT') {
-            badgeColor = 'rgba(22, 163, 74, 0.15)';
-            txtColor = '#16a34a';
-          } else if (val === 'SECTION') {
-            badgeColor = 'rgba(99, 102, 241, 0.15)';
-            txtColor = '#6366f1';
-          }
-          bHtml += `<td style="white-space: nowrap;"><span style="background: ${badgeColor}; color: ${txtColor}; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">${val || '-'}</span></td>`;
-        } else {
-          bHtml += `<td style="white-space: nowrap;">${val !== undefined && val !== null && val !== '' ? val : '-'}</td>`;
-        }
-      });
+      var records = ctx.records || [];
+      var schema = ctx.schema;
+      var formKey = ctx.formKey;
+      var unitMap = ctx.unitMap || {};
+      var childMap = ctx.childMap || {};
+      var locMap = ctx.locMap || {};
+      var stnMap = ctx.stnMap || {};
+      var tier = this.selectedTier || 'ALL';
+
+      var filtered = records.slice();
       if (formKey === 'organization_units') {
-        var children = childMap[pkVal] || [];
-        if (children.length > 0) {
-          bHtml += `<td style="white-space: nowrap;"><span style="background: rgba(13,148,136,0.15); color: var(--brand-teal-light); padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;" title="${children.join(', ')}">${children.length} Sub-unit(s)</span></td>`;
-        } else {
-          bHtml += `<td style="white-space: nowrap; color: var(--text-muted); font-size: 0.75rem;">None</td>`;
+        var hierarchyOrder = {
+          'CORPORATE': 1,
+          'DIRECTORATE': 2,
+          'DIVISION': 3,
+          'DEPARTMENT': 4,
+          'WING': 5,
+          'SECTION': 6,
+          'UNIT': 7
+        };
+
+        filtered.sort(function (a, b) {
+          var tA = orgViews.detectUnitTier(a);
+          var tB = orgViews.detectUnitTier(b);
+          var pA = hierarchyOrder[tA] || 99;
+          var pB = hierarchyOrder[tB] || 99;
+          if (pA !== pB) return pA - pB;
+          return String(a.unit_name || '').localeCompare(String(b.unit_name || ''));
+        });
+
+        if (tier !== 'ALL') {
+          filtered = filtered.filter(function (r) {
+            return orgViews.detectUnitTier(r) === tier;
+          });
         }
       }
-      bHtml += `
-        <td style="text-align: right; padding-right: 1.25rem; white-space: nowrap; position: sticky; right: 0; background-color: var(--surface-card); box-shadow: -2px 0 4px rgba(0,0,0,0.05);">
+
+      if (filtered.length === 0) {
+        var colSpan = schema.fields.length + (formKey === 'organization_units' ? 4 : 3);
+        tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; padding: 2rem; color: #64748b;">No records found matching ${tier !== 'ALL' ? tier : 'criteria'}.</td></tr>`;
+        return;
+      }
+
+      var bHtml = '';
+      filtered.forEach(function (r, idx) {
+        var pkVal = r[schema.pk] || r.id || ('#' + (idx + 1));
+        bHtml += `<tr>`;
+        bHtml += `<td style="text-align: center; font-weight: 700; color: #64748b;">${idx + 1}</td>`;
+        bHtml += `<td style="font-weight: 700; color: #0f766e; font-family: monospace;">${pkVal}</td>`;
+        schema.fields.forEach(function (f) {
+          var val = r[f.name];
+          if (formKey === 'organization_units' && f.name === 'parent_unit_id') {
+            var rawParent = (val === null || val === undefined) ? '' : String(val).trim();
+            if (!rawParent || rawParent.toUpperCase() === 'NULL' || rawParent === '-') {
+              bHtml += `<td style="white-space: nowrap; color: #94a3b8; text-align: center;">-</td>`;
+            } else {
+              var parentU = unitMap[rawParent] || unitMap[rawParent.toUpperCase()];
+              var parentName = parentU ? (parentU.unit_name || parentU.unit_code || '-').trim() : rawParent;
+              bHtml += `<td style="white-space: nowrap; font-weight: 600; color: #0f172a;">${parentName}</td>`;
+            }
+          } else if (f.name === 'location_id') {
+            var locDisp = (val && locMap[val]) ? locMap[val] : (val || '-');
+            bHtml += `<td style="white-space: nowrap; color: #0f172a;">${locDisp}</td>`;
+          } else if (f.name === 'station_id' || f.name === 'station_code') {
+            var rawStn = val || r.station_code || r.station_id || r.station || '';
+            var stnCode = String(rawStn).trim().toUpperCase();
+            bHtml += `<td style="white-space: nowrap; font-family: monospace; font-weight: 700; color: #0f172a;">${stnCode || '-'}</td>`;
+          } else if (f.name === 'unit_id' || f.name === 'dep_id') {
+            var uObj = (val && (unitMap[val] || unitMap[String(val).trim().toUpperCase()])) ? (unitMap[val] || unitMap[String(val).trim().toUpperCase()]) : null;
+            var uDisp = uObj ? (uObj.unit_name || uObj.unit_code || val) : (val || '-');
+            bHtml += `<td style="white-space: nowrap; font-weight: 600; color: #0f172a;">${uDisp}</td>`;
+          } else if (f.name === 'position_id') {
+            var pDisp = (val && (ctx.posMap || {})[val]) ? ((ctx.posMap || {})[val].position_title || (ctx.posMap || {})[val].position_code) : (val || '-');
+            bHtml += `<td style="white-space: nowrap; color: #0f172a;">${pDisp}</td>`;
+          } else if (formKey === 'organization_units' && f.name === 'unit_type') {
+            var rawType = (val === null || val === undefined) ? '' : String(val).trim();
+            if (!rawType || rawType.toUpperCase() === 'NULL' || rawType === '-') {
+              bHtml += `<td style="white-space: nowrap; color: #94a3b8; text-align: center;">-</td>`;
+            } else {
+              var uType = rawType.toUpperCase();
+              var badgeBg = '#f1f5f9';
+              var badgeText = '#0f172a';
+              var badgeBorder = '#cbd5e1';
+              if (uType === 'MD & CEO' || uType === 'CEO' || uType === 'CORPORATE' || uType === 'EXECUTIVE') {
+                badgeBg = '#fee2e2'; badgeText = '#991b1b'; badgeBorder = '#f87171';
+              } else if (uType === 'DIRECTORATE' || uType === 'HEADQUARTER') {
+                badgeBg = '#ffedd5'; badgeText = '#9a3412'; badgeBorder = '#fb923c';
+              } else if (uType === 'DIVISION') {
+                badgeBg = '#fef3c7'; badgeText = '#92400e'; badgeBorder = '#fcd34d';
+              } else if (uType === 'DEPARTMENT') {
+                badgeBg = '#dcfce7'; badgeText = '#166534'; badgeBorder = '#4ade80';
+              } else if (uType === 'WING' || uType === 'SUB-WING') {
+                badgeBg = '#e0e7ff'; badgeText = '#3730a3'; badgeBorder = '#818cf8';
+              } else if (uType === 'SECTION') {
+                badgeBg = '#f3e8ff'; badgeText = '#6b21a8'; badgeBorder = '#c084fc';
+              } else if (uType === 'UNIT' || uType === 'TEAM') {
+                badgeBg = '#ccfbf1'; badgeText = '#0f766e'; badgeBorder = '#2dd4bf';
+              }
+              bHtml += `<td style="white-space: nowrap;"><span style="background: ${badgeBg}; color: ${badgeText}; border: 1px solid ${badgeBorder}; padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 10px; display: inline-block;">${rawType}</span></td>`;
+            }
+          } else {
+            var strVal = (val === null || val === undefined) ? '' : String(val).trim();
+            if (!strVal || strVal.toUpperCase() === 'NULL') {
+              bHtml += `<td style="white-space: nowrap; color: #94a3b8; text-align: center;">-</td>`;
+            } else {
+              bHtml += `<td style="white-space: nowrap; color: #0f172a;">${strVal}</td>`;
+            }
+          }
+        });
+        if (formKey === 'organization_units') {
+          var pkNorm = String(pkVal || '').trim().toUpperCase();
+          var codeNorm = String(r.unit_code || '').trim().toUpperCase();
+          var nameNorm = String(r.unit_name || '').trim().toUpperCase();
+          var childrenList = childMap[pkNorm] || (codeNorm ? childMap[codeNorm] : null) || (nameNorm ? childMap[nameNorm] : null) || [];
+          if (childrenList.length > 0) {
+            var childTitles = childrenList.map(function (c) { return c.name + (c.unit_type ? ' [' + c.unit_type + ']' : ''); }).join(', ');
+            bHtml += `<td style="white-space: nowrap;"><span style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 11px;" title="${childTitles}">${childrenList.length} Sub-unit(s)</span></td>`;
+          } else {
+            bHtml += `<td style="white-space: nowrap; color: #94a3b8; font-size: 11px; text-align: center;">-</td>`;
+          }
+        }
+        bHtml += `
+        <td style="text-align: right; padding-right: 0.5rem; white-space: nowrap; position: sticky; right: 0; background-color: #ffffff; box-shadow: -2px 0 4px rgba(0,0,0,0.05);">
           <button type="button" class="btn-table-edit" onclick="orgViews.openRecordEditView('${formKey}', '${pkVal}')" title="Edit this record">
-            <span class="material-icons" style="font-size: 13px;">edit</span>
+            <span class="material-icons" style="font-size: 12px;">edit</span>
             <span>Edit</span>
           </button>
-          <button type="button" class="btn-table-delete" style="margin-left: 0.3rem;" onclick="orgViews.deleteRecord('${formKey}', '${pkVal}')" title="Delete this record">
-            <span class="material-icons" style="font-size: 13px;">delete</span>
+          <button type="button" class="btn-table-delete" style="margin-left: 0.2rem;" onclick="orgViews.deleteRecord('${formKey}', '${pkVal}')" title="Delete this record">
+            <span class="material-icons" style="font-size: 12px;">delete</span>
             <span>Delete</span>
           </button>
         </td>
       `;
-      bHtml += `</tr>`;
-    });
-    tbody.innerHTML = bHtml;
-  },
-
-  loadGridData: function(formKey, forceRefresh) {
-    if (formKey === 'directorates' || formKey === 'departments' || formKey === 'sections') {
-      formKey = 'organization_units';
-    }
-    var schema = AppSchemas[formKey];
-    if (!schema) return;
-
-    var headerRow = document.getElementById('org-grid-header');
-    var tbody = document.getElementById('org-grid-body');
-    if (!headerRow || !tbody) return;
-
-    var thHtml = `<th style="width: 50px; text-align: center; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">SL</th>`;
-    thHtml += `<th style="width: 110px; position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light);">Record ID</th>`;
-    schema.fields.forEach(function(f) {
-      thHtml += `<th style="position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light); white-space: nowrap;">${f.label}</th>`;
-    });
-    if (formKey === 'organization_units') {
-      thHtml += `<th style="position: sticky; top: 0; background-color: var(--surface-alt); z-index: 10; border-bottom: 2px solid var(--border-light); white-space: nowrap;">Subordinate Units</th>`;
-    }
-    thHtml += `<th style="width: 150px; text-align: right; padding-right: 1.25rem; position: sticky; top: 0; right: 0; background-color: var(--surface-alt); z-index: 15; border-bottom: 2px solid var(--border-light); box-shadow: -2px 0 4px rgba(0,0,0,0.05);">Action</th>`;
-    headerRow.innerHTML = thHtml;
-
-    var self = this;
-    Promise.all([
-      api.read(schema.table, !!forceRefresh),
-      api.read('work_locations').catch(function(){ return []; }),
-      api.read('stations').catch(function(){ return []; })
-    ]).then(function(results) {
-      var records = results[0];
-      var workLocations = results[1] || [];
-      var stations = results[2] || [];
-
-      var locMap = {};
-      workLocations.forEach(function(l) {
-        var stnTag = (l.station_id || l.station_code) ? '[' + (l.station_id || l.station_code) + '] ' : '';
-        locMap[l.location_id] = stnTag + (l.location_name || l.location_code || l.location_id);
-        if (l.location_code) locMap[l.location_code] = stnTag + (l.location_name || l.location_code);
+        bHtml += `</tr>`;
       });
+      tbody.innerHTML = bHtml;
+    },
 
-      var stnMap = {};
-      stations.forEach(function(s) {
-        var sDisp = (s.station_code ? '[' + s.station_code + '] ' : '') + (s.station_name || s.station_code || s.station_id);
-        stnMap[s.station_id] = sDisp;
-        if (s.station_code) stnMap[s.station_code] = sDisp;
-      });
-
-      var unitMap = {};
-      var childMap = {};
-      if (formKey === 'organization_units') {
-        (records || []).forEach(function(u) {
-          unitMap[u.unit_id] = u;
-          if (u.parent_unit_id) {
-            if (!childMap[u.parent_unit_id]) childMap[u.parent_unit_id] = [];
-            childMap[u.parent_unit_id].push(u.unit_name || u.unit_code);
-          }
-        });
+    loadGridData: function (formKey, forceRefresh) {
+      if (formKey === 'directorates' || formKey === 'departments' || formKey === 'sections') {
+        formKey = 'organization_units';
       }
+      var schema = AppSchemas[formKey];
+      if (!schema) return;
 
-      self.gridContext = {
-        records: records,
-        schema: schema,
-        formKey: formKey,
-        unitMap: unitMap,
-        childMap: childMap,
-        locMap: locMap,
-        stnMap: stnMap
+      var headerRow = document.getElementById('org-grid-header');
+      var tbody = document.getElementById('org-grid-body');
+      if (!headerRow || !tbody) return;
+
+      var thHtml = `<th style="text-align: center; position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">SL</th>`;
+      thHtml += `<th style="position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">Record ID</th>`;
+      schema.fields.forEach(function (f) {
+        var colLabel = f.label;
+        if (formKey === 'organization_units' && f.name === 'parent_unit_id') {
+          colLabel = 'Parent Unit';
+        }
+        thHtml += `<th style="position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">${colLabel}</th>`;
+      });
+      if (formKey === 'organization_units') {
+        thHtml += `<th style="position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">Sub Units</th>`;
+      }
+      thHtml += `<th style="text-align: right; padding-right: 0.5rem; position: sticky; top: 0; right: 0; background-color: #f1f5f9; z-index: 15; border-bottom: 2px solid #cbd5e1; box-shadow: -2px 0 4px rgba(0,0,0,0.05); white-space: nowrap;">Action</th>`;
+      headerRow.innerHTML = thHtml;
+
+      var self = this;
+      var getRef = function (tbl) {
+        if (self.masterData && self.masterData[tbl] && self.masterData[tbl].length > 0) {
+          return Promise.resolve(self.masterData[tbl]);
+        }
+        return api.read(tbl, false).catch(function () { return []; });
       };
 
-      self.renderTableRows(self.gridContext);
-    }).catch(function(err) {
-      tbody.innerHTML = `<tr><td colspan="${schema.fields.length + 4}" style="text-align: center; padding: 2rem; color: var(--status-danger);">Failed to load: ${err.message}</td></tr>`;
-    });
-  },
+      Promise.all([
+        api.read(schema.table, !!forceRefresh),
+        getRef('work_locations'),
+        getRef('stations'),
+        getRef('organization_units'),
+        getRef('positions'),
+        getRef('pay_groups')
+      ]).then(function (results) {
+        var records = results[0];
+        var workLocations = results[1] || [];
+        var stations = results[2] || [];
+        var allUnits = results[3] || [];
+        var allPositions = results[4] || [];
+        var allPayGroups = results[5] || [];
 
-  openRecordEditView: function(formKey, pkVal) {
-    var schema = AppSchemas[formKey];
-    var self = this;
-    api.read(schema.table).then(function(records) {
-      var row = (records || []).find(function(r) { return (r[schema.pk] || r.id) === pkVal; });
-      if (!row) return app.toast('Record not found', 'error');
+        var locMap = {};
+        workLocations.forEach(function (l) {
+          locMap[l.location_id] = l.location_name || l.location_code || l.location_id;
+          if (l.location_code) locMap[l.location_code] = l.location_name || l.location_code;
+        });
 
-      var mount = document.getElementById('org-view-mount');
-      if (!mount) return;
+        var stnMap = {};
+        stations.forEach(function (s) {
+          var sCode = String(s.station_code || s.station_id || '').trim().toUpperCase();
+          if (sCode) {
+            stnMap[sCode] = sCode;
+            if (s.station_id) stnMap[String(s.station_id).trim().toUpperCase()] = sCode;
+          }
+        });
 
-      var hierarchyHeaderHtml = '';
-      if (formKey === 'organization_units') {
-        hierarchyHeaderHtml = `
-          <div style="background: rgba(13, 148, 136, 0.08); border: 1.5px solid var(--brand-teal); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem;">
-            <div style="font-weight: 800; font-size: 0.78rem; color: var(--brand-teal-light); text-transform: uppercase; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
-              <span class="material-icons" style="font-size: 16px;">account_tree</span>
+        var unitMap = {};
+        var childMap = {};
+
+        // 1. Build canonical unit index by ID, Code, and Name
+        var canonicalParentById = {};
+        var keyToCanonicalId = {};
+
+        (allUnits || []).forEach(function (u) {
+          if (!u) return;
+          if (u.is_deleted === true || u.is_deleted === 'TRUE' || String(u.status || '').trim().toUpperCase() === 'DELETED') return;
+
+          var uid = String(u.unit_id || '').trim();
+          var ucode = String(u.unit_code || '').trim();
+          var uname = String(u.unit_name || '').trim();
+
+          if (uid) {
+            unitMap[uid] = u;
+            unitMap[uid.toUpperCase()] = u;
+            canonicalParentById[uid.toUpperCase()] = u;
+            keyToCanonicalId[uid.toUpperCase()] = uid.toUpperCase();
+          }
+          if (ucode) {
+            unitMap[ucode] = u;
+            unitMap[ucode.toUpperCase()] = u;
+            if (uid) keyToCanonicalId[ucode.toUpperCase()] = uid.toUpperCase();
+          }
+          if (uname) {
+            if (uid) keyToCanonicalId[uname.toUpperCase()] = uid.toUpperCase();
+          }
+        });
+
+        // 2. Build accurate child map linking child units to parent identifiers
+        (allUnits || []).forEach(function (u) {
+          if (!u) return;
+          if (u.is_deleted === true || u.is_deleted === 'TRUE' || String(u.status || '').trim().toUpperCase() === 'DELETED') return;
+
+          var rawParent = String(u.parent_unit_id || '').trim();
+          if (!rawParent || rawParent.toUpperCase() === 'NULL' || rawParent === '-') return;
+
+          var parentNorm = rawParent.toUpperCase();
+          var canonicalParentKey = keyToCanonicalId[parentNorm] || parentNorm;
+          var parentUnitObj = canonicalParentById[canonicalParentKey] || canonicalParentById[parentNorm];
+
+          var childName = (u.unit_name || u.unit_code || u.unit_id || '').trim();
+          var childObj = {
+            unit_id: u.unit_id,
+            unit_code: u.unit_code,
+            name: childName,
+            unit_type: u.unit_type
+          };
+
+          var regChildKey = function (k) {
+            if (!k) return;
+            var normK = String(k).trim().toUpperCase();
+            if (!childMap[normK]) childMap[normK] = [];
+            var already = childMap[normK].some(function (c) {
+              return c.unit_id && u.unit_id ? (String(c.unit_id).trim() === String(u.unit_id).trim()) : (c.name === childName);
+            });
+            if (!already) {
+              childMap[normK].push(childObj);
+            }
+          };
+
+          regChildKey(parentNorm);
+          regChildKey(canonicalParentKey);
+          if (parentUnitObj) {
+            if (parentUnitObj.unit_id) regChildKey(parentUnitObj.unit_id);
+            if (parentUnitObj.unit_code) regChildKey(parentUnitObj.unit_code);
+            if (parentUnitObj.unit_name) regChildKey(parentUnitObj.unit_name);
+          }
+        });
+
+        var posMap = {};
+        (allPositions || []).forEach(function (p) {
+          posMap[p.position_id] = p;
+          if (p.position_code) posMap[p.position_code] = p;
+          if (p.position_title) posMap[p.position_title] = p;
+        });
+
+        var pgMap = {};
+        (allPayGroups || []).forEach(function (pg) {
+          pgMap[pg.pg_id] = pg;
+        });
+
+        self.gridContext = {
+          records: records,
+          schema: schema,
+          formKey: formKey,
+          unitMap: unitMap,
+          posMap: posMap,
+          pgMap: pgMap,
+          childMap: childMap,
+          locMap: locMap,
+          stnMap: stnMap
+        };
+
+        if (formKey === 'organization_units') {
+          var counts = { ALL: 0, CORPORATE: 0, DIRECTORATE: 0, DIVISION: 0, DEPARTMENT: 0, WING: 0, SECTION: 0, UNIT: 0 };
+          (records || []).forEach(function (r) {
+            if (r.is_deleted === true || r.is_deleted === 'TRUE' || String(r.status || '').trim().toUpperCase() === 'DELETED') return;
+            counts.ALL++;
+            var t = self.detectUnitTier(r);
+            if (counts[t] !== undefined) counts[t]++;
+          });
+          Object.keys(counts).forEach(function (k) {
+            var cEl = document.getElementById('tier-count-' + k);
+            if (cEl) cEl.innerText = '(' + counts[k] + ')';
+            var pill = document.getElementById('tier-pill-' + k);
+            if (pill && k !== 'ALL') {
+              pill.style.display = counts[k] > 0 ? 'inline-flex' : 'none';
+            }
+          });
+        }
+
+        self.renderTableRows(self.gridContext);
+      }).catch(function (err) {
+        tbody.innerHTML = `<tr><td colspan="${schema.fields.length + 4}" style="text-align: center; padding: 2rem; color: var(--status-danger);">Failed to load: ${err.message}</td></tr>`;
+      });
+    },
+
+    openRecordEditView: function (formKey, pkVal) {
+      var schema = AppSchemas[formKey];
+      var self = this;
+      api.read(schema.table).then(function (records) {
+        var strPk = String(pkVal || '').trim().toLowerCase();
+        var row = (records || []).find(function (r) {
+          var rPk = r[schema.pk] || (schema.pk ? r[schema.pk.toLowerCase()] : null) || r.id || r._rowNumber;
+          return String(rPk || '').trim().toLowerCase() === strPk || String(r._rowNumber || '').trim() === strPk.replace(/^#/, '');
+        });
+        if (!row) return app.toast('Record not found', 'error');
+
+        var mount = document.getElementById('org-view-mount');
+        if (!mount) return;
+        mount.scrollTop = 0;
+
+        var hierarchyHeaderHtml = '';
+        if (formKey === 'organization_units') {
+          hierarchyHeaderHtml = `
+          <div style="background: rgba(13, 148, 136, 0.08); border: 1.5px solid #0f766e; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #0f172a;">
+            <div style="font-weight: 800; font-size: 0.78rem; color: #0f766e; text-transform: uppercase; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span class="material-icons" style="font-size: 16px; color: #0f766e;">account_tree</span>
               <span>Parent-Child Hierarchy Relationships</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 0.25rem; line-height: 1.5;">
-              <div><strong>Current Unit:</strong> ${row.unit_name || row.unit_code} [${row.unit_type || 'UNIT'}] (${pkVal})</div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem; line-height: 1.5; color: #0f172a;">
+              <div><strong>Current Unit:</strong> ${row.unit_name || row.unit_code} [${row.unit_type || orgViews.detectUnitTier(row)}] (${pkVal})</div>
               <div id="org-edit-ancestry-path"><strong>Hierarchy Path:</strong> Loading ancestry...</div>
-              <div id="org-edit-subordinates-box"><strong>Direct Subordinate Units (Children):</strong> Loading children...</div>
+              <div id="org-edit-subordinates-box"><strong>Direct Sub Units (Children):</strong> Loading children...</div>
             </div>
           </div>
         `;
-      }
+        } else if (formKey === 'pay_groups') {
+          hierarchyHeaderHtml = `
+          <div style="background: rgba(13, 148, 136, 0.08); border: 1.5px solid #0f766e; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #0f172a;">
+            <div style="font-weight: 800; font-size: 0.78rem; color: #0f766e; text-transform: uppercase; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span class="material-icons" style="font-size: 16px; color: #0f766e;">hub</span>
+              <span>Designation Reporting Hierarchy Chain</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem; line-height: 1.5; color: #0f172a;">
+              <div><strong>Active Designation:</strong> ${row.designation || '-'} (${row.pay_group || '-'}) [${pkVal}]</div>
+              <div id="pg-edit-reporting-chain"><strong>Reporting Line:</strong> Loading reporting chain...</div>
+              <div id="pg-edit-subordinates-box"><strong>Direct Subordinate Designations:</strong> Loading subordinates...</div>
+            </div>
+          </div>
+        `;
+        } else if (formKey === 'designations') {
+          hierarchyHeaderHtml = `
+          <div style="background: rgba(13, 148, 136, 0.08); border: 1.5px solid #0f766e; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #0f172a;">
+            <div style="font-weight: 800; font-size: 0.78rem; color: #0f766e; text-transform: uppercase; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span class="material-icons" style="font-size: 16px; color: #0f766e;">badge</span>
+              <span>Designation Master Detail</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem; line-height: 1.5; color: #0f172a;">
+              <div><strong>Designation:</strong> ${row.designation || '-'} (${row.designation_short || '-'}) [${pkVal}]</div>
+              <div id="deg-edit-dept-box"><strong>Department:</strong> Loading department...</div>
+              <div><strong>Pay Group / Category:</strong> ${row.pay_group || '-'} [${row.pg_category || '-'}]</div>
+            </div>
+          </div>
+        `;
+        }
 
-      var html = `
+        var html = `
         <div class="form-shell-container animate-scale-up">
           <div class="form-shell-header">
             <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
-              <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: rgba(45, 212, 191, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <span class="material-icons" style="color: var(--brand-teal-light); font-size: 1.15rem;">edit</span>
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: rgba(45, 212, 191, 0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-icons" style="color: #ffffff; font-size: 1.15rem;">edit</span>
               </div>
               <div style="min-width: 0;">
                 <h3 style="font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.25; margin: 0; color: #ffffff;">Edit ${(schema.title || '').replace(/ Form$/i, '')}</h3>
-                <p style="font-size: 0.72rem; color: #94a3b8; margin: 2px 0 0 0; line-height: 1.2;">Modifying Active Record ID: <span style="color: var(--brand-teal-light); font-weight: 700;">${pkVal}</span></p>
+                <p style="font-size: 0.75rem; color: #e2e8f0; margin: 2px 0 0 0; line-height: 1.25;">Modifying Active Record ID: <span style="color: #ffffff; font-weight: 800; text-decoration: underline;">${pkVal}</span></p>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
@@ -787,36 +1642,68 @@ var orgViews = window.orgViews = {
             <div class="form-two-column-grid">
       `;
 
-      schema.fields.forEach(function(field) {
-        var val = row[field.name] !== undefined ? row[field.name] : '';
-        html += `
+        schema.fields.forEach(function (field) {
+          var val = row[field.name] !== undefined ? row[field.name] : '';
+          if (!val && (field.name === 'station_code' || field.name === 'station_id')) {
+            val = row.station_code || row.station_id || row.station || '';
+          }
+          if (!val && (field.name === 'unit_id' || field.name === 'dep_id')) {
+            val = row.unit_id || row.dep_id || '';
+          }
+          html += `
           <div class="form-group ${field.type === 'textarea' ? 'full-width' : ''}" id="edit-form-group-${field.name}">
             <label>${field.label}</label>
         `;
-        if (field.type === 'select' || field.type === 'dependable_select') {
-          html += `<select name="${field.name}" id="edit-field-${field.name}" class="form-input" data-selected-val="${val}">`;
-          html += `<option value="">-- ${field.placeholder || 'Select Option'} --</option>`;
-          if (field.options) {
-            var matched = false;
-            field.options.forEach(function(opt) {
-              var isSel = (String(opt).trim().toLowerCase() === String(val).trim().toLowerCase()) ? 'selected' : '';
-              if (isSel) matched = true;
-              html += `<option value="${opt}" ${isSel}>${opt}</option>`;
-            });
-            if (val && !matched) {
-              html += `<option value="${val}" selected>${val}</option>`;
+          if (field.type === 'select' || field.type === 'dependable_select') {
+            html += `<select name="${field.name}" id="edit-field-${field.name}" class="form-input" data-selected-val="${val}">`;
+            html += `<option value="">-- ${field.placeholder || 'Select Option'} --</option>`;
+            if (field.options) {
+              var matched = false;
+              field.options.forEach(function (opt) {
+                var isSel = (String(opt).trim().toLowerCase() === String(val).trim().toLowerCase()) ? 'selected' : '';
+                if (isSel) matched = true;
+                html += `<option value="${opt}" ${isSel}>${opt}</option>`;
+              });
+              if (val && !matched) {
+                html += `<option value="${val}" selected>${val}</option>`;
+              }
             }
+            html += `</select>`;
+          } else {
+            html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" value="${val}" class="form-input" />`;
           }
-          html += `</select>`;
-        } else {
-          html += `<input type="${field.type === 'number' ? 'number' : 'text'}" name="${field.name}" value="${val}" class="form-input" />`;
-        }
-        html += `</div>`;
-      });
+          html += `</div>`;
 
-      html += `
+            if (field.name === 'parent_unit_id') {
+              html += `
+              <div id="org-edit-hierarchy-preview-box" class="full-width" style="grid-column: 1 / -1; background: rgba(13, 148, 136, 0.08); border: 1.5px dashed var(--brand-teal); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; font-size: 0.78rem; color: var(--text-primary); margin-top: -0.25rem;">
+                <div style="font-weight: 800; font-size: 0.75rem; color: #0f766e; text-transform: uppercase; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+                  <span class="material-icons" style="font-size: 15px; color: #0f766e;">account_tree</span>
+                  <span style="color: #0f766e; letter-spacing: 0.02em;">Parent-Child Hierarchy Tree Preview</span>
+                </div>
+                <div id="org-edit-hierarchy-preview-text" style="color: var(--text-secondary); line-height: 1.5;">
+                  <em>No parent selected. This unit will be created at the Top-Level (Corporate / Root Authority).</em>
+                </div>
+              </div>
+            `;
+            } else if (field.name === 'unit_id' && schema.table === 'workforce_setup') {
+              html += `
+              <div id="ws-edit-hierarchy-preview-box" class="full-width" style="grid-column: 1 / -1; background: rgba(13, 148, 136, 0.08); border: 1.5px dashed var(--brand-teal); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; font-size: 0.78rem; color: var(--text-primary); margin-top: -0.25rem;">
+                <div style="font-weight: 800; font-size: 0.75rem; color: #0f766e; text-transform: uppercase; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+                  <span class="material-icons" style="font-size: 15px; color: #0f766e;">apartment</span>
+                  <span style="color: #0f766e; letter-spacing: 0.02em;">Directorate & Department Ancestry Hierarchy</span>
+                </div>
+                <div id="ws-edit-hierarchy-preview-text" style="color: var(--text-secondary); line-height: 1.5;">
+                  <em>Live hierarchy chain will update as you adjust the unit.</em>
+                </div>
+              </div>
+            `;
+            }
+          });
+
+        html += `
             </div>
-            <div class="form-shell-footer" style="padding: 1rem 0 0 0; margin-top: 1rem;">
+            <div class="form-shell-footer">
               <button type="button" class="btn-cancel" onclick="orgViews.openViewGrid('${formKey}')">Cancel</button>
               <button type="submit" class="btn-primary-action">
                 <span class="material-icons" style="font-size: 16px;">save</span>
@@ -827,131 +1714,706 @@ var orgViews = window.orgViews = {
         </div>
       `;
 
-      mount.innerHTML = html;
-      orgViews.populateEditSelects(schema, row);
+        mount.innerHTML = html;
+        orgViews.populateEditSelects(schema, row);
 
-      if (formKey === 'organization_units') {
-        api.read('organization_units').then(function(units) {
-          var uMap = {};
-          (units || []).forEach(function(u) { uMap[u.unit_id] = u; });
-
-          // Ancestry
-          var chain = [];
-          var pId = row.parent_unit_id;
-          while (pId && uMap[pId]) {
-            chain.unshift(uMap[pId].unit_name + ' [' + (uMap[pId].unit_type || 'UNIT') + ']');
-            pId = uMap[pId].parent_unit_id;
-          }
-          chain.push('<strong style="color: var(--brand-teal-light);">' + (row.unit_name || row.unit_code) + ' [' + (row.unit_type || 'UNIT') + ']</strong>');
-          var pathEl = document.getElementById('org-edit-ancestry-path');
-          if (pathEl) {
-            pathEl.innerHTML = '<strong>Hierarchy Path:</strong> ' + (chain.length > 1 ? chain.join(' ➔ ') : 'Top-Level (Root Directorate)');
-          }
-
-          // Subordinates
-          var children = (units || []).filter(function(u) { return String(u.parent_unit_id) === String(pkVal); });
-          var subEl = document.getElementById('org-edit-subordinates-box');
-          if (subEl) {
-            if (children.length > 0) {
-              var childListStr = children.map(function(c) {
-                return `<span style="display: inline-block; background: rgba(13,148,136,0.15); color: var(--brand-teal-light); padding: 1px 6px; border-radius: 3px; margin: 2px 4px 2px 0;">${c.unit_name} [${c.unit_type || 'UNIT'}] (${c.unit_id})</span>`;
-              }).join(' ');
-              subEl.innerHTML = `<strong>Direct Subordinate Units (${children.length}):</strong><div style="margin-top: 4px;">${childListStr}</div>`;
-            } else {
-              subEl.innerHTML = `<strong>Direct Subordinate Units (Children):</strong> <span style="color: var(--text-muted);">No sub-units nested under this unit yet.</span>`;
-            }
-          }
-        });
-      }
-    }).catch(function(e) {
-      app.toast('Failed to load record for edit: ' + e.message, 'error');
-    });
-  },
-
-  populateEditSelects: async function(schema, row) {
-    var self = this;
-    for (var i = 0; i < schema.fields.length; i++) {
-      var f = schema.fields[i];
-      if ((f.type === 'select' || f.type === 'dependable_select') && f.source) {
-        var sel = document.getElementById('edit-field-' + f.name) || document.getElementById('field-' + f.name);
-        if (!sel) continue;
-        var currentVal = String(row[f.name] || '');
-        try {
-          var list = await api.read(f.source);
-          if (list && list.length > 0) {
-            sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
-            var seen = {};
-            list.forEach(function(item) {
-              var val = item[f.sourceKey] || item.id || item.code || item[Object.keys(item)[0]];
-              var disp = item[f.sourceDisplay] || item.name || val;
-              if (f.source === 'stations') {
-                disp = (item.station_code ? '[' + item.station_code + '] ' : '') + (item.station_name || val);
-              } else if (f.source === 'work_locations') {
-                var stnTag = (item.station_id || item.station_code) ? '[' + (item.station_id || item.station_code) + '] ' : '';
-                disp = stnTag + (item.location_name || item.location_code || val);
+        if (formKey === 'organization_units') {
+          api.read('organization_units').then(function (units) {
+            var activeUnits = (units || []).filter(function (u) {
+              return !(u.is_deleted === true || u.is_deleted === 'TRUE' || String(u.status || '').trim().toUpperCase() === 'DELETED');
+            });
+            var uMap = {};
+            activeUnits.forEach(function (u) {
+              if (u.unit_id) {
+                uMap[u.unit_id] = u;
+                uMap[String(u.unit_id).trim().toUpperCase()] = u;
               }
-              if (val && !seen[val]) {
-                seen[val] = true;
-                var opt = document.createElement('option');
-                opt.value = val;
-                opt.textContent = disp || val;
-                if (String(val) === currentVal) opt.selected = true;
-                sel.appendChild(opt);
+              if (u.unit_code) {
+                uMap[u.unit_code] = u;
+                uMap[String(u.unit_code).trim().toUpperCase()] = u;
               }
             });
-          }
-        } catch(err) {}
-      }
-    }
 
-    var editLocSel = document.getElementById('edit-field-location_id') || document.getElementById('field-location_id');
-    var editStnSel = document.getElementById('edit-field-station_id') || document.getElementById('edit-field-station_code') || document.getElementById('field-station_id') || document.getElementById('field-station_code');
-    if (editLocSel && editStnSel) {
-      editLocSel.addEventListener('change', function() {
-        self.updateLocationStationDependency(document.getElementById('org-edit-form'), this.value);
+            // Ancestry
+            var chain = [];
+            var pId = row.parent_unit_id;
+            var visitedChain = {};
+            while (pId) {
+              var normP = String(pId).trim().toUpperCase();
+              if (!uMap[normP] || visitedChain[normP]) break;
+              visitedChain[normP] = true;
+              var pUnit = uMap[normP];
+              chain.unshift(pUnit.unit_name || pUnit.unit_code);
+              pId = pUnit.parent_unit_id;
+            }
+            chain.push('<strong style="color: var(--brand-teal-light);">' + (row.unit_name || row.unit_code) + '</strong>');
+            var pathEl = document.getElementById('org-edit-ancestry-path');
+            if (pathEl) {
+              pathEl.innerHTML = '<strong>Hierarchy Path:</strong> ' + (chain.length > 1 ? chain.join(' ➔ ') : 'Top-Level (Corporate / Root Authority)');
+            }
+
+            // Subordinates with accurate multi-key matching
+            var pkNorm = String(pkVal || '').trim().toUpperCase();
+            var codeNorm = String(row.unit_code || '').trim().toUpperCase();
+            var nameNorm = String(row.unit_name || '').trim().toUpperCase();
+
+            var children = activeUnits.filter(function (u) {
+              var p = String(u.parent_unit_id || '').trim().toUpperCase();
+              if (!p || p === 'NULL' || p === '-') return false;
+              return p === pkNorm || (codeNorm && p === codeNorm) || (nameNorm && p === nameNorm);
+            });
+            var subEl = document.getElementById('org-edit-subordinates-box');
+            if (subEl) {
+              if (children.length > 0) {
+                var childListStr = children.map(function (c) {
+                  return `<span style="display: inline-block; background: rgba(13,148,136,0.12); color: #0f766e; border: 1px solid rgba(13,148,136,0.3); font-weight: 700; padding: 1px 6px; border-radius: 3px; margin: 2px 4px 2px 0;">${c.unit_name} [${c.unit_type || 'UNIT'}] (${c.unit_id})</span>`;
+                }).join(' ');
+                subEl.innerHTML = `<strong>Direct Sub Units (${children.length}):</strong><div style="margin-top: 4px;">${childListStr}</div>`;
+              } else {
+                subEl.innerHTML = `<strong>Direct Sub Units (Children):</strong> <span style="color: var(--text-muted);">No sub-units nested under this unit yet.</span>`;
+              }
+            }
+          });
+        } else if (formKey === 'designations') {
+          api.read('organization_units').then(function (units) {
+            var matchedU = (units || []).find(function(u) {
+              return String(u.unit_id || '').trim().toUpperCase() === String(row.unit_id || '').trim().toUpperCase();
+            });
+            var deptBox = document.getElementById('deg-edit-dept-box');
+            if (deptBox) {
+              var dName = matchedU ? (matchedU.unit_name || matchedU.unit_code) : (row.unit_id || '-');
+              deptBox.innerHTML = '<strong>Department:</strong> ' + dName + (matchedU ? ' (' + matchedU.unit_id + ')' : '');
+            }
+          });
+        } else if (formKey === 'workforce_setup') {
+          api.read('organization_units').then(function (units) {
+            var uMap = {};
+            (units || []).forEach(function (u) {
+              if (u.unit_id) uMap[String(u.unit_id).trim().toUpperCase()] = u;
+              if (u.unit_code) uMap[String(u.unit_code).trim().toUpperCase()] = u;
+            });
+            var chain = [];
+            var currUId = row.unit_id;
+            var visited = {};
+            while (currUId && uMap[String(currUId).trim().toUpperCase()] && !visited[currUId]) {
+              visited[currUId] = true;
+              var uObj = uMap[String(currUId).trim().toUpperCase()];
+              chain.unshift(uObj.unit_name || uObj.unit_code);
+              currUId = uObj.parent_unit_id;
+            }
+            var prevTextEl = document.getElementById('ws-edit-hierarchy-preview-text');
+            if (prevTextEl) {
+              prevTextEl.innerHTML = '<span style="color: #0f766e; font-weight: 800;">Ancestry Path:</span> ' + (chain.length > 0 ? chain.join(' ➔ ') : 'Top-Level Unit');
+            }
+          });
+        }
+      }).catch(function (e) {
+        app.toast('Failed to load record for edit: ' + e.message, 'error');
       });
-      self.updateLocationStationDependency(document.getElementById('org-edit-form'), editLocSel.value || row.location_id, row.station_id || row.station_code);
-    }
-  },
+    },
 
-  handleEditSubmit: function(e, formKey, pkVal) {
-    e.preventDefault();
-    var schema = AppSchemas[formKey];
-    var form = document.getElementById('org-edit-form');
-    var formData = new FormData(form);
-    var payload = {};
-    formData.forEach(function(val, key) { payload[key] = val; });
-
-    if (formKey === 'workforce_setup') {
-      if (payload.staff_number !== undefined && payload.set_up === undefined) {
-        payload.set_up = payload.staff_number;
+    populateEditSelects: async function (schema, row) {
+      var self = this;
+      if (!self.masterData) {
+        try {
+          self.masterData = await api.getMasterData();
+        } catch (eMd) {
+          self.masterData = {};
+        }
       }
-    }
 
-    api.update(schema.table, schema.pk, pkVal, payload).then(function() {
-      app.toast('Record successfully updated', 'success');
-      orgViews.openViewGrid(formKey);
-    }).catch(function(err) {
-      app.toast('Update failed: ' + err.message, 'error');
-    });
-  },
+      for (var i = 0; i < schema.fields.length; i++) {
+        var f = schema.fields[i];
+        if ((f.type === 'select' || f.type === 'dependable_select') && f.source) {
+          var sel = document.getElementById('edit-field-' + f.name) || document.getElementById('field-' + f.name);
+          if (!sel) continue;
+          var currentVal = String(row[f.name] || '');
+          if (!currentVal && (f.name === 'station_code' || f.name === 'station_id')) {
+            currentVal = String(row.station_code || row.station_id || row.station || '');
+          }
+          if (!currentVal && (f.name === 'unit_id' || f.name === 'dep_id')) {
+            currentVal = String(row.unit_id || row.dep_id || '');
+          }
+          try {
+            var list = (self.masterData && self.masterData[f.source] && self.masterData[f.source].length > 0)
+              ? self.masterData[f.source]
+              : await api.read(f.source);
+            if (!list || list.length === 0) {
+              try {
+                var md = await api.getMasterData();
+                if (md && md[f.source] && md[f.source].length > 0) {
+                  list = md[f.source];
+                  if (!self.masterData) self.masterData = {};
+                  self.masterData[f.source] = md[f.source];
+                }
+              } catch (eMd) { }
+            }
 
-  deleteRecord: function(formKey, pkVal) {
-    var schema = AppSchemas[formKey];
-    if (!schema || !pkVal) return;
+            // Fallback for work_locations if sheet is still blank
+            if (f.source === 'work_locations' && (!list || list.length === 0)) {
+              list = [
+                { location_id: 'LOC-0001', location_code: '101', location_name: 'Head Office (Balaka Bhaban)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0002', location_code: '102', location_name: 'Airport Terminal 1 (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0003', location_code: '103', location_name: 'Airport Terminal 2 (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0004', location_code: '104', location_name: 'Hangar Complex (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0005', location_code: '105', location_name: 'Cargo Terminal (HSIA)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0006', location_code: '106', location_name: 'Biman Training Center (BATC)', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0007', location_code: '107', location_name: 'Motijheel District Sales Office', station_id: 'DAC', city: 'Dhaka', country: 'Bangladesh' },
+                { location_id: 'LOC-0008', location_code: '201', location_name: 'Shah Amanat Int\'l Airport Terminal', station_id: 'CGP', city: 'Chittagong', country: 'Bangladesh' },
+                { location_id: 'LOC-0009', location_code: '301', location_name: 'Osmani Int\'l Airport Terminal', station_id: 'ZYL', city: 'Sylhet', country: 'Bangladesh' }
+              ];
+            }
 
-    Components.showConfirmModal({
-      title: 'Delete ' + schema.title + ' Record',
-      message: 'Are you sure you want to permanently delete record ' + pkVal + '?',
-      onConfirm: function() {
-        api.delete(schema.table, schema.pk, pkVal).then(function() {
-          app.toast('Record deleted successfully', 'success');
-          orgViews.loadGridData(formKey, true);
-        }).catch(function(err) {
-          app.toast('Delete failed: ' + err.message, 'error');
+            if (list && list.length > 0) {
+              sel.innerHTML = `<option value="">-- ${f.placeholder || 'Select ' + f.label} --</option>`;
+              if (f.source === 'organization_units') {
+                if (schema.table === 'designations' && f.name === 'unit_id') {
+                  var deptUnits2 = (list || []).filter(function (u) {
+                    var tier = orgViews.detectUnitTier(u);
+                    var uType = String(u.unit_type || '').trim().toUpperCase();
+                    var uName = String(u.unit_name || '').trim().toUpperCase();
+                    return tier === 'DEPARTMENT' || uType === 'DEPARTMENT' || uType === 'DIVISION' || uName.indexOf('DEPARTMENT') !== -1;
+                  });
+                  deptUnits2.sort(function (a, b) {
+                    return String(a.unit_name || '').localeCompare(String(b.unit_name || ''));
+                  });
+                  deptUnits2.forEach(function (dept) {
+                    var opt = document.createElement('option');
+                    opt.value = dept.unit_id;
+                    opt.textContent = dept.unit_name || dept.unit_code || dept.unit_id;
+                    opt.dataset.unitName = dept.unit_name || '';
+                    opt.dataset.unitType = dept.unit_type || 'DEPARTMENT';
+                    opt.dataset.unitCode = dept.unit_code || '';
+                    if (String(dept.unit_id) === currentVal) opt.selected = true;
+                    sel.appendChild(opt);
+                  });
+                  if (currentVal && !deptUnits2.some(function(d) { return String(d.unit_id) === currentVal; })) {
+                    var matchedU2 = list.find(function(u) { return String(u.unit_id) === currentVal; });
+                    if (matchedU2) {
+                      var optExtra2 = document.createElement('option');
+                      optExtra2.value = matchedU2.unit_id;
+                      optExtra2.textContent = matchedU2.unit_name || matchedU2.unit_code || matchedU2.unit_id;
+                      optExtra2.selected = true;
+                      sel.appendChild(optExtra2);
+                    }
+                  }
+                  continue;
+                }
+                var treeNodes2 = self.buildHierarchyTreeOptions(list);
+                treeNodes2.forEach(function (node) {
+                  // Prevent self-parenting in edit modal
+                  if (schema.table === 'organization_units' && f.name === 'parent_unit_id' && String(node.unit_id) === String(row.unit_id)) {
+                    return;
+                  }
+                  var opt = document.createElement('option');
+                  opt.value = node.unit_id;
+                  opt.textContent = node.label;
+                  opt.dataset.unitName = node.unit_name || '';
+                  opt.dataset.unitType = node.unit_type || '';
+                  opt.dataset.unitCode = node.unit_code || '';
+                  if (String(node.unit_id) === currentVal) opt.selected = true;
+                  sel.appendChild(opt);
+                });
+                continue;
+              }
+              var itemsToRender2 = list.slice();
+              var isPgCodeField2 = (f.source === 'pay_groups' && f.name.indexOf('designation') === -1);
+              if (isPgCodeField2) {
+                var uniquePgs2 = {};
+                list.forEach(function (item) {
+                  var p = String(item.pay_group || '').trim();
+                  if (p) uniquePgs2[p] = true;
+                });
+                var stdOrder2 = ['PG-1', 'PG-3(2)', 'PG-4', 'PG-5', 'PG-6', 'PG-7', 'PG-8', 'PG-9', 'PG-10', 'PG-11', 'PG-12', 'LOCAL'];
+                var sorted2 = Object.keys(uniquePgs2).sort(function (a, b) {
+                  var iA = stdOrder2.indexOf(a);
+                  var iB = stdOrder2.indexOf(b);
+                  if (iA !== -1 && iB !== -1) return iA - iB;
+                  if (iA !== -1) return -1;
+                  if (iB !== -1) return 1;
+                  return a.localeCompare(b);
+                });
+                itemsToRender2 = sorted2.map(function (p) { return { pay_group: p }; });
+              } else if (f.source === 'stations' && f.name === 'city') {
+                var citiesSeen2 = {};
+                var uniqueCities2 = [];
+                list.forEach(function (item) {
+                  var c = (item.city || '').trim();
+                  if (c && !citiesSeen2[c.toUpperCase()]) {
+                    citiesSeen2[c.toUpperCase()] = true;
+                    uniqueCities2.push({ city: c });
+                  }
+                });
+                uniqueCities2.sort(function (a, b) {
+                  return a.city.localeCompare(b.city);
+                });
+                itemsToRender2 = uniqueCities2;
+              }
+              var seen = {};
+              itemsToRender2.forEach(function (item) {
+                var val = item[f.sourceKey] || item.location_id || item.location_code || item.id || item.code;
+                // Prevent self-parenting in edit modal
+                if (schema.table === 'organization_units' && f.name === 'parent_unit_id' && String(val) === String(row.unit_id)) {
+                  return;
+                }
+                var disp = item[f.sourceDisplay] || item.name || val;
+                if (f.source === 'stations' && f.name === 'city') {
+                  val = item.city;
+                  disp = item.city;
+                } else if (f.source === 'stations') {
+                  disp = item.station_code || item.station_id || val;
+                } else if (f.source === 'work_locations') {
+                  val = item.location_id || item.location_code || item.id || item.code || val;
+                  disp = item.location_name || item.location_code || val;
+                } else if (f.source === 'positions') {
+                  disp = item.position_title || item.position_code || val;
+                } else if (f.source === 'shifts') {
+                  disp = item.shift_name || item.shift_code || val;
+                } else if (f.source === 'pay_groups') {
+                  if (isPgCodeField2) {
+                    disp = item.pay_group || val;
+                    val = item.pay_group || val;
+                  } else if (f.name === 'designation') {
+                    disp = item.designation || val;
+                  } else {
+                    disp = item.designation || item.pay_group || val;
+                  }
+                } else if (f.source === 'organization_units') {
+                  disp = item.unit_name || item.unit_code || val;
+                }
+                var dedupeKey2 = (f.source === 'shifts') ? (item.shift_name || val) : (isPgCodeField2 ? (item.pay_group || val) : ((f.source === 'pay_groups') ? (item.designation || val) : ((f.source === 'work_locations') ? (item.location_id || item.location_code || val) : val)));
+                if (val && !seen[dedupeKey2]) {
+                  seen[dedupeKey2] = true;
+                  var opt = document.createElement('option');
+                  opt.value = val;
+                  opt.textContent = disp || val;
+                  opt.dataset.designation = item.designation || '';
+                  opt.dataset.payGroup = item.pay_group || '';
+                  opt.dataset.unitType = item.unit_type || '';
+                  opt.dataset.stationId = item.station_id || item.station_code || '';
+                  opt.dataset.locationCode = item.location_code || '';
+                  opt.dataset.locationName = item.location_name || '';
+                  if (String(val) === currentVal || (item.location_code && String(item.location_code) === currentVal) || (item.location_id && String(item.location_id) === currentVal)) {
+                    opt.selected = true;
+                  }
+                  sel.appendChild(opt);
+                }
+              });
+            } else if (f.name === 'parent_unit_id') {
+              sel.innerHTML = `<option value="">-- None (Top-Level / Corporate Authority) --</option>`;
+            }
+          } catch (err) { }
+        }
+      }
+
+      var editLocSel = document.getElementById('edit-field-location_id') || document.getElementById('field-location_id');
+      var editStnSel = document.getElementById('edit-field-station_id') || document.getElementById('edit-field-station_code') || document.getElementById('field-station_id') || document.getElementById('field-station_code');
+      if (editLocSel && editStnSel && schema.table !== 'work_locations') {
+        editLocSel.addEventListener('change', function () {
+          var selOpt = this.options[this.selectedIndex];
+          var linkedStn = selOpt ? (selOpt.dataset.stationId || '') : '';
+          self.updateLocationStationDependency(document.getElementById('org-edit-form'), this.value, linkedStn);
+        });
+        if (editLocSel.value || row.location_id) {
+          var initEditOpt = editLocSel.options[editLocSel.selectedIndex];
+          var initEditStn = initEditOpt ? (initEditOpt.dataset.stationId || row.station_id || row.station_code) : (row.station_id || row.station_code);
+          self.updateLocationStationDependency(document.getElementById('org-edit-form'), editLocSel.value || row.location_id, initEditStn);
+        }
+      }
+
+      if (schema.table === 'work_locations') {
+        var editStnSel2 = document.getElementById('edit-field-station_id');
+        var editCitySel = document.getElementById('edit-field-city');
+        var editCountryInp = document.getElementById('edit-field-country');
+        var editRegionSel = document.getElementById('edit-field-region');
+
+        if (editStnSel2) {
+          editStnSel2.addEventListener('change', function () {
+            var selStn = this.value;
+            if (!selStn) return;
+            api.read('stations').then(function (stations) {
+              var foundStn = (stations || []).find(function (s) {
+                return String(s.station_code || s.station_id || '').trim().toUpperCase() === String(selStn).trim().toUpperCase();
+              });
+              if (foundStn) {
+                if (editCitySel && foundStn.city) editCitySel.value = foundStn.city;
+                var sType = String(foundStn.station_type || '').toLowerCase();
+                var sCity = String(foundStn.city || '').trim().toUpperCase();
+                var isForeignStn = sType.indexOf('foreign') !== -1;
+                var isBangladesh = !isForeignStn || (sType.indexOf('base') !== -1 || sType.indexOf('home') !== -1) ||
+                  ['DHAKA', 'CHITTAGONG', 'SYLHET', 'COX\'S BAZAR', 'JESSORE', 'SAIDPUR', 'RAJSHAHI', 'BARISAL'].indexOf(sCity) !== -1;
+
+                if (editCountryInp) {
+                  if (foundStn.country && String(foundStn.country).trim().toLowerCase() !== 'foreign') {
+                    editCountryInp.value = foundStn.country;
+                  } else if (isBangladesh) {
+                    editCountryInp.value = 'Bangladesh';
+                  } else {
+                    editCountryInp.value = '';
+                  }
+                }
+                if (editRegionSel) {
+                  if (isBangladesh) {
+                    editRegionSel.value = 'Home';
+                  } else if (foundStn.region) {
+                    editRegionSel.value = foundStn.region;
+                  }
+                }
+              }
+            });
+          });
+        }
+
+        if (editCitySel) {
+          editCitySel.addEventListener('change', function () {
+            var selCity = this.value;
+            if (!selCity) return;
+            api.read('stations').then(function (stations) {
+              var currStnVal = editStnSel2 ? editStnSel2.value : '';
+              var matchingStations = (stations || []).filter(function (s) {
+                return !selCity || String(s.city || '').trim().toLowerCase() === String(selCity).trim().toLowerCase();
+              });
+              if (editStnSel2) {
+                editStnSel2.innerHTML = '<option value="">-- None / Head Office (Non-Airport Facility) --</option>';
+                matchingStations.forEach(function (s) {
+                  var sCode = s.station_code || s.station_id;
+                  var opt = document.createElement('option');
+                  opt.value = sCode;
+                  opt.textContent = sCode;
+                  if (sCode === currStnVal) opt.selected = true;
+                  editStnSel2.appendChild(opt);
+                });
+              }
+            });
+          });
+        }
+      }
+
+      if (schema.table === 'pay_groups') {
+        var editPgInput = document.getElementById('edit-field-pay_group');
+        var editRankInput = document.getElementById('edit-field-rank_level');
+        var rankMap = {
+          'PG-1': 1, 'PG-3(2)': 4, 'PG-4': 5, 'PG-5': 6, 'PG-6': 7,
+          'PG-7': 8, 'PG-8': 9, 'PG-9': 10, 'PG-10': 11, 'PG-11': 12, 'PG-12': 13
+        };
+        if (editPgInput && editRankInput) {
+          editPgInput.addEventListener('change', function () {
+            var val = (this.value || '').trim();
+            if (rankMap[val] !== undefined) {
+              editRankInput.value = rankMap[val];
+            }
+          });
+        }
+      }
+
+      if (schema.table === 'designations') {
+        var editCategorySelect = document.getElementById('edit-field-pg_category');
+        var editPgSelect = document.getElementById('edit-field-pay_group');
+        var editCategoryRows = [];
+        api.read('pay_groups').then(function(rows) {
+          editCategoryRows = rows || [];
+          if (editCategorySelect) {
+            var categories = {};
+            editCategoryRows.forEach(function(r) { if (r.pg_category) categories[r.pg_category] = true; });
+            var targetCat = row.pg_category || editCategorySelect.value;
+            editCategorySelect.innerHTML = '<option value="">-- Select category --</option>';
+            Object.keys(categories).sort().forEach(function(category) {
+              var option = document.createElement('option');
+              option.value = category;
+              option.textContent = category;
+              if (category === targetCat) option.selected = true;
+              editCategorySelect.appendChild(option);
+            });
+            if (targetCat && !categories[targetCat]) {
+              var optFallback = document.createElement('option');
+              optFallback.value = targetCat;
+              optFallback.textContent = targetCat;
+              optFallback.selected = true;
+              editCategorySelect.appendChild(optFallback);
+            }
+          }
+
+          var populateEditPgs = function(cat, initialPg) {
+            if (!editPgSelect) return;
+            var currPg = initialPg !== undefined ? initialPg : editPgSelect.value;
+            editPgSelect.innerHTML = '<option value="">-- Select pay group --</option>';
+            var seenPg = {};
+            var stdOrder = ['PG-1', 'PG-3(2)', 'PG-4', 'PG-5', 'PG-6', 'PG-7', 'PG-8', 'PG-9', 'PG-10', 'PG-11', 'PG-12', 'LOCAL'];
+            var matchedPgs = [];
+            editCategoryRows.filter(function(r) { return !cat || String(r.pg_category) === cat; }).forEach(function(r) {
+              var p = String(r.pay_group || '').trim();
+              if (p && !seenPg[p]) {
+                seenPg[p] = true;
+                matchedPgs.push(p);
+              }
+            });
+            matchedPgs.sort(function(a, b) {
+              var iA = stdOrder.indexOf(a);
+              var iB = stdOrder.indexOf(b);
+              if (iA !== -1 && iB !== -1) return iA - iB;
+              if (iA !== -1) return -1;
+              if (iB !== -1) return 1;
+              return a.localeCompare(b);
+            });
+            matchedPgs.forEach(function(pg) {
+              var opt = document.createElement('option');
+              opt.value = pg;
+              opt.textContent = pg;
+              if (pg === currPg) opt.selected = true;
+              editPgSelect.appendChild(opt);
+            });
+            if (currPg && !seenPg[currPg]) {
+              var optExtra = document.createElement('option');
+              optExtra.value = currPg;
+              optExtra.textContent = currPg;
+              optExtra.selected = true;
+              editPgSelect.appendChild(optExtra);
+            }
+          };
+
+          populateEditPgs(row.pg_category, row.pay_group);
+
+          if (editCategorySelect) {
+            editCategorySelect.onchange = function() {
+              populateEditPgs(this.value, '');
+            };
+          }
         });
       }
-    });
-  }
-};
+
+      if (schema.table === 'workforce_setup') {
+        var editWsUnitSel = document.getElementById('edit-field-unit_id') || document.getElementById('field-unit_id');
+        var editWsPgSel = document.getElementById('edit-field-pay_group') || document.getElementById('field-pay_group');
+        var editWsDesigInp = document.getElementById('edit-field-designation') || document.getElementById('field-designation');
+        var editWsPosSel = document.getElementById('edit-field-position_id') || document.getElementById('field-position_id');
+
+        var updateEditWsPayGroups = function (selectedUnitId, currentPgVal) {
+          Promise.all([
+            api.read('pay_groups').catch(function () { return []; }),
+            api.read('organization_units').catch(function () { return []; })
+          ]).then(function (res) {
+            var pgs = res[0] || [];
+            var orgUnits = res[1] || [];
+            var matchedU = null;
+            if (selectedUnitId) {
+              matchedU = orgUnits.find(function (u) {
+                return String(u.unit_id || u.unit_code || '').trim().toUpperCase() === String(selectedUnitId).trim().toUpperCase();
+              });
+            }
+            var ancestorIds = {};
+            var chain = [];
+            if (matchedU) {
+              var currU = matchedU;
+              var visitedU = {};
+              while (currU && !visitedU[currU.unit_id]) {
+                visitedU[currU.unit_id] = true;
+                chain.unshift(currU.unit_name || currU.unit_code);
+                if (currU.unit_id) ancestorIds[String(currU.unit_id).trim().toUpperCase()] = true;
+                if (currU.unit_code) ancestorIds[String(currU.unit_code).trim().toUpperCase()] = true;
+                var parentId = currU.parent_unit_id ? String(currU.parent_unit_id).trim().toUpperCase() : null;
+                currU = parentId ? orgUnits.find(function (ou) {
+                  return String(ou.unit_id || ou.unit_code || '').trim().toUpperCase() === parentId;
+                }) : null;
+              }
+            }
+
+            var prevWsEl = document.getElementById('ws-edit-hierarchy-preview-text');
+            if (prevWsEl) {
+              if (chain.length > 0) {
+                prevWsEl.innerHTML = '<span style="color: #0f766e; font-weight: 800;">Ancestry Path:</span> ' + chain.join(' ➔ ');
+              } else {
+                prevWsEl.innerHTML = '<em>Select an Organization Unit to preview its Directorate, Department, and Section hierarchy chain.</em>';
+              }
+            }
+
+            var filtered = pgs.filter(function (pg) {
+              var pgU = String(pg.unit_id || '').trim().toUpperCase();
+              if (!pgU || pgU === 'ALL' || pgU === 'CORPORATE') return true;
+              if (ancestorIds[pgU]) return true;
+              return false;
+            });
+
+            if (!selectedUnitId) filtered = pgs;
+
+            var uniquePgs = {};
+            filtered.forEach(function (item) {
+              var p = (item.pay_group || '').trim();
+              if (p) uniquePgs[p] = true;
+            });
+            var stdOrder = ['PG-1', 'PG-3(2)', 'PG-4', 'PG-5', 'PG-6', 'PG-7', 'PG-8', 'PG-9', 'PG-10', 'PG-11', 'PG-12', 'LOCAL'];
+            var sortedPgs = Object.keys(uniquePgs).sort(function (a, b) {
+              var iA = stdOrder.indexOf(a);
+              var iB = stdOrder.indexOf(b);
+              if (iA !== -1 && iB !== -1) return iA - iB;
+              if (iA !== -1) return -1;
+              if (iB !== -1) return 1;
+              return a.localeCompare(b);
+            });
+
+            var targetPg = currentPgVal !== undefined ? currentPgVal : (editWsPgSel ? editWsPgSel.value : '');
+            if (editWsPgSel) {
+              editWsPgSel.innerHTML = '<option value="">-- Select Pay Group --</option>';
+              sortedPgs.forEach(function (pg) {
+                var opt = document.createElement('option');
+                opt.value = pg;
+                opt.textContent = pg; // ONLY clean single pay group name
+                if (pg === targetPg) opt.selected = true;
+                editWsPgSel.appendChild(opt);
+              });
+            }
+
+            var populateEditDesignations = function (tPg, initialDesig) {
+              if (!editWsDesigInp) return;
+              if (editWsDesigInp.tagName === 'SELECT') {
+                var desigList = filtered.filter(function (item) {
+                  if (!tPg) return true;
+                  return String(item.pay_group || '').trim().toUpperCase() === String(tPg).trim().toUpperCase();
+                });
+                var seenD = {};
+                var currDesig = initialDesig !== undefined ? initialDesig : editWsDesigInp.value;
+                editWsDesigInp.innerHTML = '<option value="">-- Select Designation --</option>';
+                desigList.forEach(function (item) {
+                  var d = (item.designation || '').trim();
+                  if (d && !seenD[d]) {
+                    seenD[d] = true;
+                    var opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d; // ONLY clean designation name
+                    opt.dataset.payGroup = item.pay_group || '';
+                    if (d === currDesig) opt.selected = true;
+                    editWsDesigInp.appendChild(opt);
+                  }
+                });
+              }
+            };
+
+            populateEditDesignations(targetPg, row.designation);
+
+            if (editWsPgSel) {
+              editWsPgSel.onchange = function () {
+                populateEditDesignations(this.value);
+              };
+            }
+            if (editWsDesigInp && editWsDesigInp.tagName === 'SELECT') {
+              editWsDesigInp.onchange = function () {
+                var selOpt = this.options[this.selectedIndex];
+                if (selOpt && selOpt.dataset.payGroup && editWsPgSel && !editWsPgSel.value) {
+                  editWsPgSel.value = selOpt.dataset.payGroup;
+                }
+                if (editWsPosSel && !editWsPosSel.value && this.value) {
+                  editWsPosSel.value = this.value;
+                }
+              };
+            }
+          });
+        };
+
+        if (editWsUnitSel) {
+          editWsUnitSel.addEventListener('change', function () {
+            updateEditWsPayGroups(this.value, '');
+          });
+        }
+        if (editWsPosSel) {
+          editWsPosSel.addEventListener('change', function () {
+            var selectedPos = this.value;
+            if (selectedPos && editWsDesigInp && !editWsDesigInp.value) {
+              editWsDesigInp.value = selectedPos;
+            }
+          });
+        }
+
+        updateEditWsPayGroups(row.unit_id, row.pay_group);
+      }
+    },
+
+    handleEditSubmit: function (e, formKey, pkVal) {
+      e.preventDefault();
+      var schema = AppSchemas[formKey];
+      var form = document.getElementById('org-edit-form');
+      var formData = new FormData(form);
+      var payload = {};
+      formData.forEach(function (val, key) { payload[key] = val; });
+
+      if (formKey === 'workforce_setup') {
+        var sNum = payload.sanctioned_posts || payload.staff_number || payload.set_up;
+        if (sNum !== undefined && sNum !== '') {
+          payload.sanctioned_posts = sNum;
+          payload.staff_number = sNum;
+          payload.set_up = sNum;
+        }
+        var editWsPgEl = document.getElementById('edit-field-pay_group');
+        if (editWsPgEl && editWsPgEl.selectedIndex >= 0) {
+          var selOpt2 = editWsPgEl.options[editWsPgEl.selectedIndex];
+          if (selOpt2 && selOpt2.dataset.payGroup) {
+            payload.pay_group = selOpt2.dataset.payGroup;
+          }
+          if (selOpt2 && selOpt2.dataset.designation && !payload.designation) {
+            payload.designation = selOpt2.dataset.designation;
+          }
+        }
+        if (payload.position_id && !payload.designation) {
+          payload.designation = payload.position_id;
+        }
+        if (payload.station_code && !payload.station_id) {
+          payload.station_id = payload.station_code;
+        }
+        if (payload.duty_pattern && !payload.shift_type) {
+          payload.shift_type = payload.duty_pattern;
+        }
+      } else if (formKey === 'shifts') {
+        if (!payload.unit_id && payload.dep_id) {
+          payload.unit_id = payload.dep_id;
+        }
+        delete payload.station_code;
+        delete payload.station_id;
+        delete payload.dep_id;
+      }
+
+      api.update(schema.table, schema.pk, pkVal, payload).then(function () {
+        app.toast('Record successfully updated', 'success');
+        orgViews.openViewGrid(formKey);
+      }).catch(function (err) {
+        if (err.isDuplicate || (err.message && (err.message.indexOf('already exists') !== -1 || err.message.indexOf('Duplicate') !== -1))) {
+          Components.showDuplicateModal(err.message, 'Edit: ' + schema.title);
+        } else {
+          app.toast('Update failed: ' + err.message, 'error');
+        }
+      });
+    },
+
+    deleteRecord: function (formKey, pkVal) {
+      var schema = AppSchemas[formKey];
+      if (!schema || !pkVal) return;
+
+      Components.showConfirmModal({
+        title: 'Delete ' + schema.title + ' Record',
+        message: 'Are you sure you want to permanently delete record ' + pkVal + '?',
+        onConfirm: function () {
+          api.delete(schema.table, schema.pk, pkVal).then(function () {
+            app.toast('Record deleted successfully', 'success');
+            if (orgViews.masterData && orgViews.masterData[schema.table]) {
+              orgViews.masterData[schema.table] = orgViews.masterData[schema.table].filter(function (item) {
+                var itemPk = item[schema.pk] || item.id || '';
+                return String(itemPk).trim().toLowerCase() !== String(pkVal).trim().toLowerCase();
+              });
+            }
+            api.invalidateCache(schema.table);
+            orgViews.loadGridData(formKey, true);
+          }).catch(function (err) {
+            var errMsg = (err && err.message) || String(err);
+            if (errMsg.indexOf('no data rows') !== -1 || errMsg.indexOf('not found') !== -1 || errMsg.indexOf('absent') !== -1) {
+              app.toast('Table cache synchronized: record is no longer present.', 'info');
+              api.invalidateCache(schema.table);
+              if (orgViews.masterData && orgViews.masterData[schema.table]) {
+                delete orgViews.masterData[schema.table];
+              }
+              orgViews.loadGridData(formKey, true);
+            } else {
+              app.toast('Delete failed: ' + errMsg, 'error');
+            }
+          });
+        }
+      });
+    }
+  };
 </script>

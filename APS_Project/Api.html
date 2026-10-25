@@ -223,7 +223,7 @@ var api = window.api = {
     if (!forceRefresh && this._memCache[cacheKey]) {
       return this._memCache[cacheKey];
     }
-    const data = await this.call('api_read', table);
+    const data = await this.call('api_read', table, forceRefresh);
     if (Array.isArray(data)) {
       this._memCache[cacheKey] = data;
     }
@@ -275,6 +275,8 @@ var api = window.api = {
   delete: async function(table, pkCol, id) {
     const res = await this.call('api_delete', table, pkCol, id);
     this.invalidateCache(table);
+    delete this._memCache['tbl_' + table];
+    delete this._memCache['master_data'];
     return res;
   },
 
@@ -304,6 +306,10 @@ var api = window.api = {
 
   getWorkforceSetupReport: async function(filters) {
     return this.call('api_get_workforce_setup_report', filters);
+  },
+
+  cleanObsoleteShiftColumns: async function() {
+    return this.call('api_clean_obsolete_shift_columns');
   },
 
   getWorkforceDistribution: async function(filters) {
@@ -371,9 +377,7 @@ var api = window.api = {
     this.clearAllCaches();
     return res;
   }
-};
-
-// Immediately wipe any lingering cache from previous versions on startup
+};// Immediately wipe any lingering cache from previous versions on startup
 try {
   api._purgeResidualStorage();
 } catch (e) {}
